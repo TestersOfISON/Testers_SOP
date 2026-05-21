@@ -4,6 +4,7 @@
   "description": "Master QA Interactive Portal for Standard Operating Procedures",
   "start_url": "./index.html",
   "display": "standalone",
+  "orientation": "landscape",
   "background_color": "#1a252f",
   "theme_color": "#3498db",
   "icons": [
