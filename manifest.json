@@ -1,7 +1,7 @@
 {
-  "name": "QA Interactive Portal",
-  "short_name": "QA Portal",
-  "description": "Master QA Interactive Portal for Standard Operating Procedures",
+  "name": "iSON - Tester's SOP",
+  "short_name": "iSON - Tester's SOP",
+  "description": "iSON - Tester's SOP for Standard Operating Procedures",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "landscape",
@@ -18,5 +18,4 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
-}
+ 
