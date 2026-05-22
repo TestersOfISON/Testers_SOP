@@ -256,23 +256,23 @@
       </div>
       
       <div id="tab-checklist" class="tab-content">
-        <!-- Jira Ticket Context Selector & Excel Tools -->
-        <div class="ticket-bar-container" style="background: var(--bg-color); padding: 15px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: space-between;">
+        <!-- User Story Context Selector & Excel Tools -->
+        <div id="ticket-bar-container" class="ticket-bar-container" style="background: var(--bg-color); padding: 15px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: space-between;">
           <div style="display: flex; align-items: center; gap: 10px; flex-grow: 1; min-width: 280px; flex-wrap: wrap;">
-            <span style="font-weight: 600; font-size: 0.95rem; white-space: nowrap;">Active Ticket Context:</span>
-            <input type="text" id="jira-ticket-input" placeholder="e.g. SCRT-1234 (Optional)" class="form-input" style="max-width: 180px; padding: 8px 12px; margin: 0;" oninput="handleTicketKeyChange()">
+            <span style="font-weight: 600; font-size: 0.95rem; white-space: nowrap;">User Story:</span>
+            <input type="text" id="jira-ticket-input" placeholder="e.g. SCRT-1234" class="form-input" style="max-width: 180px; padding: 8px 12px; margin: 0;" oninput="handleTicketKeyChange()">
             <select id="jira-ticket-select" class="form-input" style="max-width: 180px; padding: 8px 12px; margin: 0;" onchange="handleTicketSelect(this.value)">
-              <option value="">-- Recent Tickets --</option>
+              <option value="">-- Recent User Stories --</option>
             </select>
           </div>
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <button class="btn btn-success" id="export-excel-btn" style="margin: 0; padding: 8px 15px; font-size: 0.85rem; background: var(--success);" onclick="exportSingleTicketToExcel()">Export Ticket</button>
-            <button class="btn btn-primary" id="export-all-excel-btn" style="margin: 0; padding: 8px 15px; font-size: 0.85rem; background: var(--primary);" onclick="exportAllTicketsToExcel()">Export All</button>
+            <button class="btn btn-success" id="export-excel-btn" style="margin: 0; padding: 8px 15px; font-size: 0.85rem; background: var(--success);" onclick="exportSingleUserStoryToExcel()">Export User Story</button>
+            <button class="btn btn-primary" id="export-all-excel-btn" style="margin: 0; padding: 8px 15px; font-size: 0.85rem; background: var(--primary);" onclick="exportAllUserStoriesToExcel()">Export Workbook</button>
           </div>
         </div>
 
         <!-- Progress Indicator -->
-        <div class="progress-wrapper" style="margin-bottom: 20px; background: var(--bg-color); padding: 15px; border: 1px solid var(--border); border-radius: 8px;">
+        <div id="progress-bar-container" class="progress-wrapper" style="margin-bottom: 20px; background: var(--bg-color); padding: 15px; border: 1px solid var(--border); border-radius: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.95rem; font-weight: 600;">
             <span id="progress-text-label">Module Progress: 0%</span>
             <span id="progress-fraction-label" style="color: #777;">0 of 0 items checked</span>
@@ -287,7 +287,7 @@
           <h3 style="margin: 0;">Standard Operating Procedure Checklist</h3>
           <div style="display: flex; gap: 10px;">
             <button class="btn btn-danger" id="reset-checklist-btn" style="margin: 0; padding: 8px 15px; font-size: 0.85rem;" onclick="resetCurrentChecklist()">Reset Module</button>
-            <button class="btn btn-danger" id="reset-all-btn" style="margin: 0; padding: 8px 15px; font-size: 0.85rem; background: #c0392b;" onclick="resetAllData()">Reset All Tickets</button>
+            <button class="btn btn-danger" id="reset-all-btn" style="margin: 0; padding: 8px 15px; font-size: 0.85rem; background: #c0392b;" onclick="resetAllData()">Reset All Stories</button>
           </div>
         </div>
         
@@ -295,12 +295,12 @@
 
         <!-- Tickets Registry Dashboard -->
         <div id="ticket-dashboard-container" style="margin-top: 35px; background: var(--bg-color); padding: 20px; border: 1px solid var(--border); border-radius: 8px;">
-          <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 1.15rem; color: var(--primary);">Jira Tickets SOP Progress Registry</h3>
+          <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 1.15rem; color: var(--primary);">User Stories SOP Progress Registry</h3>
           <div style="overflow-x: auto;">
             <table id="ticket-dashboard-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
               <thead>
                 <tr style="border-bottom: 2px solid var(--border); color: #777;">
-                  <th style="padding: 10px 5px;">Jira Ticket Key</th>
+                  <th style="padding: 10px 5px;">User Story Key</th>
                   <th style="padding: 10px 5px;">Last Active Module</th>
                   <th style="padding: 10px 5px;">Module Progress</th>
                   <th style="padding: 10px 5px;">Overall Progress</th>
@@ -905,6 +905,7 @@ Please send observations before the meeting.</div>`
       }
     };
 
+    const activeChecklistModules = ['ai_generation', 'test_design', 'scenario_validation', 'uat', 'smoke', 'prl', 'regression'];
     let currentModuleId = null;
 
     // --- ACCORDION LOGIC ---
@@ -996,7 +997,7 @@ Please send observations before the meeting.</div>`
       if (!select) return;
       
       const registry = getTicketRegistry();
-      select.innerHTML = '<option value="">-- Recent Tickets --</option>';
+      select.innerHTML = '<option value="">-- Recent User Stories --</option>';
       
       registry.forEach(key => {
         const opt = document.createElement('option');
@@ -1052,7 +1053,7 @@ Please send observations before the meeting.</div>`
     function getTicketOverallProgress(ticketKey) {
       let grandTotal = 0;
       let grandChecked = 0;
-      for (const moduleId of Object.keys(qaModules)) {
+      for (const moduleId of activeChecklistModules) {
         const { checkedCount, totalCount } = getModuleProgress(moduleId, ticketKey);
         grandTotal += totalCount;
         grandChecked += checkedCount;
@@ -1099,7 +1100,7 @@ Please send observations before the meeting.</div>`
         tbody.innerHTML = `
           <tr>
             <td colspan="5" style="text-align: center; color: #777; padding: 20px;">
-              No active tickets in registry. Enter a Jira Ticket Key above to start tracking.
+              No active user stories in registry. Enter a User Story Key above to start tracking.
             </td>
           </tr>`;
         return;
@@ -1137,7 +1138,7 @@ Please send observations before the meeting.</div>`
           </td>
           <td style="padding: 10px 5px; text-align: center;">
             <button class="btn btn-primary" style="margin: 0 5px 0 0; padding: 5px 10px; font-size: 0.8rem; height: auto;" onclick="handleTicketSelect('${key}')">Switch</button>
-            <button class="btn btn-success" style="margin: 0 5px 0 0; padding: 5px 10px; font-size: 0.8rem; height: auto;" onclick="exportTicketDirectly('${key}')">Export</button>
+            <button class="btn btn-success" style="margin: 0 5px 0 0; padding: 5px 10px; font-size: 0.8rem; height: auto;" onclick="exportUserStoryDirectly('${key}')">Export Story</button>
             <button class="btn btn-danger" style="margin: 0; padding: 5px 10px; font-size: 0.8rem; background: var(--danger); height: auto;" onclick="deleteTicketFromRegistry('${key}')">Delete</button>
           </td>
         `;
@@ -1146,7 +1147,7 @@ Please send observations before the meeting.</div>`
     }
 
     function deleteTicketFromRegistry(key) {
-      if (confirm(`Are you sure you want to delete all checklist progress for ticket ${key}?`)) {
+      if (confirm(`Are you sure you want to delete all checklist progress for user story ${key}?`)) {
         const registry = getTicketRegistry();
         const index = registry.indexOf(key);
         if (index > -1) {
@@ -1154,7 +1155,7 @@ Please send observations before the meeting.</div>`
           localStorage.setItem('sop_ticket_registry', JSON.stringify(registry));
         }
         
-        Object.keys(qaModules).forEach(moduleId => {
+        activeChecklistModules.forEach(moduleId => {
           localStorage.removeItem(`checklist_state_${moduleId}_${key}`);
         });
         localStorage.removeItem(`sop_ticket_meta_${key}`);
@@ -1179,7 +1180,7 @@ Please send observations before the meeting.</div>`
         return;
       }
       const ticketKey = getActiveTicketKey();
-      const displayKey = ticketKey ? `for ticket ${ticketKey}` : "for this module";
+      const displayKey = ticketKey ? `for user story ${ticketKey}` : "for this module";
       if (confirm(`Are you sure you want to reset all checklist items ${displayKey}?`)) {
         const checkboxes = document.querySelectorAll('#checklist-container input[type="checkbox"]');
         checkboxes.forEach(cb => cb.checked = false);
@@ -1188,10 +1189,10 @@ Please send observations before the meeting.</div>`
     }
 
     function resetAllData() {
-      if (confirm("WARNING: This will permanently delete ALL active tickets, their metadata, and their checklist progress. Are you sure you want to continue?")) {
+      if (confirm("WARNING: This will permanently delete ALL active user stories, their metadata, and their checklist progress. Are you sure you want to continue?")) {
         const registry = getTicketRegistry();
         registry.forEach(key => {
-          Object.keys(qaModules).forEach(moduleId => {
+          activeChecklistModules.forEach(moduleId => {
             localStorage.removeItem(`checklist_state_${moduleId}_${key}`);
           });
           localStorage.removeItem(`sop_ticket_meta_${key}`);
@@ -1211,14 +1212,15 @@ Please send observations before the meeting.</div>`
         
         updateTicketDropdown();
         updateTicketDashboard();
-        alert("All checklist data has been reset.");
+        alert("All user story checklist data has been reset.");
       }
     }
 
     // --- LOCAL STORAGE FUNCTIONALITY ---
     function saveChecklistState(moduleId) {
       if (!moduleId) return;
-      const ticketKey = getActiveTicketKey();
+      const isSOPModule = activeChecklistModules.includes(moduleId);
+      const ticketKey = isSOPModule ? getActiveTicketKey() : '';
       const tKey = ticketKey ? ticketKey : 'default';
       
       const checkboxes = document.querySelectorAll('#checklist-container input[type="checkbox"]');
@@ -1228,18 +1230,20 @@ Please send observations before the meeting.</div>`
       });
       localStorage.setItem(`checklist_state_${moduleId}_${tKey}`, JSON.stringify(states));
 
-      if (ticketKey) {
-        addToTicketRegistry(ticketKey);
+      if (isSOPModule) {
+        if (ticketKey) {
+          addToTicketRegistry(ticketKey);
+        }
+        saveTicketMetadata(ticketKey, moduleId);
+        updateProgressBar();
+        updateTicketDashboard();
       }
-      
-      saveTicketMetadata(ticketKey, moduleId);
-      updateProgressBar();
-      updateTicketDashboard();
     }
 
     function loadChecklistState(moduleId) {
       if (!moduleId) return;
-      const ticketKey = getActiveTicketKey();
+      const isSOPModule = activeChecklistModules.includes(moduleId);
+      const ticketKey = isSOPModule ? getActiveTicketKey() : '';
       const tKey = ticketKey ? ticketKey : 'default';
       
       const checkboxes = document.querySelectorAll('#checklist-container input[type="checkbox"]');
@@ -1260,7 +1264,9 @@ Please send observations before the meeting.</div>`
         }
       }
       
-      updateProgressBar();
+      if (isSOPModule) {
+        updateProgressBar();
+      }
     }
 
     function handleTicketKeyChange() {
@@ -1283,12 +1289,12 @@ Please send observations before the meeting.</div>`
     }
 
     // --- SHEETJS EXCEL EXPORT WORKBOOKS ---
-    function exportSingleTicketToExcel() {
+    function exportSingleUserStoryToExcel() {
       const ticketKey = getActiveTicketKey();
-      exportTicketDirectly(ticketKey);
+      exportUserStoryDirectly(ticketKey);
     }
 
-    function exportTicketDirectly(ticketKey) {
+    function exportUserStoryDirectly(ticketKey) {
       if (typeof XLSX === 'undefined') {
         alert("Excel export library (SheetJS) is not loaded yet. Please wait a moment.");
         return;
@@ -1300,16 +1306,16 @@ Please send observations before the meeting.</div>`
       // SUMMARY SHEET
       const summaryData = [
         ["iSON - Tester's SOP Progress Report"],
-        ["Ticket Reference:", displayKey],
+        ["User Story Reference:", displayKey],
         ["Generated Date:", new Date().toLocaleString()],
         [],
-        ["Module Name", "Active Progress Rate", "Items Checked", "Total Items", "Last Updated"]
+        ["Module Name", "Module Progress Rate", "Items Checked", "Total Items", "Last Updated"]
       ];
       
       let grandTotal = 0;
       let grandChecked = 0;
       
-      Object.keys(qaModules).forEach(moduleId => {
+      activeChecklistModules.forEach(moduleId => {
         const { percent, checkedCount, totalCount } = getModuleProgress(moduleId, ticketKey);
         const meta = getTicketMetadata(ticketKey);
         const lastUpdatedStr = (percent > 0 && meta.lastUpdated) 
@@ -1352,7 +1358,7 @@ Please send observations before the meeting.</div>`
         ["Module", "Criteria Group", "Checklist Item Description", "Checked Status"]
       ];
       
-      Object.keys(qaModules).forEach(moduleId => {
+      activeChecklistModules.forEach(moduleId => {
         const data = qaModules[moduleId];
         const tKey = ticketKey ? ticketKey : 'default';
         const saved = localStorage.getItem(`checklist_state_${moduleId}_${tKey}`);
@@ -1397,7 +1403,7 @@ Please send observations before the meeting.</div>`
       XLSX.writeFile(wb, `Testers_SOP_${displayKey}.xlsx`);
     }
 
-    function exportAllTicketsToExcel() {
+    function exportAllUserStoriesToExcel() {
       if (typeof XLSX === 'undefined') {
         alert("Excel export library (SheetJS) is not loaded yet. Please wait a moment.");
         return;
@@ -1405,7 +1411,7 @@ Please send observations before the meeting.</div>`
       
       const registry = getTicketRegistry();
       if (registry.length === 0) {
-        alert("No tickets found in the registry to export. Work on some tickets first!");
+        alert("No user stories found in the registry to export. Work on some user stories first!");
         return;
       }
       
@@ -1413,10 +1419,10 @@ Please send observations before the meeting.</div>`
       
       // REGISTRY SUMMARY SHEET
       const summaryData = [
-        ["iSON - Tester's SOP Global Registry Report"],
+        ["iSON - Tester's SOP Global Registry Dashboard"],
         ["Generated Date:", new Date().toLocaleString()],
         [],
-        ["Jira Ticket Key", "Last Active Module", "Active Module Progress", "Overall SOP Compliance", "Last Updated"]
+        ["User Story Key", "Last Active Module", "Active Module Progress", "Overall SOP Compliance", "Last Updated"]
       ];
       
       registry.forEach(key => {
@@ -1445,21 +1451,27 @@ Please send observations before the meeting.</div>`
       
       const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
       wsSummary['!cols'] = [
-        {wch: 18}, // Ticket Key
+        {wch: 18}, // User Story Key
         {wch: 35}, // Last Active Module
         {wch: 22}, // Active Module Progress
         {wch: 25}, // Overall Compliance
         {wch: 25}  // Last Updated
       ];
-      XLSX.utils.book_append_sheet(wb, wsSummary, "Global Registry");
+      XLSX.utils.book_append_sheet(wb, wsSummary, "Registry Dashboard");
       
-      // GLOBAL DETAILED SHEET
-      const auditData = [
-        ["Jira Ticket Key", "Module Name", "Criteria Group", "Checklist Item Description", "Checked Status"]
-      ];
-      
+      // INDEPENDENT SHEETS FOR EACH USER STORY
+      const usedSheetNames = new Set();
       registry.forEach(key => {
-        Object.keys(qaModules).forEach(moduleId => {
+        const auditData = [
+          ["User Story SOP Audit Log"],
+          ["User Story Key:", key],
+          ["Overall Compliance:", `${getTicketOverallProgress(key)}%`],
+          ["Generated Date:", new Date().toLocaleString()],
+          [],
+          ["Module", "Criteria Group", "Checklist Item Description", "Checked Status"]
+        ];
+        
+        activeChecklistModules.forEach(moduleId => {
           const data = qaModules[moduleId];
           const saved = localStorage.getItem(`checklist_state_${moduleId}_${key}`);
           let states = {};
@@ -1471,7 +1483,7 @@ Please send observations before the meeting.</div>`
             data.checklist.forEach((item, index) => {
               const id = `check-${moduleId}-${index}`;
               const status = states[id] ? "COMPLETED" : "NOT COMPLETED";
-              auditData.push([key, data.title, "Standard Checklist", item, status]);
+              auditData.push([data.title, "Standard Checklist", item, status]);
             });
           } else if (data.checklist) {
             const entry = data.checklist.entry_criteria || [];
@@ -1480,29 +1492,40 @@ Please send observations before the meeting.</div>`
             entry.forEach((item, index) => {
               const id = `check-entry-${moduleId}-${index}`;
               const status = states[id] ? "COMPLETED" : "NOT COMPLETED";
-              auditData.push([key, data.title, "Entry Criteria", item, status]);
+              auditData.push([data.title, "Entry Criteria", item, status]);
             });
             
             exit.forEach((item, index) => {
               const id = `check-exit-${moduleId}-${index}`;
               const status = states[id] ? "COMPLETED" : "NOT COMPLETED";
-              auditData.push([key, data.title, "Exit Criteria", item, status]);
+              auditData.push([data.title, "Exit Criteria", item, status]);
             });
           }
         });
+        
+        const wsStory = XLSX.utils.aoa_to_sheet(auditData);
+        wsStory['!cols'] = [
+          {wch: 35}, // Module
+          {wch: 18}, // Criteria Group
+          {wch: 80}, // Checklist Item Description
+          {wch: 18}  // Checked Status
+        ];
+        
+        // Sanitize sheet name to fit Excel limitations (max 31 chars, no special chars)
+        let baseName = key.replace(/[\\\/\?\*\[\]\:]/g, "").substring(0, 31);
+        if (!baseName) baseName = "UserStory";
+        let safeSheetName = baseName;
+        let counter = 1;
+        while (usedSheetNames.has(safeSheetName.toLowerCase())) {
+          const suffix = `_${counter}`;
+          safeSheetName = baseName.substring(0, 31 - suffix.length) + suffix;
+          counter++;
+        }
+        usedSheetNames.add(safeSheetName.toLowerCase());
+        XLSX.utils.book_append_sheet(wb, wsStory, safeSheetName);
       });
       
-      const wsDetailed = XLSX.utils.aoa_to_sheet(auditData);
-      wsDetailed['!cols'] = [
-        {wch: 18}, // Jira Ticket Key
-        {wch: 35}, // Module
-        {wch: 18}, // Criteria Group
-        {wch: 80}, // Checklist Item Description
-        {wch: 18}  // Checked Status
-      ];
-      XLSX.utils.book_append_sheet(wb, wsDetailed, "Global Detailed Audit Log");
-      
-      XLSX.writeFile(wb, "Testers_SOP_All_Tickets_Report.xlsx");
+      XLSX.writeFile(wb, "Testers_SOP_All_User_Stories_Report.xlsx");
     }
 
     // --- LOAD MODULE ---
@@ -1513,6 +1536,18 @@ Please send observations before the meeting.</div>`
 
       // Close sidebar if on mobile
       closeSidebarOnMobile();
+
+      // Hide/Show User Story tracking & progress based on module type
+      const isSOPModule = activeChecklistModules.includes(moduleId);
+      const ticketBar = document.getElementById('ticket-bar-container');
+      const progressBar = document.getElementById('progress-bar-container');
+      const dashboardContainer = document.getElementById('ticket-dashboard-container');
+      const resetAllBtn = document.getElementById('reset-all-btn');
+      
+      if (ticketBar) ticketBar.style.display = isSOPModule ? 'flex' : 'none';
+      if (progressBar) progressBar.style.display = isSOPModule ? 'block' : 'none';
+      if (dashboardContainer) dashboardContainer.style.display = isSOPModule ? 'block' : 'none';
+      if (resetAllBtn) resetAllBtn.style.display = isSOPModule ? 'inline-block' : 'none';
 
       // Update Active State in Sidebar
       document.querySelectorAll('.panel-btn').forEach(btn => btn.classList.remove('active-module'));
