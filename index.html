@@ -130,6 +130,8 @@
     [data-theme="dark"] .checklist-item:hover { background: rgba(255,255,255,0.015); }
     .checklist-item label { margin-left: 12px; flex-grow: 1; cursor: pointer; font-size: 1.05rem; }
     .checklist-item input[type="checkbox"] { transform: scale(1.3); cursor: pointer; accent-color: var(--primary); }
+    .checklist-item input[type="checkbox"]:disabled { opacity: 0.4; cursor: not-allowed; }
+    .checklist-item input[type="checkbox"]:disabled + label { opacity: 0.5; cursor: not-allowed; }
     
     /* Form Inputs */
     .form-group { margin-bottom: 15px; }
@@ -168,10 +170,10 @@
     [data-theme="dark"] .search-result-item:hover { background: rgba(37, 99, 235, 0.15); }
 
     /* Custom Ticket Dashboard Tables Styling */
-    #ticket-dashboard-table th { font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; border-bottom: 2px solid var(--border); }
-    #ticket-dashboard-table th, #ticket-dashboard-table td { padding: 12px 10px; border-bottom: 1px solid var(--border); }
-    #ticket-dashboard-table tr:hover { background: rgba(0,0,0,0.015); }
-    [data-theme="dark"] #ticket-dashboard-table tr:hover { background: rgba(255,255,255,0.015); }
+    #user-story-dashboard-table th { font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; border-bottom: 2px solid var(--border); }
+    #user-story-dashboard-table th, #user-story-dashboard-table td { padding: 12px 10px; border-bottom: 1px solid var(--border); }
+    #user-story-dashboard-table tr:hover { background: rgba(0,0,0,0.015); }
+    [data-theme="dark"] #user-story-dashboard-table tr:hover { background: rgba(255,255,255,0.015); }
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.mini.min.js"></script>
@@ -257,11 +259,11 @@
       
       <div id="tab-checklist" class="tab-content">
         <!-- User Story Context Selector & Excel Tools -->
-        <div id="ticket-bar-container" class="ticket-bar-container" style="background: var(--bg-color); padding: 15px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: space-between;">
+        <div id="user-story-bar-container" class="user-story-bar-container" style="background: var(--bg-color); padding: 15px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: space-between;">
           <div style="display: flex; align-items: center; gap: 10px; flex-grow: 1; min-width: 280px; flex-wrap: wrap;">
             <span style="font-weight: 600; font-size: 0.95rem; white-space: nowrap;">User Story:</span>
-            <input type="text" id="jira-ticket-input" placeholder="e.g. SCRT-1234" class="form-input" style="max-width: 180px; padding: 8px 12px; margin: 0;" oninput="handleTicketKeyChange()">
-            <select id="jira-ticket-select" class="form-input" style="max-width: 180px; padding: 8px 12px; margin: 0;" onchange="handleTicketSelect(this.value)">
+            <input type="text" id="user-story-input" placeholder="e.g. SCRT-1234" class="form-input" style="max-width: 180px; padding: 8px 12px; margin: 0;" oninput="handleUserStoryKeyChange()">
+            <select id="user-story-select" class="form-input" style="max-width: 180px; padding: 8px 12px; margin: 0;" onchange="handleUserStorySelect(this.value)">
               <option value="">-- Recent User Stories --</option>
             </select>
           </div>
@@ -294,10 +296,10 @@
         <div id="checklist-container" style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; overflow: hidden;"></div>
 
         <!-- Tickets Registry Dashboard -->
-        <div id="ticket-dashboard-container" style="margin-top: 35px; background: var(--bg-color); padding: 20px; border: 1px solid var(--border); border-radius: 8px;">
+        <div id="user-story-dashboard-container" style="margin-top: 35px; background: var(--bg-color); padding: 20px; border: 1px solid var(--border); border-radius: 8px;">
           <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 1.15rem; color: var(--primary);">User Stories SOP Progress Registry</h3>
           <div style="overflow-x: auto;">
-            <table id="ticket-dashboard-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+            <table id="user-story-dashboard-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
               <thead>
                 <tr style="border-bottom: 2px solid var(--border); color: #777;">
                   <th style="padding: 10px 5px;">User Story Key</th>
@@ -307,7 +309,7 @@
                   <th style="padding: 10px 5px; text-align: center;">Actions</th>
                 </tr>
               </thead>
-              <tbody id="ticket-dashboard-tbody">
+              <tbody id="user-story-dashboard-tbody">
                 <!-- Dynamically populated -->
               </tbody>
             </table>
@@ -949,13 +951,13 @@ Please send observations before the meeting.</div>`
     }
 
     // --- TICKET & REGISTRY UTILITIES ---
-    function getActiveTicketKey() {
-      const input = document.getElementById('jira-ticket-input');
+    function getActiveUserStoryKey() {
+      const input = document.getElementById('user-story-input');
       return input ? input.value.trim().toUpperCase() : '';
     }
 
-    function getTicketRegistry() {
-      const saved = localStorage.getItem('sop_ticket_registry');
+    function getUserStoryRegistry() {
+      const saved = localStorage.getItem('sop_user_story_registry');
       if (!saved) return [];
       try {
         return JSON.parse(saved);
@@ -964,39 +966,39 @@ Please send observations before the meeting.</div>`
       }
     }
 
-    function addToTicketRegistry(ticketKey) {
-      if (!ticketKey) return;
-      const registry = getTicketRegistry();
-      if (!registry.includes(ticketKey)) {
-        registry.push(ticketKey);
-        localStorage.setItem('sop_ticket_registry', JSON.stringify(registry));
-        updateTicketDropdown();
+    function addToUserStoryRegistry(storyKey) {
+      if (!storyKey) return;
+      const registry = getUserStoryRegistry();
+      if (!registry.includes(storyKey)) {
+        registry.push(storyKey);
+        localStorage.setItem('sop_user_story_registry', JSON.stringify(registry));
+        updateUserStoryDropdown();
       }
     }
 
-    function saveTicketMetadata(ticketKey, moduleId) {
-      const tKey = ticketKey ? ticketKey : 'default';
+    function saveUserStoryMetadata(storyKey, moduleId) {
+      const tKey = storyKey ? storyKey : 'default';
       const meta = {
         lastUpdated: new Date().toISOString(),
         lastModuleId: moduleId
       };
-      localStorage.setItem(`sop_ticket_meta_${tKey}`, JSON.stringify(meta));
+      localStorage.setItem(`sop_user_story_meta_${tKey}`, JSON.stringify(meta));
     }
 
-    function getTicketMetadata(ticketKey) {
-      const tKey = ticketKey ? ticketKey : 'default';
-      const saved = localStorage.getItem(`sop_ticket_meta_${tKey}`);
+    function getUserStoryMetadata(storyKey) {
+      const tKey = storyKey ? storyKey : 'default';
+      const saved = localStorage.getItem(`sop_user_story_meta_${tKey}`);
       if (saved) {
         try { return JSON.parse(saved); } catch(e) {}
       }
       return { lastUpdated: null, lastModuleId: null };
     }
 
-    function updateTicketDropdown() {
-      const select = document.getElementById('jira-ticket-select');
+    function updateUserStoryDropdown() {
+      const select = document.getElementById('user-story-select');
       if (!select) return;
       
-      const registry = getTicketRegistry();
+      const registry = getUserStoryRegistry();
       select.innerHTML = '<option value="">-- Recent User Stories --</option>';
       
       registry.forEach(key => {
@@ -1006,20 +1008,20 @@ Please send observations before the meeting.</div>`
         select.appendChild(opt);
       });
       
-      const activeKey = getActiveTicketKey();
+      const activeKey = getActiveUserStoryKey();
       if (activeKey) {
         select.value = activeKey;
       }
     }
 
-    function getModuleProgress(moduleId, ticketKey) {
+    function getModuleProgress(moduleId, storyKey) {
       const data = qaModules[moduleId];
       if (!data || !data.checklist) return { percent: 0, checkedCount: 0, totalCount: 0 };
       
       let totalCount = 0;
       let checkedCount = 0;
       
-      const tKey = ticketKey ? ticketKey : 'default';
+      const tKey = storyKey ? storyKey : 'default';
       const saved = localStorage.getItem(`checklist_state_${moduleId}_${tKey}`);
       let states = {};
       if (saved) {
@@ -1050,11 +1052,11 @@ Please send observations before the meeting.</div>`
       return { percent, checkedCount, totalCount };
     }
 
-    function getTicketOverallProgress(ticketKey) {
+    function getUserStoryOverallProgress(storyKey) {
       let grandTotal = 0;
       let grandChecked = 0;
       for (const moduleId of activeChecklistModules) {
-        const { checkedCount, totalCount } = getModuleProgress(moduleId, ticketKey);
+        const { checkedCount, totalCount } = getModuleProgress(moduleId, storyKey);
         grandTotal += totalCount;
         grandChecked += checkedCount;
       }
@@ -1073,8 +1075,8 @@ Please send observations before the meeting.</div>`
         return;
       }
       
-      const ticketKey = getActiveTicketKey();
-      const { percent, checkedCount, totalCount } = getModuleProgress(currentModuleId, ticketKey);
+      const storyKey = getActiveUserStoryKey();
+      const { percent, checkedCount, totalCount } = getModuleProgress(currentModuleId, storyKey);
       
       if (textLabel) {
         textLabel.innerText = `Module Progress: ${percent}%`;
@@ -1089,12 +1091,12 @@ Please send observations before the meeting.</div>`
       }
     }
 
-    function updateTicketDashboard() {
-      const tbody = document.getElementById('ticket-dashboard-tbody');
+    function updateUserStoryDashboard() {
+      const tbody = document.getElementById('user-story-dashboard-tbody');
       if (!tbody) return;
       
       tbody.innerHTML = '';
-      const registry = getTicketRegistry();
+      const registry = getUserStoryRegistry();
       
       if (registry.length === 0) {
         tbody.innerHTML = `
@@ -1107,7 +1109,7 @@ Please send observations before the meeting.</div>`
       }
       
       registry.forEach(key => {
-        const meta = getTicketMetadata(key);
+        const meta = getUserStoryMetadata(key);
         const activeModuleTitle = meta.lastModuleId && qaModules[meta.lastModuleId] 
           ? qaModules[meta.lastModuleId].title 
           : "N/A";
@@ -1116,7 +1118,7 @@ Please send observations before the meeting.</div>`
           ? getModuleProgress(meta.lastModuleId, key) 
           : { percent: 0 };
         const moduleProgress = meta.lastModuleId ? `${moduleProgressObj.percent}%` : "0%";
-        const overallProgress = `${getTicketOverallProgress(key)}%`;
+        const overallProgress = `${getUserStoryOverallProgress(key)}%`;
         const formattedDate = meta.lastUpdated 
           ? new Date(meta.lastUpdated).toLocaleString() 
           : "N/A";
@@ -1137,39 +1139,39 @@ Please send observations before the meeting.</div>`
             </span>
           </td>
           <td style="padding: 10px 5px; text-align: center;">
-            <button class="btn btn-primary" style="margin: 0 5px 0 0; padding: 5px 10px; font-size: 0.8rem; height: auto;" onclick="handleTicketSelect('${key}')">Switch</button>
+            <button class="btn btn-primary" style="margin: 0 5px 0 0; padding: 5px 10px; font-size: 0.8rem; height: auto;" onclick="handleUserStorySelect('${key}')">Switch</button>
             <button class="btn btn-success" style="margin: 0 5px 0 0; padding: 5px 10px; font-size: 0.8rem; height: auto;" onclick="exportUserStoryDirectly('${key}')">Export Story</button>
-            <button class="btn btn-danger" style="margin: 0; padding: 5px 10px; font-size: 0.8rem; background: var(--danger); height: auto;" onclick="deleteTicketFromRegistry('${key}')">Delete</button>
+            <button class="btn btn-danger" style="margin: 0; padding: 5px 10px; font-size: 0.8rem; background: var(--danger); height: auto;" onclick="deleteUserStoryFromRegistry('${key}')">Delete</button>
           </td>
         `;
         tbody.appendChild(tr);
       });
     }
 
-    function deleteTicketFromRegistry(key) {
+    function deleteUserStoryFromRegistry(key) {
       if (confirm(`Are you sure you want to delete all checklist progress for user story ${key}?`)) {
-        const registry = getTicketRegistry();
+        const registry = getUserStoryRegistry();
         const index = registry.indexOf(key);
         if (index > -1) {
           registry.splice(index, 1);
-          localStorage.setItem('sop_ticket_registry', JSON.stringify(registry));
+          localStorage.setItem('sop_user_story_registry', JSON.stringify(registry));
         }
         
         activeChecklistModules.forEach(moduleId => {
           localStorage.removeItem(`checklist_state_${moduleId}_${key}`);
         });
-        localStorage.removeItem(`sop_ticket_meta_${key}`);
+        localStorage.removeItem(`sop_user_story_meta_${key}`);
         
-        const currentActiveKey = getActiveTicketKey();
+        const currentActiveKey = getActiveUserStoryKey();
         if (currentActiveKey === key) {
-          document.getElementById('jira-ticket-input').value = '';
+          document.getElementById('user-story-input').value = '';
           if (currentModuleId) {
             loadChecklistState(currentModuleId);
           }
         }
         
-        updateTicketDropdown();
-        updateTicketDashboard();
+        updateUserStoryDropdown();
+        updateUserStoryDashboard();
       }
     }
 
@@ -1179,8 +1181,8 @@ Please send observations before the meeting.</div>`
         alert("Please select a module first.");
         return;
       }
-      const ticketKey = getActiveTicketKey();
-      const displayKey = ticketKey ? `for user story ${ticketKey}` : "for this module";
+      const storyKey = getActiveUserStoryKey();
+      const displayKey = storyKey ? `for user story ${storyKey}` : "for this module";
       if (confirm(`Are you sure you want to reset all checklist items ${displayKey}?`)) {
         const checkboxes = document.querySelectorAll('#checklist-container input[type="checkbox"]');
         checkboxes.forEach(cb => cb.checked = false);
@@ -1190,38 +1192,104 @@ Please send observations before the meeting.</div>`
 
     function resetAllData() {
       if (confirm("WARNING: This will permanently delete ALL active user stories, their metadata, and their checklist progress. Are you sure you want to continue?")) {
-        const registry = getTicketRegistry();
+        const registry = getUserStoryRegistry();
         registry.forEach(key => {
           activeChecklistModules.forEach(moduleId => {
             localStorage.removeItem(`checklist_state_${moduleId}_${key}`);
           });
-          localStorage.removeItem(`sop_ticket_meta_${key}`);
+          localStorage.removeItem(`sop_user_story_meta_${key}`);
         });
         
         Object.keys(qaModules).forEach(moduleId => {
           localStorage.removeItem(`checklist_state_${moduleId}_default`);
           localStorage.removeItem(`checklist_state_${moduleId}`);
         });
-        localStorage.removeItem(`sop_ticket_meta_default`);
-        localStorage.removeItem('sop_ticket_registry');
+        localStorage.removeItem(`sop_user_story_meta_default`);
+        localStorage.removeItem('sop_user_story_registry');
         
-        document.getElementById('jira-ticket-input').value = '';
+        document.getElementById('user-story-input').value = '';
         if (currentModuleId) {
           loadChecklistState(currentModuleId);
         }
         
-        updateTicketDropdown();
-        updateTicketDashboard();
+        updateUserStoryDropdown();
+        updateUserStoryDashboard();
         alert("All user story checklist data has been reset.");
       }
+    }
+
+    // --- CHECKLIST LOGIC ---
+
+    function evaluateChecklistLogic(moduleId) {
+      if (!moduleId) return;
+      const data = qaModules[moduleId];
+      if (!data || !data.checklist) return;
+      let stateChanged = false;
+
+      if (Array.isArray(data.checklist)) {
+        let allPreviousChecked = true;
+        data.checklist.forEach((item, index) => {
+          const id = `check-${moduleId}-${index}`;
+          const cb = document.getElementById(id);
+          if (cb) {
+            cb.disabled = !allPreviousChecked;
+            if (cb.disabled && cb.checked) {
+              cb.checked = false;
+              stateChanged = true;
+            }
+            if (!cb.checked) {
+              allPreviousChecked = false;
+            }
+          }
+        });
+      } else {
+        let entryAllChecked = true;
+        if (data.checklist.entry_criteria) {
+          let allPreviousChecked = true;
+          data.checklist.entry_criteria.forEach((item, index) => {
+            const id = `check-entry-${moduleId}-${index}`;
+            const cb = document.getElementById(id);
+            if (cb) {
+              cb.disabled = !allPreviousChecked;
+              if (cb.disabled && cb.checked) {
+                cb.checked = false;
+                stateChanged = true;
+              }
+              if (!cb.checked) {
+                allPreviousChecked = false;
+                entryAllChecked = false;
+              }
+            }
+          });
+        }
+        
+        if (data.checklist.exit_criteria) {
+          let allPreviousChecked = entryAllChecked;
+          data.checklist.exit_criteria.forEach((item, index) => {
+            const id = `check-exit-${moduleId}-${index}`;
+            const cb = document.getElementById(id);
+            if (cb) {
+              cb.disabled = !allPreviousChecked;
+              if (cb.disabled && cb.checked) {
+                cb.checked = false;
+                stateChanged = true;
+              }
+              if (!cb.checked) {
+                allPreviousChecked = false;
+              }
+            }
+          });
+        }
+      }
+      return stateChanged;
     }
 
     // --- LOCAL STORAGE FUNCTIONALITY ---
     function saveChecklistState(moduleId) {
       if (!moduleId) return;
       const isSOPModule = activeChecklistModules.includes(moduleId);
-      const ticketKey = isSOPModule ? getActiveTicketKey() : '';
-      const tKey = ticketKey ? ticketKey : 'default';
+      const storyKey = isSOPModule ? getActiveUserStoryKey() : '';
+      const tKey = storyKey ? storyKey : 'default';
       
       const checkboxes = document.querySelectorAll('#checklist-container input[type="checkbox"]');
       const states = {};
@@ -1231,20 +1299,20 @@ Please send observations before the meeting.</div>`
       localStorage.setItem(`checklist_state_${moduleId}_${tKey}`, JSON.stringify(states));
 
       if (isSOPModule) {
-        if (ticketKey) {
-          addToTicketRegistry(ticketKey);
+        if (storyKey) {
+          addToUserStoryRegistry(storyKey);
         }
-        saveTicketMetadata(ticketKey, moduleId);
+        saveUserStoryMetadata(storyKey, moduleId);
         updateProgressBar();
-        updateTicketDashboard();
+        updateUserStoryDashboard();
       }
     }
 
     function loadChecklistState(moduleId) {
       if (!moduleId) return;
       const isSOPModule = activeChecklistModules.includes(moduleId);
-      const ticketKey = isSOPModule ? getActiveTicketKey() : '';
-      const tKey = ticketKey ? ticketKey : 'default';
+      const storyKey = isSOPModule ? getActiveUserStoryKey() : '';
+      const tKey = storyKey ? storyKey : 'default';
       
       const checkboxes = document.querySelectorAll('#checklist-container input[type="checkbox"]');
       checkboxes.forEach(cb => cb.checked = false);
@@ -1264,44 +1332,46 @@ Please send observations before the meeting.</div>`
         }
       }
       
+      evaluateChecklistLogic(moduleId);
+      
       if (isSOPModule) {
         updateProgressBar();
       }
     }
 
-    function handleTicketKeyChange() {
-      const ticketKey = getActiveTicketKey();
+    function handleUserStoryKeyChange() {
+      const storyKey = getActiveUserStoryKey();
       if (currentModuleId) {
         loadChecklistState(currentModuleId);
       }
-      updateTicketDashboard();
+      updateUserStoryDashboard();
     }
 
-    function handleTicketSelect(ticketKey) {
-      const input = document.getElementById('jira-ticket-input');
+    function handleUserStorySelect(storyKey) {
+      const input = document.getElementById('user-story-input');
       if (input) {
-        input.value = ticketKey;
+        input.value = storyKey;
       }
       if (currentModuleId) {
         loadChecklistState(currentModuleId);
       }
-      updateTicketDashboard();
+      updateUserStoryDashboard();
     }
 
     // --- SHEETJS EXCEL EXPORT WORKBOOKS ---
     function exportSingleUserStoryToExcel() {
-      const ticketKey = getActiveTicketKey();
-      exportUserStoryDirectly(ticketKey);
+      const storyKey = getActiveUserStoryKey();
+      exportUserStoryDirectly(storyKey);
     }
 
-    function exportUserStoryDirectly(ticketKey) {
+    function exportUserStoryDirectly(storyKey) {
       if (typeof XLSX === 'undefined') {
         alert("Excel export library (SheetJS) is not loaded yet. Please wait a moment.");
         return;
       }
       
       const wb = XLSX.utils.book_new();
-      const displayKey = ticketKey ? ticketKey : 'General_Global';
+      const displayKey = storyKey ? storyKey : 'General_Global';
       
       // SUMMARY SHEET
       const summaryData = [
@@ -1316,8 +1386,8 @@ Please send observations before the meeting.</div>`
       let grandChecked = 0;
       
       activeChecklistModules.forEach(moduleId => {
-        const { percent, checkedCount, totalCount } = getModuleProgress(moduleId, ticketKey);
-        const meta = getTicketMetadata(ticketKey);
+        const { percent, checkedCount, totalCount } = getModuleProgress(moduleId, storyKey);
+        const meta = getUserStoryMetadata(storyKey);
         const lastUpdatedStr = (percent > 0 && meta.lastUpdated) 
           ? new Date(meta.lastUpdated).toLocaleString() 
           : "N/A";
@@ -1360,7 +1430,7 @@ Please send observations before the meeting.</div>`
       
       activeChecklistModules.forEach(moduleId => {
         const data = qaModules[moduleId];
-        const tKey = ticketKey ? ticketKey : 'default';
+        const tKey = storyKey ? storyKey : 'default';
         const saved = localStorage.getItem(`checklist_state_${moduleId}_${tKey}`);
         let states = {};
         if (saved) {
@@ -1409,7 +1479,7 @@ Please send observations before the meeting.</div>`
         return;
       }
       
-      const registry = getTicketRegistry();
+      const registry = getUserStoryRegistry();
       if (registry.length === 0) {
         alert("No user stories found in the registry to export. Work on some user stories first!");
         return;
@@ -1426,7 +1496,7 @@ Please send observations before the meeting.</div>`
       ];
       
       registry.forEach(key => {
-        const meta = getTicketMetadata(key);
+        const meta = getUserStoryMetadata(key);
         const activeModuleTitle = meta.lastModuleId && qaModules[meta.lastModuleId] 
           ? qaModules[meta.lastModuleId].title 
           : "N/A";
@@ -1435,7 +1505,7 @@ Please send observations before the meeting.</div>`
           ? getModuleProgress(meta.lastModuleId, key) 
           : { percent: 0 };
         const moduleProgress = meta.lastModuleId ? `${moduleProgressObj.percent}%` : "0%";
-        const overallProgress = `${getTicketOverallProgress(key)}%`;
+        const overallProgress = `${getUserStoryOverallProgress(key)}%`;
         const formattedDate = meta.lastUpdated 
           ? new Date(meta.lastUpdated).toLocaleString() 
           : "N/A";
@@ -1465,7 +1535,7 @@ Please send observations before the meeting.</div>`
         const auditData = [
           ["User Story SOP Audit Log"],
           ["User Story Key:", key],
-          ["Overall Compliance:", `${getTicketOverallProgress(key)}%`],
+          ["Overall Compliance:", `${getUserStoryOverallProgress(key)}%`],
           ["Generated Date:", new Date().toLocaleString()],
           [],
           ["Module", "Criteria Group", "Checklist Item Description", "Checked Status"]
@@ -1539,9 +1609,9 @@ Please send observations before the meeting.</div>`
 
       // Hide/Show User Story tracking & progress based on module type
       const isSOPModule = activeChecklistModules.includes(moduleId);
-      const ticketBar = document.getElementById('ticket-bar-container');
+      const ticketBar = document.getElementById('user-story-bar-container');
       const progressBar = document.getElementById('progress-bar-container');
-      const dashboardContainer = document.getElementById('ticket-dashboard-container');
+      const dashboardContainer = document.getElementById('user-story-dashboard-container');
       const resetAllBtn = document.getElementById('reset-all-btn');
       
       if (ticketBar) ticketBar.style.display = isSOPModule ? 'flex' : 'none';
@@ -1634,6 +1704,7 @@ Please send observations before the meeting.</div>`
     // Set up global event delegation for saving checkbox changes
     document.getElementById('checklist-container').addEventListener('change', function(e) {
       if (e.target && e.target.type === 'checkbox' && currentModuleId) {
+        evaluateChecklistLogic(currentModuleId);
         saveChecklistState(currentModuleId);
       }
     });
@@ -1779,8 +1850,8 @@ Please send observations before the meeting.</div>`
     });
 
     window.addEventListener('DOMContentLoaded', () => {
-      updateTicketDropdown();
-      updateTicketDashboard();
+      updateUserStoryDropdown();
+      updateUserStoryDashboard();
       loadModule('ai_generation');
     });
   </script>
