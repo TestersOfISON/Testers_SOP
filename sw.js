@@ -1,4 +1,4 @@
-const CACHE_NAME = 'qa-portal-cache-v1';
+const CACHE_NAME = 'qa-portal-cache-v2';
 const urlsToCache = [
   './index.html',
   './manifest.json',
@@ -13,18 +13,46 @@ self.addEventListener('install', event => {
       .then(cache => {
         return cache.addAll(urlsToCache);
       })
+      .then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cache => {
+          if (cache !== CACHE_NAME) {
+            console.log('Service Worker: Clearing Old Cache');
+            return caches.delete(cache);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Cache hit - return response
-        if (response) {
+  const requestUrl = new URL(event.request.url);
+  
+  // Network-First for HTML/Manifest to ensure updates are seen immediately
+  if (event.request.mode === 'navigate' || requestUrl.pathname.endsWith('manifest.json')) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
           return response;
-        }
-        return fetch(event.request);
-      })
-  );
+        })
+        .catch(() => caches.match(event.request))
+    );
+  } else {
+    // Cache-First for static resources
+    event.respondWith(
+      caches.match(event.request)
+        .then(response => {
+          return response || fetch(event.request);
+        })
+    );
+  }
 });

@@ -301,12 +301,16 @@ Mandatory Labels:
             E --> F{"Approved?"}
             F -- No --> G["Update Scenarios"] --> B
             F -- Yes --> H["Scenarios Validated -> Proceed to Testing"]`,
-        checklist: [
-          "Compile all created LXs for the US.",
-          "Send notification/email to PO, App Owner, Beneficiary.",
-          "Receive explicit approval from PO.",
-          "Update any scenarios as per feedback."
-        ],
+        checklist: {
+          entry_criteria: [
+            "Compile all created LXs for the US.",
+            "Send notification/email to PO, App Owner, Beneficiary."
+          ],
+          exit_criteria: [
+            "Receive explicit approval from PO.",
+            "Update any scenarios as per feedback."
+          ]
+        },
         templates: ""
       },
       "uat": {
@@ -333,15 +337,19 @@ Mandatory Labels:
             K -- No --> J
             G -- Yes --> L
             L --> N["US Status: Approval Required"] --> O["Hold DEMO"]`,
-        checklist: [
-          "Verify Test Scenarios are Validated by PO.",
-          "Verify/Create 'UAT Testing' Sub-Test Execution.",
-          "Modify 'Original Estimate' to actual time.",
-          "Execute ALL test scenarios (No 'Aborted' statuses without comment).",
-          "If Bug found: Create Issue with Env 'UAT'.",
-          "Retest all bugs after Dev fix.",
-          "Transition US to 'Approval Required'."
-        ],
+        checklist: {
+          entry_criteria: [
+            "Verify Test Scenarios are Validated by PO.",
+            "Verify/Create 'UAT Testing' Sub-Test Execution.",
+            "Modify 'Original Estimate' to actual time."
+          ],
+          exit_criteria: [
+            "Execute ALL test scenarios (No 'Aborted' statuses without comment).",
+            "If Bug found: Create Issue with Env 'UAT'.",
+            "Retest all bugs after Dev fix.",
+            "Transition US to 'Approval Required'."
+          ]
+        },
         templates: ""
       },
       "smoke": {
@@ -363,12 +371,16 @@ Mandatory Labels:
             I -- Yes --> D
             I -- No --> H
             E -- No --> K["Proceed to PRL Testing"]`,
-        checklist: [
-          "Create 'Smoke PRL Testing' Sub-Task.",
-          "Add ONLY LXs from 'Smoke Tests' folder.",
-          "Execute. Interrupt immediately if any step fails.",
-          "If Bug: Label 'Smoke', Env 'Prelive'."
-        ],
+        checklist: {
+          entry_criteria: [
+            "Create 'Smoke PRL Testing' Sub-Task.",
+            "Add ONLY LXs from 'Smoke Tests' folder."
+          ],
+          exit_criteria: [
+            "Execute. Interrupt immediately if any step fails.",
+            "If Bug: Label 'Smoke', Env 'Prelive'."
+          ]
+        },
         templates: ""
       },
       "prl": {
@@ -390,13 +402,17 @@ Mandatory Labels:
             G --> I{"All Pass?"}
             I -- Yes --> J["Ready for Regression"]
             I -- No --> K["Open Bug - Env: Prelive"]`,
-        checklist: [
-          "Verify Smoke Testing is 100% PASS.",
-          "Add Happy path LX(s) to Sub-Test Execution.",
-          "Retest UAT bugs (Major/Blocker severity ONLY).",
-          "Check 'Retested in Prelive' for verified bugs.",
-          "Execute Happy path LXs."
-        ],
+        checklist: {
+          entry_criteria: [
+            "Verify Smoke Testing is 100% PASS.",
+            "Add Happy path LX(s) to Sub-Test Execution.",
+            "Retest UAT bugs (Major/Blocker severity ONLY)."
+          ],
+          exit_criteria: [
+            "Check 'Retested in Prelive' for verified bugs.",
+            "Execute Happy path LXs."
+          ]
+        },
         templates: ""
       },
       "regression": {
@@ -415,12 +431,16 @@ Mandatory Labels:
             E -- Yes --> F["Open Bug - Label: regression"]
             F --> G["Dev Fixes & Retest"]
             E -- No --> H["US Ready for Release"]`,
-        checklist: [
-          "Create 'Regression PRL Testing' Sub-Task.",
-          "Add LXs from 'Regression Tests' folder.",
-          "Execute all regression scenarios.",
-          "If Bug: Label 'regression', Env 'Prelive'."
-        ],
+        checklist: {
+          entry_criteria: [
+            "Create 'Regression PRL Testing' Sub-Task.",
+            "Add LXs from 'Regression Tests' folder."
+          ],
+          exit_criteria: [
+            "Execute all regression scenarios.",
+            "If Bug: Label 'regression', Env 'Prelive'."
+          ]
+        },
         templates: ""
       },
       "bugs": {
@@ -442,13 +462,17 @@ Mandatory Labels:
             I --> J{"Fixed?"}
             J -- Yes --> K["Status: Finalized"]
             J -- No --> L["Status: Re-open"] --> G`,
-        checklist: [
-          "Attempt to reproduce the bug.",
-          "Select Correct Category and Reproducibility (Always/Sometimes).",
-          "Select Severity (Trivial, Minor, Medium, Major, Blocker).",
-          "Fill 'Steps to reproduce', 'Actual result', 'Expected result'.",
-          "Attach Screenshot or Video evidence."
-        ],
+        checklist: {
+          entry_criteria: [
+            "Attempt to reproduce the bug.",
+            "Select Correct Category and Reproducibility (Always/Sometimes).",
+            "Select Severity (Trivial, Minor, Medium, Major, Blocker)."
+          ],
+          exit_criteria: [
+            "Fill 'Steps to reproduce', 'Actual result', 'Expected result'.",
+            "Attach Screenshot or Video evidence."
+          ]
+        },
         templates: `<div class="code-block">Bug Detailing Template:
 Steps to reproduce:
 1. Navigate to [Link]
@@ -578,14 +602,18 @@ Expected Result: The system processes the payment and shows success screen.</div
             F --> G{"Bugs found?"}
             G -- Yes --> H["Open Integrated Testing Bug -> Assign to specific team"]
             G -- No --> I["Finalized Integrated Testing"]`,
-        checklist: [
-          "Create 'Integrated testing' Issue type in Jira.",
-          "Create a dedicated Xray sub-folder.",
-          "Define cross-system test scenarios.",
-          "Execute UAT Integrated testing.",
-          "Execute PRL Integrated testing.",
-          "Coordinate bug reporting with the responsible team."
-        ],
+        checklist: {
+          entry_criteria: [
+            "Create 'Integrated testing' Issue type in Jira.",
+            "Create a dedicated Xray sub-folder.",
+            "Define cross-system test scenarios."
+          ],
+          exit_criteria: [
+            "Execute UAT Integrated testing.",
+            "Execute PRL Integrated testing.",
+            "Coordinate bug reporting with the responsible team."
+          ]
+        },
         templates: ""
       },
       "mobile": {
@@ -606,14 +634,18 @@ Expected Result: The system processes the payment and shows success screen.</div
             C & D & E --> F{"Bug Found?"}
             F -- Yes --> G["Record/Screenshot via ApowerMirror"] --> H["Open Bug"]
             F -- No --> I["Testing Complete"]`,
-        checklist: [
-          "Connect devices to PC via ApowerMirror.",
-          "Execute scenarios on iOS physical device.",
-          "Execute scenarios on Android physical device.",
-          "Execute Smoke tests on Huawei device.",
-          "Verify UI/UX adaptability (Resizing, dark mode, gestures).",
-          "Verify both RO and EN localizations."
-        ],
+        checklist: {
+          entry_criteria: [
+            "Connect devices to PC via ApowerMirror."
+          ],
+          exit_criteria: [
+            "Execute scenarios on iOS physical device.",
+            "Execute scenarios on Android physical device.",
+            "Execute Smoke tests on Huawei device.",
+            "Verify UI/UX adaptability (Resizing, dark mode, gestures).",
+            "Verify both RO and EN localizations."
+          ]
+        },
         templates: ""
       },
       "agile": {
@@ -633,13 +665,17 @@ Expected Result: The system processes the payment and shows success screen.</div
             E --> F["UAT Execution"]
             F --> G["Demo"]
             G --> H["Sprint Retrospective"]`,
-        checklist: [
-          "Provide Story Point estimation during Sprint Planning.",
-          "Define Test scenarios based on US Acceptance Criteria.",
-          "Attend Daily Scrum and report blockers.",
-          "Execute UAT during the sprint timeline.",
-          "Prepare for and hold Demo."
-        ],
+        checklist: {
+          entry_criteria: [
+            "Provide Story Point estimation during Sprint Planning.",
+            "Define Test scenarios based on US Acceptance Criteria.",
+            "Attend Daily Scrum and report blockers."
+          ],
+          exit_criteria: [
+            "Execute UAT during the sprint timeline.",
+            "Prepare for and hold Demo."
+          ]
+        },
         templates: ""
       },
       "demo": {
@@ -660,13 +696,17 @@ Expected Result: The system processes the payment and shows success screen.</div
             G --> H{"Acceptance?"}
             H -- Yes --> I["Transition to Final Test"]
             H -- No --> J["Return to In Testing"]`,
-        checklist: [
-          "Verify test scenarios are PO validated.",
-          "Check for open bugs (escalate Blockers to TL).",
-          "Confirm all Acceptance Criteria are met.",
-          "Prepare realistic Test Data (no DB manipulation).",
-          "Verify environment stability before meeting."
-        ],
+        checklist: {
+          entry_criteria: [
+            "Verify test scenarios are PO validated.",
+            "Check for open bugs (escalate Blockers to TL).",
+            "Confirm all Acceptance Criteria are met."
+          ],
+          exit_criteria: [
+            "Prepare realistic Test Data (no DB manipulation).",
+            "Verify environment stability before meeting."
+          ]
+        },
         templates: `<div class="code-block">DEMO Preview Email:
 Subject: Validation of flows presented in the DEMO meeting
 To: Product Owner, Beneficiary
@@ -698,12 +738,16 @@ Please send observations before the meeting.</div>`
             D & E --> F["End of Day"]
             F --> G["Log Time in Jira (Tasks/Sub-tasks)"]
             G --> H["Verify Monthly Productivity KPI"]`,
-        checklist: [
-          "Verify primary team workload.",
-          "Check secondary team board if primary is blocked.",
-          "Log hours in Jira for all executed tasks at the end of the day.",
-          "Ensure Terramind activity tracking is active."
-        ],
+        checklist: {
+          entry_criteria: [
+            "Verify primary team workload.",
+            "Check secondary team board if primary is blocked.",
+            "Ensure Terramind activity tracking is active."
+          ],
+          exit_criteria: [
+            "Log hours in Jira for all executed tasks at the end of the day."
+          ]
+        },
         templates: ""
       },
       "waterfall": {
@@ -720,13 +764,17 @@ Please send observations before the meeting.</div>`
             C --> D["Testing Phase"]
             D --> E["Write Test Scenarios"] --> F["Execute Tests"]
             F --> G["Launch / Go Live"]`,
-        checklist: [
-          "Provide High-Level estimate during Requirements stage.",
-          "Provide Detailed estimate (Optimistic/Pessimistic) via Excel.",
-          "Write scenarios based on approved FSD/TDD.",
-          "Wait for Development Phase to completely finish.",
-          "Execute functional and integration testing."
-        ],
+        checklist: {
+          entry_criteria: [
+            "Provide High-Level estimate during Requirements stage.",
+            "Provide Detailed estimate (Optimistic/Pessimistic) via Excel.",
+            "Write scenarios based on approved FSD/TDD.",
+            "Wait for Development Phase to completely finish."
+          ],
+          exit_criteria: [
+            "Execute functional and integration testing."
+          ]
+        },
         templates: ""
       }
     };
@@ -751,6 +799,34 @@ Please send observations before the meeting.</div>`
       else { body.setAttribute('data-theme', 'dark'); }
     }
 
+    // --- LOCAL STORAGE FUNCTIONALITY ---
+    function saveChecklistState(moduleId) {
+      if (!moduleId) return;
+      const checkboxes = document.querySelectorAll('#checklist-container input[type="checkbox"]');
+      const states = {};
+      checkboxes.forEach(cb => {
+        states[cb.id] = cb.checked;
+      });
+      localStorage.setItem(`checklist_state_${moduleId}`, JSON.stringify(states));
+    }
+
+    function loadChecklistState(moduleId) {
+      if (!moduleId) return;
+      const saved = localStorage.getItem(`checklist_state_${moduleId}`);
+      if (!saved) return;
+      try {
+        const states = JSON.parse(saved);
+        for (const [id, checked] of Object.entries(states)) {
+          const cb = document.getElementById(id);
+          if (cb) {
+            cb.checked = checked;
+          }
+        }
+      } catch (e) {
+        console.error("Error loading checklist state", e);
+      }
+    }
+
     // --- LOAD MODULE ---
     function loadModule(moduleId) {
       const data = qaModules[moduleId];
@@ -759,7 +835,13 @@ Please send observations before the meeting.</div>`
 
       // Update Active State in Sidebar
       document.querySelectorAll('.panel-btn').forEach(btn => btn.classList.remove('active-module'));
-      event.target.classList.add('active-module');
+      const sidebarBtns = document.querySelectorAll('.panel-btn');
+      for (let btn of sidebarBtns) {
+        if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(`'${moduleId}'`)) {
+          btn.classList.add('active-module');
+          break;
+        }
+      }
       
       // Update Title & Show Tabs
       document.getElementById('current-module-title').innerText = data.title;
@@ -802,8 +884,8 @@ Please send observations before the meeting.</div>`
               <label for="${id}">${item}</label>
             </div>`;
         });
-      } else {
-        if (data.checklist.entry_criteria) {
+      } else if (data.checklist) {
+        if (data.checklist.entry_criteria && data.checklist.entry_criteria.length > 0) {
           checklistContainer.innerHTML += `<div style="padding: 10px 15px; font-weight: bold; background: rgba(52, 152, 219, 0.1); border-bottom: 1px solid var(--border);">Entry Criteria</div>`;
           data.checklist.entry_criteria.forEach((item, index) => {
             const id = `check-entry-${moduleId}-${index}`;
@@ -814,7 +896,7 @@ Please send observations before the meeting.</div>`
               </div>`;
           });
         }
-        if (data.checklist.exit_criteria) {
+        if (data.checklist.exit_criteria && data.checklist.exit_criteria.length > 0) {
           checklistContainer.innerHTML += `<div style="padding: 10px 15px; font-weight: bold; background: rgba(46, 204, 113, 0.1); border-bottom: 1px solid var(--border); border-top: 1px solid var(--border);">Exit Criteria</div>`;
           data.checklist.exit_criteria.forEach((item, index) => {
             const id = `check-exit-${moduleId}-${index}`;
@@ -827,8 +909,18 @@ Please send observations before the meeting.</div>`
         }
       }
 
+      // Restore checklist checked state from localStorage
+      loadChecklistState(moduleId);
+
       switchTab('guidelines'); // Default to Guidelines instead of Standard Operating Procedure now that it's simpler
     }
+
+    // Set up global event delegation for saving checkbox changes
+    document.getElementById('checklist-container').addEventListener('change', function(e) {
+      if (e.target && e.target.type === 'checkbox' && currentModuleId) {
+        saveChecklistState(currentModuleId);
+      }
+    });
 
     // --- TAB SWITCHING ---
     function switchTab(tabId) {
