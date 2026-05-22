@@ -1,10 +1,11 @@
-const CACHE_NAME = 'qa-portal-cache-v2';
+const CACHE_NAME = 'qa-portal-cache-v3';
 const urlsToCache = [
   './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
-  'https://cdn.jsdelivr.net/npm/mermaid@9.4.3/dist/mermaid.min.js'
+  'https://cdn.jsdelivr.net/npm/mermaid@9.4.3/dist/mermaid.min.js',
+  'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.mini.min.js'
 ];
 
 self.addEventListener('install', event => {
@@ -47,11 +48,21 @@ self.addEventListener('fetch', event => {
         .catch(() => caches.match(event.request))
     );
   } else {
-    // Cache-First for static resources
+    // Cache-First with dynamic caching fallback for static resources
     event.respondWith(
       caches.match(event.request)
         .then(response => {
-          return response || fetch(event.request);
+          if (response) {
+            return response;
+          }
+          return fetch(event.request).then(networkResponse => {
+            // Dynamic caching: cache successful static responses (e.g. CDNs, fonts)
+            if (networkResponse && networkResponse.status === 200) {
+              const responseClone = networkResponse.clone();
+              caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+            }
+            return networkResponse;
+          });
         })
     );
   }
