@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iSON - Tester's SOP</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@9.4.3/dist/mermaid.min.js"></script>
+
+  <link rel="stylesheet" href="css/style.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.mini.min.js"></script>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="theme-color" content="#2563eb">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+  <aside class="sidebar">
+    <div class="sidebar-header" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+      <img src="./icon-192.png" alt="Logo" style="width: 28px; height: 28px; border-radius: 6px;">
+      <span>Tester's SOP</span>
+    </div>
+    
+    <button class="accordion active">Test Design & Management</button>
+    <div class="panel" style="max-height: 500px;">
+      <button class="panel-btn active-module" onclick="loadModule('ai_generation')">AI Scenario Generation</button>
+      <button class="panel-btn" onclick="loadModule('test_design')">Test Design & Xray Management</button>
+      <button class="panel-btn" onclick="loadModule('scenario_validation')">Scenario Validation</button>
+    </div>
+
+    <button class="accordion">Test Execution</button>
+    <div class="panel">
+      <button class="panel-btn" onclick="loadModule('uat')">1. UAT Testing</button>
+      <button class="panel-btn" onclick="loadModule('smoke')">2. Smoke Testing (PRL)</button>
+      <button class="panel-btn" onclick="loadModule('prl')">3. PRL Testing</button>
+      <button class="panel-btn" onclick="loadModule('regression')">4. Regression Testing</button>
+    </div>
+
+    <button class="accordion">Defect Management</button>
+    <div class="panel">
+      <button class="panel-btn" onclick="loadModule('bugs')">Bugs Workflow</button>
+      <button class="panel-btn" onclick="loadModule('incidents')">Incidents Workflow</button>
+    </div>
+
+    <button class="accordion">Specialized Testing</button>
+    <div class="panel">
+      <button class="panel-btn" onclick="loadModule('integrated')">Integrated Testing</button>
+      <button class="panel-btn" onclick="loadModule('api_testing')">API Testing Workflow</button>
+      <button class="panel-btn" onclick="loadModule('ui_ux')">UI/UX & Smartwatch Testing</button>
+      <button class="panel-btn" onclick="loadModule('mobile')">Mobile Testing</button>
+    </div>
+
+    <button class="accordion">Agile & Ceremonies</button>
+    <div class="panel">
+      <button class="panel-btn" onclick="loadModule('agile')">Agile/Scrum Workflow</button>
+      <button class="panel-btn" onclick="loadModule('demo')">DEMO Presentation</button>
+      <button class="panel-btn" onclick="loadModule('timelogging')">Logging Time & Teams</button>
+      <button class="panel-btn" onclick="loadModule('waterfall')">Waterfall Workflow</button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <nav class="top-nav">
+      <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+        <button class="sidebar-toggle-btn" onclick="toggleSidebar()">☰</button>
+        <img src="./icon-192.png" alt="Logo" style="width: 32px; height: 32px; border-radius: 6px;">
+        <div id="current-module-title" style="font-weight: bold; font-size: 1.4rem; color: var(--primary);">Select a Module</div>
+      </div>
+      <div class="search-container">
+        <input type="text" id="global-search" placeholder="Search guidelines, checklists, templates..." oninput="handleSearch(this.value)">
+        <div id="search-results"></div>
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <a href="dashboard.html" class="btn btn-primary" style="margin: 0; padding: 8px 15px; text-decoration: none;">QA Dashboard</a>
+        <button id="theme-toggle" class="theme-toggle" style="margin: 0; font-size: 1.2rem; padding: 5px 10px; background: transparent; color: var(--text-color); border: 1px solid var(--border);">🌙</button>
+      </div>
+    </nav>
+
+    <div class="content-area">
+      <div class="tabs" id="tabs-container" style="display: none;">
+        <button class="tab-btn active" onclick="switchTab('guidelines')">Guidelines & Rules</button>
+        <button class="tab-btn" onclick="switchTab('flowchart')">Workflow Chart</button>
+        <button class="tab-btn" onclick="switchTab('checklist')">Standard Operating Procedure</button>
+        <button class="tab-btn" onclick="switchTab('templates')">Templates</button>
+        
+      </div>
+
+      <div id="tab-guidelines" class="tab-content"></div>
+      
+      <div id="tab-flowchart" class="tab-content">
+        <div class="mermaid-wrapper" id="mermaid-container"></div>
+      </div>
+      
+      <div id="tab-checklist" class="tab-content">
+        <!-- User Story Context Selector & Excel Tools -->
+        <div id="user-story-bar-container" class="user-story-bar-container" style="background: var(--bg-color); padding: 15px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 10px; flex-grow: 1; min-width: 280px; flex-wrap: wrap;">
+            <span style="font-weight: 600; font-size: 0.95rem; white-space: nowrap;">User Story:</span>
+            <input type="text" id="user-story-input" placeholder="e.g. SCRT-1234" class="form-input" style="max-width: 180px; padding: 8px 12px; margin: 0;" oninput="handleUserStoryKeyChange()">
+            <select id="user-story-select" class="form-input" style="max-width: 180px; padding: 8px 12px; margin: 0;" onchange="handleUserStorySelect(this.value)">
+              <option value="">-- Recent User Stories --</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="btn btn-success" id="export-excel-btn" style="margin: 0; padding: 8px 15px; font-size: 0.85rem; background: var(--success);" onclick="exportSingleUserStoryToExcel()">Export User Story</button>
+            <button class="btn btn-primary" id="export-all-excel-btn" style="margin: 0; padding: 8px 15px; font-size: 0.85rem; background: var(--primary);" onclick="exportAllUserStoriesToExcel()">Export Workbook</button>
+          </div>
+        </div>
+
+        <!-- Progress Indicator -->
+        <div id="progress-bar-container" class="progress-wrapper" style="margin-bottom: 20px; background: var(--bg-color); padding: 15px; border: 1px solid var(--border); border-radius: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.95rem; font-weight: 600;">
+            <span id="progress-text-label">Module Progress: 0%</span>
+            <span id="progress-fraction-label" style="color: #777;">0 of 0 items checked</span>
+          </div>
+          <div class="progress-bar-bg" style="width: 100%; height: 12px; background: rgba(0,0,0,0.05); border-radius: 6px; overflow: hidden; border: 1px solid var(--border); position: relative;">
+            <div id="progress-bar-fill" style="width: 0%; height: 100%; background: var(--primary); transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease; border-radius: 6px;"></div>
+          </div>
+        </div>
+
+        <!-- Checklist Controls & Container -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+          <h3 style="margin: 0;">Standard Operating Procedure Checklist</h3>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-danger" id="reset-checklist-btn" style="margin: 0; padding: 8px 15px; font-size: 0.85rem;" onclick="resetCurrentChecklist()">Reset Module</button>
+            <button class="btn btn-danger" id="reset-all-btn" style="margin: 0; padding: 8px 15px; font-size: 0.85rem; background: #c0392b;" onclick="resetAllData()">Reset All Stories</button>
+          </div>
+        </div>
+        
+        <div id="checklist-container" style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; overflow: hidden;"></div>
+
+        <!-- Tickets Registry Dashboard -->
+        <div id="user-story-dashboard-container" style="margin-top: 35px; background: var(--bg-color); padding: 20px; border: 1px solid var(--border); border-radius: 8px;">
+          <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 1.15rem; color: var(--primary);">User Stories SOP Progress Registry</h3>
+
+          <div style="display: flex; gap: 20px; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 200px; max-width: 250px; background: rgba(0,0,0,0.02); padding: 10px; border-radius: 8px;">
+              <canvas id="complianceChart" width="200" height="200"></canvas>
+            </div>
+            <div style="flex: 2; min-width: 300px;">
+
+          <div style="overflow-x: auto;">
+            <table id="user-story-dashboard-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+              <thead>
+                <tr style="border-bottom: 2px solid var(--border); color: #777;">
+                  <th style="padding: 10px 5px;">User Story Key</th>
+                  <th style="padding: 10px 5px;">Last Active Module</th>
+                  <th style="padding: 10px 5px;">Module Progress</th>
+                  <th style="padding: 10px 5px;">Overall Progress</th>
+                  <th style="padding: 10px 5px; text-align: center;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="user-story-dashboard-tbody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-templates" class="tab-content"></div>
+      
+      
+        <div id="logs-container"></div>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/data.js"></script>
+  <script type="module" src="js/firebase-sync.js"></script>
+  <script src="js/app.js"></script>
+
+  <script src="js/data.js"></script>
+  <script type="module" src="js/firebase-sync.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
