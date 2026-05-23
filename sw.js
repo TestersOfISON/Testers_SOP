@@ -1,11 +1,14 @@
-const CACHE_NAME = 'qa-portal-cache-v4';
+const CACHE_NAME = 'qa-portal-cache-v5';
 const urlsToCache = [
   './index.html',
+  './dashboard.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
-  'https://cdn.jsdelivr.net/npm/mermaid@9.4.3/dist/mermaid.min.js',
-  'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.mini.min.js'
+  './css/style.css',
+  './js/data.js',
+  './js/app.js',
+  './js/firebase-sync.js'
 ];
 
 self.addEventListener('install', event => {
