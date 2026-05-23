@@ -477,7 +477,10 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
       checkboxes.forEach(cb => {
         states[cb.id] = cb.checked;
       });
-      localStorage.setItem(`checklist_state_${moduleId}_${tKey}`, JSON.stringify(states));
+            localStorage.setItem(`checklist_state_${moduleId}_${tKey}`, JSON.stringify(states));
+      if (window.syncStateToCloud && isSOPModule) {
+        window.syncStateToCloud(tKey, moduleId, states, getUserStoryOverallProgress(tKey));
+      }
 
       if (isSOPModule) {
         if (storyKey) {
