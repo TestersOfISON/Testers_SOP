@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lead QA Dashboard - iSON</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body style="padding: 30px; display: block; overflow-y: auto;">
+
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+    <h1 style="color: var(--primary); margin: 0;">Lead QA - Global Progress Dashboard</h1>
+    <a href="index.html" class="btn btn-primary" style="margin: 0;">Back to Portal</a>
+  </div>
+
+  <div style="background: var(--card-bg); padding: 30px; border-radius: 8px; box-shadow: var(--shadow); border: 1px solid var(--border);">
+    <h3 style="margin-top: 0; margin-bottom: 20px;">Real-Time User Story Compliance</h3>
+    
+    <div style="overflow-x: auto;">
+      <table id="user-story-dashboard-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+        <thead>
+          <tr>
+            <th>User Story Key</th>
+            <th>Overall SOP Compliance</th>
+            <th>Last Updated</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="dashboard-tbody">
+          <tr><td colspan="4" style="text-align: center; padding: 20px;">Loading live data from Firebase...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Firebase Integration -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBQG6GHxApLRSgBnQvXWrfdgrIf9sEacRA",
+      authDomain: "qa-lead-dashboard.firebaseapp.com",
+      projectId: "qa-lead-dashboard",
+      storageBucket: "qa-lead-dashboard.firebasestorage.app",
+      messagingSenderId: "946430881036",
+      appId: "1:946430881036:web:1c0281b84acc89fd19ed29",
+      measurementId: "G-7Y3YPX7XNS"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const tbody = document.getElementById('dashboard-tbody');
+
+    // Listen to real-time updates from Firestore
+    onSnapshot(collection(db, "user_stories"), (snapshot) => {
+      tbody.innerHTML = ''; // Clear loading state
+      
+      if (snapshot.empty) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">No user stories active.</td></tr>';
+        return;
+      }
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const key = doc.id;
+        const progress = data.overallProgress || 0;
+        const date = data.lastUpdated ? new Date(data.lastUpdated).toLocaleString() : 'Unknown';
+        
+        const isComplete = progress === 100;
+        const statusBadge = isComplete 
+          ? `<span style="background: #10b981; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold;">COMPLETE</span>`
+          : `<span style="background: #f59e0b; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold;">IN PROGRESS</span>`;
+
+        // Progress Bar
+        const progressHtml = `
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 100px; height: 8px; background: rgba(0,0,0,0.1); border-radius: 4px; overflow: hidden;">
+              <div style="width: ${progress}%; height: 100%; background: var(--primary); transition: width 0.5s;"></div>
+            </div>
+            <span>${progress}%</span>
+          </div>
+        `;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="font-weight: 600; color: var(--primary);">${key}</td>
+          <td>${progressHtml}</td>
+          <td style="color: #777; font-size: 0.9rem;">${date}</td>
+          <td>${statusBadge}</td>
+        `;
+        tbody.appendChild(tr);
+
+        // Fun interaction: If someone hits 100% while QA is watching, trigger confetti
+        // (In a real app, we'd compare previous state to ensure it just hit 100%, but this is a fun showcase)
+        if (isComplete && !tr.dataset.confettiFired && typeof confetti === 'function') {
+          tr.dataset.confettiFired = true;
+          confetti({ particleCount: 50, spread: 40, origin: { y: 0.1 } });
+        }
+      });
+    });
+  </script>
+</body>
+</html>
