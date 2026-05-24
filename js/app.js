@@ -1,30 +1,11 @@
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Theme Logic
+  // Theme Initialization
   const themeToggle = document.getElementById('theme-toggle');
   if (themeToggle) {
     const currentTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', currentTheme);
     themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
-
-    themeToggle.addEventListener('click', () => {
-      let theme = document.documentElement.getAttribute('data-theme');
-      if (theme === 'dark') {
-        theme = 'light';
-        themeToggle.textContent = '🌙';
-      } else {
-        theme = 'dark';
-        themeToggle.textContent = '☀️';
-      }
-      document.documentElement.setAttribute('data-theme', theme);
-      localStorage.setItem('theme', theme);
-      
-      // Update chart colors if it exists
-      if (complianceChart) {
-        complianceChart.data.datasets[0].backgroundColor[1] = theme === 'dark' ? '#334155' : '#e2e8f0';
-        complianceChart.update();
-      }
-    });
   }
 
   // Sidebar Search Logic
@@ -78,7 +59,13 @@ function updateComplianceChart(percent) {
   }
 }
 
-mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
+try {
+  if (typeof mermaid !== 'undefined') {
+    mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
+  }
+} catch(e) {
+  console.error("Mermaid initialization failed", e);
+}
 
     // Apply saved theme preference on page load
     const savedTheme = localStorage.getItem('theme_preference');
@@ -102,15 +89,40 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
       });
     }
 
+    // --- TAB LOGIC ---
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      
+      if (typeof event !== 'undefined' && event && event.target && event.target.classList) {
+        event.target.classList.add('active');
+      } else {
+        const btn = document.querySelector(`.tab-btn[onclick*="${tabId}"]`);
+        if (btn) btn.classList.add('active');
+      }
+      
+      const tabContent = document.getElementById(`tab-${tabId}`);
+      if (tabContent) tabContent.classList.add('active');
+    }
+
     // --- THEME TOGGLE ---
     function toggleTheme() {
-      const body = document.body;
-      if (body.getAttribute('data-theme') === 'dark') { 
-        body.removeAttribute('data-theme'); 
-        localStorage.setItem('theme_preference', 'light');
-      } else { 
-        body.setAttribute('data-theme', 'dark'); 
-        localStorage.setItem('theme_preference', 'dark');
+      const current = document.documentElement.getAttribute('data-theme');
+      const newTheme = current === 'dark' ? 'light' : 'dark';
+      
+      document.documentElement.setAttribute('data-theme', newTheme);
+      document.body.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      localStorage.setItem('theme_preference', newTheme);
+      
+      const themeToggle = document.getElementById('theme-toggle');
+      if (themeToggle) {
+        themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+      }
+      
+      if (typeof complianceChart !== 'undefined' && complianceChart) {
+        complianceChart.data.datasets[0].backgroundColor[1] = newTheme === 'dark' ? '#334155' : '#e2e8f0';
+        complianceChart.update();
       }
     }
 
@@ -286,6 +298,7 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
               No active user stories in registry. Enter a User Story Key above to start tracking.
             </td>
           </tr>`;
+        updateComplianceChart(0);
         return;
       }
       
@@ -320,13 +333,25 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
             </span>
           </td>
           <td style="padding: 10px 5px; text-align: center;">
-            <button class="btn btn-primary" style="margin: 0 5px 0 0; padding: 5px 10px; font-size: 0.8rem; height: auto;" onclick="handleUserStorySelect('${key}')">Switch</button>
-            <button class="btn btn-success" style="margin: 0 5px 0 0; padding: 5px 10px; font-size: 0.8rem; height: auto;" onclick="exportUserStoryDirectly('${key}')">Export Story</button>
-            <button class="btn btn-danger" style="margin: 0; padding: 5px 10px; font-size: 0.8rem; background: var(--danger); height: auto;" onclick="deleteUserStoryFromRegistry('${key}')">Delete</button>
+            <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: wrap;">
+              <button class="btn btn-primary" style="margin: 0; padding: 5px 10px; font-size: 0.8rem; height: auto;" onclick="handleUserStorySelect('${key}')">Switch</button>
+              <button class="btn btn-success" style="margin: 0; padding: 5px 10px; font-size: 0.8rem; height: auto;" onclick="exportUserStoryDirectly('${key}')">Export Story</button>
+              <button class="btn btn-danger" style="margin: 0; padding: 5px 10px; font-size: 0.8rem; background: var(--danger); height: auto;" onclick="deleteUserStoryFromRegistry('${key}')">Delete</button>
+            </div>
           </td>
         `;
         tbody.appendChild(tr);
       });
+      
+      // Update the compliance chart visually
+      const currentKey = getActiveUserStoryKey();
+      if (currentKey) {
+        updateComplianceChart(getUserStoryOverallProgress(currentKey));
+      } else if (registry.length > 0) {
+        updateComplianceChart(getUserStoryOverallProgress(registry[0]));
+      } else {
+        updateComplianceChart(0);
+      }
     }
 
     function deleteUserStoryFromRegistry(key) {
