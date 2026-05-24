@@ -298,6 +298,7 @@ try {
               No active user stories in registry. Enter a User Story Key above to start tracking.
             </td>
           </tr>`;
+        updateComplianceChart(0);
         return;
       }
       
@@ -332,13 +333,25 @@ try {
             </span>
           </td>
           <td style="padding: 10px 5px; text-align: center;">
-            <button class="btn btn-primary" style="margin: 0 5px 0 0; padding: 5px 10px; font-size: 0.8rem; height: auto;" onclick="handleUserStorySelect('${key}')">Switch</button>
-            <button class="btn btn-success" style="margin: 0 5px 0 0; padding: 5px 10px; font-size: 0.8rem; height: auto;" onclick="exportUserStoryDirectly('${key}')">Export Story</button>
-            <button class="btn btn-danger" style="margin: 0; padding: 5px 10px; font-size: 0.8rem; background: var(--danger); height: auto;" onclick="deleteUserStoryFromRegistry('${key}')">Delete</button>
+            <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: wrap;">
+              <button class="btn btn-primary" style="margin: 0; padding: 5px 10px; font-size: 0.8rem; height: auto;" onclick="handleUserStorySelect('${key}')">Switch</button>
+              <button class="btn btn-success" style="margin: 0; padding: 5px 10px; font-size: 0.8rem; height: auto;" onclick="exportUserStoryDirectly('${key}')">Export Story</button>
+              <button class="btn btn-danger" style="margin: 0; padding: 5px 10px; font-size: 0.8rem; background: var(--danger); height: auto;" onclick="deleteUserStoryFromRegistry('${key}')">Delete</button>
+            </div>
           </td>
         `;
         tbody.appendChild(tr);
       });
+      
+      // Update the compliance chart visually
+      const currentKey = getActiveUserStoryKey();
+      if (currentKey) {
+        updateComplianceChart(getUserStoryOverallProgress(currentKey));
+      } else if (registry.length > 0) {
+        updateComplianceChart(getUserStoryOverallProgress(registry[0]));
+      } else {
+        updateComplianceChart(0);
+      }
     }
 
     function deleteUserStoryFromRegistry(key) {
