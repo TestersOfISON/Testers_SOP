@@ -11,8 +11,13 @@
 <body style="padding: 30px; display: block; overflow-y: auto;">
 
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-    <h1 style="color: var(--primary); margin: 0;">Lead QA - Global Progress Dashboard</h1>
-    <a href="index.html" class="btn btn-primary" style="margin: 0;">Back to Portal</a>
+    <h1 style="color: var(--primary); margin: 0; display: flex; align-items: center; gap: 15px;">
+      <span style="font-size: 2rem;">📊</span> Lead QA - Global Progress Dashboard
+    </h1>
+    <div style="display: flex; gap: 10px;">
+      <button class="btn btn-primary" style="margin: 0;" onclick="location.reload()">🔄 Refresh</button>
+      <a href="index.html" class="btn" style="margin: 0; background: var(--surface); color: var(--text); border: 1px solid var(--border);">Back to Portal</a>
+    </div>
   </div>
 
   <div style="background: var(--card-bg); padding: 30px; border-radius: 8px; box-shadow: var(--shadow); border: 1px solid var(--border);">
@@ -22,10 +27,12 @@
       <table id="user-story-dashboard-table" style="width: 100%; border-collapse: collapse; text-align: left;">
         <thead>
           <tr>
-            <th>User Story Key</th>
-            <th>Overall SOP Compliance</th>
-            <th>Last Updated</th>
-            <th>Status</th>
+            <th style="padding: 15px; border-bottom: 2px solid var(--border);">User Story Key</th>
+            <th style="padding: 15px; border-bottom: 2px solid var(--border);">Tester</th>
+            <th style="padding: 15px; border-bottom: 2px solid var(--border);">Overall SOP Compliance</th>
+            <th style="padding: 15px; border-bottom: 2px solid var(--border);">Last Updated</th>
+            <th style="padding: 15px; border-bottom: 2px solid var(--border);">Status</th>
+            <th style="padding: 15px; border-bottom: 2px solid var(--border); text-align: center;">Actions</th>
           </tr>
         </thead>
         <tbody id="dashboard-tbody">
@@ -102,11 +109,12 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td style="font-weight: 600; color: var(--primary);">${key}</td>
-          <td style="color: #334155; font-weight: 500;">👤 ${tester}</td>
-          <td>${progressHtml}</td>
-          <td style="color: #777; font-size: 0.9rem;">${date}</td>
-          <td>${statusBadge}</td>
-          <td style="text-align: center;"><button class="btn" style="background: #ef4444; color: white; padding: 5px 10px; font-size: 0.8rem;" onclick="deleteStoryFromCloud('${key}')">Delete</button></td>
+          <td style="padding: 15px; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--primary);">${key}</td>
+          <td style="padding: 15px; border-bottom: 1px solid var(--border); color: #334155; font-weight: 500;">👤 ${tester}</td>
+          <td style="padding: 15px; border-bottom: 1px solid var(--border);">${progressHtml}</td>
+          <td style="padding: 15px; border-bottom: 1px solid var(--border); color: #777; font-size: 0.9rem;">${date}</td>
+          <td style="padding: 15px; border-bottom: 1px solid var(--border);">${statusBadge}</td>
+          <td style="padding: 15px; border-bottom: 1px solid var(--border); text-align: center;"><button class="btn" style="background: #ef4444; color: white; padding: 5px 10px; font-size: 0.8rem;" onclick="deleteStoryFromCloud('${key}')">Delete</button></td>
         `;
         tbody.appendChild(tr);
 

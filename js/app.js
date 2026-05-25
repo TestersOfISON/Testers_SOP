@@ -143,6 +143,20 @@ try {
       }
     }
 
+    // --- TESTER NAME MANAGEMENT ---
+    window.changeTesterName = function() {
+      const current = localStorage.getItem('testerName') || '';
+      const newName = prompt("Update your name for the QA Dashboard:", current);
+      if (newName && newName.trim() !== '') {
+        localStorage.setItem('testerName', newName.trim());
+        alert("Name updated successfully! Your progress will now be synced under: " + newName.trim());
+        // Force sync current state to update name in cloud immediately
+        if (typeof currentModuleId !== 'undefined' && currentModuleId) {
+          saveChecklistState(currentModuleId);
+        }
+      }
+    };
+
     // --- TICKET & REGISTRY UTILITIES ---
     function getActiveUserStoryKey() {
       const input = document.getElementById('user-story-input');
@@ -511,7 +525,7 @@ try {
                 cb.checked = false;
                 stateChanged = true;
               }
-              if (!cb.checked) {
+              if (!cb.checked && !isOptional(item)) {
                 allPreviousChecked = false;
               }
             }
@@ -920,12 +934,16 @@ try {
       
       // Render Mermaid Flowchart
       const mermaidContainer = document.getElementById('mermaid-container');
-      try {
-        mermaid.render('dynamic-mermaid-svg', data.mermaid, function(svgCode) {
-          mermaidContainer.innerHTML = svgCode;
-        });
-      } catch (err) {
-        mermaidContainer.innerHTML = `<p style="color:red; font-weight:bold;">Chart Syntax Error. Please check Mermaid code formatting.</p>`;
+      if (data.mermaid && data.mermaid.trim() !== '') {
+        try {
+          mermaid.render('dynamic-mermaid-svg', data.mermaid, function(svgCode) {
+            mermaidContainer.innerHTML = svgCode;
+          });
+        } catch (err) {
+          mermaidContainer.innerHTML = `<p style="color:red; font-weight:bold;">Chart Syntax Error. Please check Mermaid code formatting.</p>`;
+        }
+      } else {
+        mermaidContainer.innerHTML = '';
       }
 
       // Build Interactive Checklist
