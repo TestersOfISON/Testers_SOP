@@ -7,7 +7,6 @@ const qaModules = {
           <ul class="guideline-list">
             <li><strong>Sequential Flow:</strong> Modules unlock sequentially. You must complete 100% of the previous module to unlock the next.</li>
             <li><strong>Checklists:</strong> Follow the entry and exit criteria. Items marked <em>(If applicable)</em> are optional and can be skipped.</li>
-            <li><strong>Progress Tracking:</strong> Your progress is saved to the cloud. Leads can view the overall progress on the Global QA Dashboard.</li>
             <li><strong>Deleting Data:</strong> If you delete a user story from your local registry, it will also be permanently deleted from the cloud.</li>
           </ul>`,
         mermaid: ``,
