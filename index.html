@@ -219,6 +219,13 @@
       }
     };
 
+    window.syncNameUpdateToCloud = async function(userStoryKey, newName) {
+      if (!userStoryKey || userStoryKey === "default") return;
+      try {
+        await update(ref(db), { ['user_stories/' + userStoryKey + '/assignedToName']: newName });
+      } catch (e) {}
+    };
+
     window.deleteStateFromCloud = async function(userStoryKey) {
       if (!userStoryKey || userStoryKey === "default") return;
       try {

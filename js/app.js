@@ -150,9 +150,18 @@ try {
       if (newName && newName.trim() !== '') {
         localStorage.setItem('testerName', newName.trim());
         alert("Name updated successfully! Your progress will now be synced under: " + newName.trim());
+        
         // Force sync current state to update name in cloud immediately
         if (typeof currentModuleId !== 'undefined' && currentModuleId) {
           saveChecklistState(currentModuleId);
+        }
+        
+        // Also update name for all other local user stories in Firebase
+        if (window.syncNameUpdateToCloud) {
+          const registry = getUserStoryRegistry();
+          registry.forEach(key => {
+            window.syncNameUpdateToCloud(key, newName.trim());
+          });
         }
       }
     };
