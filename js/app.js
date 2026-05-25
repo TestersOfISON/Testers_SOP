@@ -371,14 +371,41 @@ try {
         const currentActiveKey = getActiveUserStoryKey();
         if (currentActiveKey === key) {
           document.getElementById('user-story-input').value = '';
-          if (currentModuleId) {
-            loadChecklistState(currentModuleId);
-          }
+          handleUserStoryKeyChange();
+        }
+        
+        // Push deletion to Firebase Cloud
+        if (window.deleteStateFromCloud) {
+          window.deleteStateFromCloud(key);
         }
         
         updateUserStoryDropdown();
         updateUserStoryDashboard();
       }
+    }
+
+    window.syncAllToCloud = function() {
+      if (!window.syncStateToCloud) {
+        alert("Firebase is not initialized or accessible in this environment.");
+        return;
+      }
+      const registry = getUserStoryRegistry();
+      if (registry.length === 0) {
+        alert("No local stories to push.");
+        return;
+      }
+      
+      registry.forEach(storyKey => {
+        const meta = getUserStoryMetadata(storyKey);
+        const progress = getUserStoryOverallProgress(storyKey);
+        for (const moduleId of activeChecklistModules) {
+          const saved = localStorage.getItem(`checklist_state_${moduleId}_${storyKey}`);
+          if (saved) {
+            window.syncStateToCloud(storyKey, moduleId, JSON.parse(saved), progress);
+          }
+        }
+      });
+      alert(`Successfully pushed all ${registry.length} local user stories to the cloud database!`);
     }
 
     // --- RESET ACTIONS ---
