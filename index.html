@@ -179,7 +179,7 @@
   <!-- Inline Firebase Sync to bypass local CORS restrictions -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getDatabase, ref, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBQG6GHxApLRSgBnQvXWrfdgrIf9sEacRA",
@@ -188,23 +188,24 @@
       storageBucket: "qa-lead-dashboard.firebasestorage.app",
       messagingSenderId: "946430881036",
       appId: "1:946430881036:web:1c0281b84acc89fd19ed29",
-      measurementId: "G-7Y3YPX7XNS"
+      measurementId: "G-7Y3YPX7XNS",
+      databaseURL: "https://qa-lead-dashboard-default-rtdb.firebaseio.com"
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    const db = getDatabase(app);
 
     window.syncStateToCloud = async function(userStoryKey, moduleId, stateObject, overallProgress) {
       if (!userStoryKey || userStoryKey === "default") return;
       
       try {
-        const docRef = doc(db, "user_stories", userStoryKey);
-        await setDoc(docRef, { 
-          [moduleId]: stateObject,
-          overallProgress: overallProgress,
-          lastUpdated: new Date().toISOString()
-        }, { merge: true });
-        console.log(`Successfully synced ${moduleId} for ${userStoryKey} to Firebase.`);
+        const updates = {};
+        updates['user_stories/' + userStoryKey + '/' + moduleId] = stateObject;
+        updates['user_stories/' + userStoryKey + '/overallProgress'] = overallProgress;
+        updates['user_stories/' + userStoryKey + '/lastUpdated'] = new Date().toISOString();
+        
+        await update(ref(db), updates);
+        console.log(`Successfully synced ${moduleId} for ${userStoryKey} to Firebase RTDB.`);
       } catch (e) {
         console.error("Error syncing to Firebase:", e);
       }
