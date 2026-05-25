@@ -453,6 +453,10 @@ try {
 
     // --- CHECKLIST LOGIC ---
 
+    function isOptional(itemText) {
+      return typeof itemText === 'string' && itemText.includes('(If applicable)');
+    }
+
     function evaluateChecklistLogic(moduleId) {
       if (!moduleId) return;
       const data = qaModules[moduleId];
@@ -470,7 +474,7 @@ try {
               cb.checked = false;
               stateChanged = true;
             }
-            if (!cb.checked) {
+            if (!cb.checked && !isOptional(item)) {
               allPreviousChecked = false;
             }
           }
@@ -488,7 +492,7 @@ try {
                 cb.checked = false;
                 stateChanged = true;
               }
-              if (!cb.checked) {
+              if (!cb.checked && !isOptional(item)) {
                 allPreviousChecked = false;
                 entryAllChecked = false;
               }
@@ -552,6 +556,32 @@ try {
       
       const checkboxes = document.querySelectorAll('#checklist-container input[type="checkbox"]');
       checkboxes.forEach(cb => cb.checked = false);
+
+      // --- SEQUENTIAL MODULE LOCKING ---
+      let moduleLocked = false;
+      if (isSOPModule) {
+        const moduleIndex = activeChecklistModules.indexOf(moduleId);
+        if (moduleIndex > 0) {
+          const prevModuleId = activeChecklistModules[moduleIndex - 1];
+          const prevProgress = getModuleProgress(prevModuleId, storyKey);
+          if (prevProgress.percent < 100) {
+            moduleLocked = true;
+          }
+        }
+      }
+
+      const checklistContainer = document.getElementById('checklist-container');
+      const existingBanner = document.getElementById('module-locked-banner');
+      if (existingBanner) existingBanner.remove();
+
+      if (moduleLocked) {
+        const prevModuleName = qaModules[activeChecklistModules[activeChecklistModules.indexOf(moduleId) - 1]].title;
+        const bannerHtml = `<div id="module-locked-banner" style="background: #fee2e2; color: #991b1b; padding: 15px; margin: 15px; border-radius: 6px; border: 1px solid #f87171; display: flex; align-items: center; gap: 10px; font-weight: 500;">
+          <span style="font-size: 1.2rem;">🔒</span>
+          Please complete 100% of "${prevModuleName}" to unlock this module.
+        </div>`;
+        checklistContainer.insertAdjacentHTML('afterbegin', bannerHtml);
+      }
       
       const saved = localStorage.getItem(`checklist_state_${moduleId}_${tKey}`);
       if (saved) {
@@ -570,6 +600,10 @@ try {
       
       evaluateChecklistLogic(moduleId);
       
+      if (moduleLocked) {
+        checkboxes.forEach(cb => cb.disabled = true);
+      }
+
       if (isSOPModule) {
         updateProgressBar();
       }
@@ -897,13 +931,21 @@ try {
       // Build Interactive Checklist
       const checklistContainer = document.getElementById('checklist-container');
       checklistContainer.innerHTML = '';
+      
+      function formatLabel(text) {
+        if (text.includes('(If applicable)')) {
+          return text.replace('(If applicable)', '<span style="color: #64748b; font-size: 0.9em; font-style: italic; font-weight: normal; margin-left: 5px;">(If applicable)</span>');
+        }
+        return text;
+      }
+
       if (Array.isArray(data.checklist)) {
         data.checklist.forEach((item, index) => {
           const id = `check-${moduleId}-${index}`;
           checklistContainer.innerHTML += `
             <div class="checklist-item">
               <input type="checkbox" id="${id}">
-              <label for="${id}">${item}</label>
+              <label for="${id}">${formatLabel(item)}</label>
             </div>`;
         });
       } else if (data.checklist) {
@@ -914,7 +956,7 @@ try {
             checklistContainer.innerHTML += `
               <div class="checklist-item">
                 <input type="checkbox" id="${id}">
-                <label for="${id}">${item}</label>
+                <label for="${id}">${formatLabel(item)}</label>
               </div>`;
           });
         }
@@ -925,7 +967,7 @@ try {
             checklistContainer.innerHTML += `
               <div class="checklist-item">
                 <input type="checkbox" id="${id}">
-                <label for="${id}">${item}</label>
+                <label for="${id}">${formatLabel(item)}</label>
               </div>`;
           });
         }

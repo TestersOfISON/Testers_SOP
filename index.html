@@ -29,6 +29,8 @@
       <span>Tester's SOP</span>
     </div>
     
+    <button class="panel-btn" style="margin-bottom: 15px; font-weight: bold; background: rgba(37, 99, 235, 0.1);" onclick="loadModule('manual')"><span class="icon">📖</span> User Manual & Guidelines</button>
+    
     <button class="accordion active">Test Design & Management</button>
     <div class="panel" style="max-height: 500px;">
       <button class="panel-btn active-module" onclick="loadModule('ai_generation')">AI Scenario Generation</button>
@@ -203,9 +205,11 @@
       
       try {
         const updates = {};
+        const testerName = localStorage.getItem('testerName') || "Anonymous Tester";
         updates['user_stories/' + userStoryKey + '/' + moduleId] = stateObject;
         updates['user_stories/' + userStoryKey + '/overallProgress'] = overallProgress;
         updates['user_stories/' + userStoryKey + '/lastUpdated'] = new Date().toISOString();
+        updates['user_stories/' + userStoryKey + '/assignedToName'] = testerName;
         
         await update(ref(db), updates);
         console.log(`Successfully synced ${moduleId} for ${userStoryKey} to Firebase RTDB.`);

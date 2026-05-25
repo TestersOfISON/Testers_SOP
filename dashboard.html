@@ -29,7 +29,7 @@
           </tr>
         </thead>
         <tbody id="dashboard-tbody">
-          <tr><td colspan="4" style="text-align: center; padding: 20px;">Loading live data from Firebase...</td></tr>
+          <tr><td colspan="6" style="text-align: center; padding: 20px;">Loading live data from Firebase...</td></tr>
         </tbody>
       </table>
     </div>
@@ -38,7 +38,7 @@
   <!-- Firebase Integration -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBQG6GHxApLRSgBnQvXWrfdgrIf9sEacRA",
@@ -56,19 +56,31 @@
 
     const tbody = document.getElementById('dashboard-tbody');
     const storiesRef = ref(db, 'user_stories');
+    
+    window.deleteStoryFromCloud = async function(storyKey) {
+      if (confirm(`Are you sure you want to completely erase ${storyKey} from the cloud database?`)) {
+        try {
+          await update(ref(db), { ['user_stories/' + storyKey]: null });
+          console.log(`Deleted ${storyKey} from cloud.`);
+        } catch(e) {
+          alert("Error deleting from cloud.");
+        }
+      }
+    };
 
     // Listen to real-time updates from Realtime Database
     onValue(storiesRef, (snapshot) => {
       tbody.innerHTML = ''; // Clear loading state
       
       if (!snapshot.exists()) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">No user stories active.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">No user stories active.</td></tr>';
         return;
       }
 
       snapshot.forEach((childSnapshot) => {
         const data = childSnapshot.val();
         const key = childSnapshot.key;
+        const tester = data.assignedToName || 'Unknown Tester';
         const progress = data.overallProgress || 0;
         const date = data.lastUpdated ? new Date(data.lastUpdated).toLocaleString() : 'Unknown';
         
@@ -90,9 +102,11 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td style="font-weight: 600; color: var(--primary);">${key}</td>
+          <td style="color: #334155; font-weight: 500;">👤 ${tester}</td>
           <td>${progressHtml}</td>
           <td style="color: #777; font-size: 0.9rem;">${date}</td>
           <td>${statusBadge}</td>
+          <td style="text-align: center;"><button class="btn" style="background: #ef4444; color: white; padding: 5px 10px; font-size: 0.8rem;" onclick="deleteStoryFromCloud('${key}')">Delete</button></td>
         `;
         tbody.appendChild(tr);
 
