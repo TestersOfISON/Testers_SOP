@@ -956,6 +956,17 @@ try {
           }
       }
       
+      // Handle Flowchart & Checklist Tabs visibility
+      const flowchartTabBtn = document.querySelector('.tab-btn[onclick*="flowchart"]');
+      const checklistTabBtn = document.querySelector('.tab-btn[onclick*="checklist"]');
+      if (moduleId === 'manual') {
+          if (flowchartTabBtn) flowchartTabBtn.style.display = 'none';
+          if (checklistTabBtn) checklistTabBtn.style.display = 'none';
+      } else {
+          if (flowchartTabBtn) flowchartTabBtn.style.display = 'inline-block';
+          if (checklistTabBtn) checklistTabBtn.style.display = 'inline-block';
+      }
+      
       // Render Mermaid Flowchart
       const mermaidContainer = document.getElementById('mermaid-container');
       if (data.mermaid && data.mermaid.trim() !== '') {
@@ -1083,13 +1094,16 @@ try {
         }
         
         let checklistMatch = false;
-        if (Array.isArray(module.checklist)) {
-          checklistMatch = module.checklist.some(item => item.toLowerCase().includes(q));
-        } else {
-          const entryMatch = module.checklist.entry_criteria ? module.checklist.entry_criteria.some(item => item.toLowerCase().includes(q)) : false;
-          const exitMatch = module.checklist.exit_criteria ? module.checklist.exit_criteria.some(item => item.toLowerCase().includes(q)) : false;
-          checklistMatch = entryMatch || exitMatch;
+        if (module.checklist) {
+          if (Array.isArray(module.checklist)) {
+            checklistMatch = module.checklist.some(item => typeof item === 'string' && item.toLowerCase().includes(q));
+          } else {
+            const entryMatch = module.checklist.entry_criteria ? module.checklist.entry_criteria.some(item => typeof item === 'string' && item.toLowerCase().includes(q)) : false;
+            const exitMatch = module.checklist.exit_criteria ? module.checklist.exit_criteria.some(item => typeof item === 'string' && item.toLowerCase().includes(q)) : false;
+            checklistMatch = entryMatch || exitMatch;
+          }
         }
+        
         if (checklistMatch) {
           matchScore += 3;
           matchDetails.push("Standard Operating Procedure");
