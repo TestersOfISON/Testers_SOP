@@ -1,4 +1,19 @@
 const qaModules = {
+      "manual": {
+        title: "User Manual & Guidelines",
+        guidelines: `<h3>About This Tool</h3>
+          <p style="font-size: 1.1rem; border-left: 4px solid var(--primary); padding-left: 15px; margin: 20px 0; background: rgba(37,99,235,0.05); padding: 15px;"><strong>Note:</strong> This is not a monitoring tool. It's a self evaluation tool which helps fellow testers to follow the prescribed standard testing procedure. Happy testing!</p>
+          <h3>How to Use</h3>
+          <ul class="guideline-list">
+            <li><strong>Sequential Flow:</strong> Modules unlock sequentially. You must complete 100% of the previous module to unlock the next.</li>
+            <li><strong>Checklists:</strong> Follow the entry and exit criteria. Items marked <em>(If applicable)</em> are optional and can be skipped.</li>
+            <li><strong>Progress Tracking:</strong> Your progress is saved to the cloud. Leads can view the overall progress on the Global QA Dashboard.</li>
+            <li><strong>Deleting Data:</strong> If you delete a user story from your local registry, it will also be permanently deleted from the cloud.</li>
+          </ul>`,
+        mermaid: ``,
+        checklist: null,
+        templates: ""
+      },
       "ai_generation": {
         title: "AI Scenario Generation via UiPath",
         guidelines: `<h3>Core Rules</h3>
@@ -136,8 +151,8 @@ Mandatory Labels:
           ],
           exit_criteria: [
             "Execute ALL test scenarios (No 'Aborted' statuses without comment).",
-            "If Bug found: Create Issue with Env 'UAT'.",
-            "Retest all bugs after Dev fix.",
+            "If Bug found: Create Issue with Env 'UAT'. (If applicable)",
+            "Retest all bugs after Dev fix. (If applicable)",
             "Transition US to 'Approval Required'."
           ]
         },
@@ -169,7 +184,7 @@ Mandatory Labels:
           ],
           exit_criteria: [
             "Execute. Interrupt immediately if any step fails.",
-            "If Bug: Label 'Smoke', Env 'Prelive'."
+            "If Bug: Label 'Smoke', Env 'Prelive'. (If applicable)"
           ]
         },
         templates: ""
@@ -196,11 +211,11 @@ Mandatory Labels:
         checklist: {
           entry_criteria: [
             "Verify Smoke Testing is 100% PASS.",
-            "Add Happy path LX(s) to Sub-Test Execution.",
-            "Retest UAT bugs (Major/Blocker severity ONLY)."
+            "Add Happy path LX(s) to Sub-Test Execution."
           ],
           exit_criteria: [
-            "Check 'Retested in Prelive' for verified bugs.",
+            "Retest UAT bugs (Major/Blocker severity ONLY). (If applicable)",
+            "Check 'Retested in Prelive' for verified bugs. (If applicable)",
             "Execute Happy path LXs."
           ]
         },
@@ -229,7 +244,7 @@ Mandatory Labels:
           ],
           exit_criteria: [
             "Execute all regression scenarios.",
-            "If Bug: Label 'regression', Env 'Prelive'."
+            "If Bug: Label 'regression', Env 'Prelive'. (If applicable)"
           ]
         },
         templates: ""
