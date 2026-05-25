@@ -176,7 +176,40 @@
     </div>
   </main>
   <script src="js/data.js"></script>
-  <script type="module" src="js/firebase-sync.js"></script>
+  <!-- Inline Firebase Sync to bypass local CORS restrictions -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBQG6GHxApLRSgBnQvXWrfdgrIf9sEacRA",
+      authDomain: "qa-lead-dashboard.firebaseapp.com",
+      projectId: "qa-lead-dashboard",
+      storageBucket: "qa-lead-dashboard.firebasestorage.app",
+      messagingSenderId: "946430881036",
+      appId: "1:946430881036:web:1c0281b84acc89fd19ed29",
+      measurementId: "G-7Y3YPX7XNS"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.syncStateToCloud = async function(userStoryKey, moduleId, stateObject, overallProgress) {
+      if (!userStoryKey || userStoryKey === "default") return;
+      
+      try {
+        const docRef = doc(db, "user_stories", userStoryKey);
+        await setDoc(docRef, { 
+          [moduleId]: stateObject,
+          overallProgress: overallProgress,
+          lastUpdated: new Date().toISOString()
+        }, { merge: true });
+        console.log(`Successfully synced ${moduleId} for ${userStoryKey} to Firebase.`);
+      } catch (e) {
+        console.error("Error syncing to Firebase:", e);
+      }
+    };
+  </script>
   <script src="js/app.js"></script>
 
 </body>
