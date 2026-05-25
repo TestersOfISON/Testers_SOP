@@ -138,9 +138,12 @@
         <div id="checklist-container" style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; overflow: hidden;"></div>
 
         <!-- Tickets Registry Dashboard -->
-        <div id="user-story-dashboard-container" style="margin-top: 35px; background: var(--bg-color); padding: 20px; border: 1px solid var(--border); border-radius: 8px;">
-          <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 1.15rem; color: var(--primary);">User Stories SOP Progress Registry</h3>
-
+        <div id="user-story-dashboard-container" style="background: var(--bg-color); padding: 25px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 2px 10px rgba(0,0,0,0.02); margin-bottom: 30px;">
+          <h3 style="margin-top: 0; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+            <span>User Stories SOP Progress Registry</span>
+            <button class="btn btn-primary" style="margin: 0; padding: 5px 15px; font-size: 0.85rem;" onclick="syncAllToCloud()">Push All to Cloud</button>
+          </h3>
+          
           <div style="display: flex; gap: 20px; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap;">
             <div style="flex: 1; min-width: 200px; max-width: 250px; background: rgba(0,0,0,0.02); padding: 10px; border-radius: 8px;">
               <canvas id="complianceChart" width="200" height="200"></canvas>
@@ -208,6 +211,16 @@
         console.log(`Successfully synced ${moduleId} for ${userStoryKey} to Firebase RTDB.`);
       } catch (e) {
         console.error("Error syncing to Firebase:", e);
+      }
+    };
+
+    window.deleteStateFromCloud = async function(userStoryKey) {
+      if (!userStoryKey || userStoryKey === "default") return;
+      try {
+        await update(ref(db), { ['user_stories/' + userStoryKey]: null });
+        console.log(`Successfully deleted ${userStoryKey} from Firebase RTDB.`);
+      } catch (e) {
+        console.error("Error deleting from Firebase:", e);
       }
     };
   </script>
