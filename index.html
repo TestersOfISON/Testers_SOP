@@ -93,7 +93,10 @@
         <div id="search-results"></div>
       </div>
       <div style="display: flex; gap: 10px; align-items: center;">
-        <button class="btn" style="margin: 0; padding: 8px 15px; background: rgba(37,99,235,0.1); color: var(--primary); font-weight: 600; border: 1px solid var(--border);" onclick="changeTesterName()">👤 Edit Name</button>
+        <div style="display: flex; align-items: center; background: rgba(37,99,235,0.05); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; gap: 8px;">
+          <span style="font-size: 0.9rem; color: var(--text-color);">👤 <span id="display-profile-name" style="font-weight: 600; color: var(--primary);">Tester</span></span>
+          <button onclick="changeTesterName()" style="background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px; display: flex; align-items: center; justify-content: center; opacity: 0.7; font-size: 0.9rem;" title="Edit User Profile Name">✏️</button>
+        </div>
         <a href="dashboard.html" class="btn btn-primary" style="margin: 0; padding: 8px 15px; text-decoration: none;">QA Dashboard</a>
         <button id="theme-toggle" class="theme-toggle" style="margin: 0; font-size: 1.2rem; padding: 5px 10px; background: transparent; color: var(--text-color); border: 1px solid var(--border);" onclick="toggleTheme()">🌙</button>
       </div>

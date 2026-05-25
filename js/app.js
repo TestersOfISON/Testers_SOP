@@ -160,6 +160,8 @@ try {
       const newName = input.value;
       if (newName && newName.trim() !== '') {
         localStorage.setItem('testerName', newName.trim());
+        const displaySpan = document.getElementById('display-profile-name');
+        if (displaySpan) displaySpan.innerText = newName.trim();
         
         // Force sync current state to update name in cloud immediately
         if (typeof currentModuleId !== 'undefined' && currentModuleId) {
@@ -1167,7 +1169,14 @@ try {
       }
     });
 
-    window.addEventListener('DOMContentLoaded', () => {
+    // INITIALIZATION
+    document.addEventListener('DOMContentLoaded', () => {
+      // Set tester profile name in UI
+      const testerName = localStorage.getItem('testerName') || 'Anonymous Tester';
+      const displaySpan = document.getElementById('display-profile-name');
+      if (displaySpan) displaySpan.innerText = testerName;
+
+      loadTheme();
       updateUserStoryDropdown();
       updateUserStoryDashboard();
       loadModule('ai_generation');
