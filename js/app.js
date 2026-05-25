@@ -146,10 +146,20 @@ try {
     // --- TESTER NAME MANAGEMENT ---
     window.changeTesterName = function() {
       const current = localStorage.getItem('testerName') || '';
-      const newName = prompt("Update your name for the QA Dashboard:", current);
+      const modal = document.getElementById('name-modal');
+      const input = document.getElementById('name-modal-input');
+      if (modal && input) {
+        input.value = current;
+        modal.style.display = 'flex';
+      }
+    };
+
+    window.saveNameModal = function() {
+      const input = document.getElementById('name-modal-input');
+      if (!input) return;
+      const newName = input.value;
       if (newName && newName.trim() !== '') {
         localStorage.setItem('testerName', newName.trim());
-        alert("Name updated successfully! Your progress will now be synced under: " + newName.trim());
         
         // Force sync current state to update name in cloud immediately
         if (typeof currentModuleId !== 'undefined' && currentModuleId) {
@@ -163,7 +173,10 @@ try {
             window.syncNameUpdateToCloud(key, newName.trim());
           });
         }
+        
+        alert("Name updated successfully! Your progress will now be synced under: " + newName.trim());
       }
+      document.getElementById('name-modal').style.display = 'none';
     };
 
     // --- TICKET & REGISTRY UTILITIES ---
