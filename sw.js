@@ -1,13 +1,13 @@
-const CACHE_NAME = 'qa-portal-cache-v7';
+const CACHE_NAME = 'qa-portal-cache-v9';
 const urlsToCache = [
   './index.html',
-  './dashboard.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
   './css/style.css',
   './js/data.js',
-  './js/app.js'
+  './js/app.js',
+  './js/firebase-sync.js'
 ];
 
 self.addEventListener('install', event => {
