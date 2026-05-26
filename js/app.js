@@ -147,38 +147,114 @@ try {
     window.changeTesterName = function() {
       const current = localStorage.getItem('testerName') || '';
       const modal = document.getElementById('name-modal');
-      const input = document.getElementById('name-modal-input');
-      if (modal && input) {
-        input.value = current;
+      const nameInput = document.getElementById('name-modal-input');
+      const pinInput = document.getElementById('pin-modal-input');
+      if (modal && nameInput && pinInput) {
+        nameInput.value = current;
+        pinInput.value = ''; // Always clear PIN
         modal.style.display = 'flex';
       }
     };
 
-    window.saveNameModal = function() {
-      const input = document.getElementById('name-modal-input');
-      if (!input) return;
-      const newName = input.value;
-      if (newName && newName.trim() !== '') {
-        localStorage.setItem('testerName', newName.trim());
-        const displaySpan = document.getElementById('display-profile-name');
-        if (displaySpan) displaySpan.innerText = newName.trim();
-        
-        // Force sync current state to update name in cloud immediately
-        if (typeof currentModuleId !== 'undefined' && currentModuleId) {
-          saveChecklistState(currentModuleId);
-        }
-        
-        // Also update name for all other local user stories in Firebase
-        if (window.syncNameUpdateToCloud) {
-          const registry = getUserStoryRegistry();
-          registry.forEach(key => {
-            window.syncNameUpdateToCloud(key, newName.trim());
-          });
-        }
-        
-        alert("Name updated successfully! Your progress will now be synced under: " + newName.trim());
+    window.saveNameModal = async function() {
+      const nameInput = document.getElementById('name-modal-input');
+      const pinInput = document.getElementById('pin-modal-input');
+      if (!nameInput || !pinInput) return;
+      
+      const newName = nameInput.value.trim();
+      const pin = pinInput.value.trim();
+      
+      if (!newName) {
+        alert("Username is required.");
+        return;
       }
+      if (pin.length !== 4) {
+        alert("Please enter a 4-digit PIN.");
+        return;
+      }
+      
+      if (window.loginOrRegisterUser) {
+        const result = await window.loginOrRegisterUser(newName, pin);
+        if (!result.success) {
+          alert(result.message);
+          return;
+        }
+      }
+
+      localStorage.setItem('testerName', newName);
+      const displaySpan = document.getElementById('display-profile-name');
+      if (displaySpan) displaySpan.innerText = newName;
+      
+      // Fetch assigned user stories
+      if (window.fetchAssignedUserStories) {
+        const count = await window.fetchAssignedUserStories(newName);
+        alert(`Login successful! Synced ${count} user stories to your device.`);
+      } else {
+        alert("Name updated successfully!");
+      }
+      
+      // Force sync current state
+      if (typeof currentModuleId !== 'undefined' && currentModuleId) {
+        saveChecklistState(currentModuleId);
+      }
+      
       document.getElementById('name-modal').style.display = 'none';
+    };
+
+    window.processAdminReset = async function() {
+      const usernameInput = document.getElementById('reset-username');
+      const pinInput = document.getElementById('reset-new-pin');
+      const passInput = document.getElementById('reset-admin-pass');
+      
+      const username = usernameInput.value.trim();
+      const newPin = pinInput.value.trim();
+      const adminPass = passInput.value.trim();
+      
+      if (!username || !newPin || !adminPass) {
+        alert("All fields are required.");
+        return;
+      }
+      
+      if (newPin.length !== 4) {
+        alert("New PIN must be 4 digits.");
+        return;
+      }
+      
+      if (adminPass !== "ISON-ADMIN") {
+        alert("Incorrect Lead Admin Password!");
+        return;
+      }
+      
+      if (window.adminResetUserPin) {
+        const result = await window.adminResetUserPin(username, newPin);
+        alert(result.message);
+        if (result.success) {
+          document.getElementById('admin-reset-modal').style.display = 'none';
+          usernameInput.value = '';
+          pinInput.value = '';
+          passInput.value = '';
+        }
+      } else {
+        alert("Database connection not ready.");
+      }
+    };
+
+    window.showAdminLoginModal = function() {
+      document.getElementById('admin-login-modal').style.display = 'flex';
+    };
+
+    window.processAdminAuth = function() {
+      const pass = document.getElementById('admin-auth-pass').value.trim();
+      if (pass === "ISON-ADMIN") {
+        localStorage.setItem('isAdmin', 'true');
+        document.getElementById('admin-login-modal').style.display = 'none';
+        const adminBtn = document.getElementById('admin-dashboard-btn');
+        if (adminBtn) adminBtn.style.display = 'inline-block';
+        alert("Admin Mode unlocked successfully.");
+      } else {
+        const locallyRegistered = localStorage.getItem('testerName') || 'your';
+        alert(`Kindly try with correct '${locallyRegistered}' user ID and password`);
+      }
     };
 
     // --- TICKET & REGISTRY UTILITIES ---
@@ -207,11 +283,14 @@ try {
       }
     }
 
-    function saveUserStoryMetadata(storyKey, moduleId) {
+    function saveUserStoryMetadata(storyKey, moduleId, epicKey, assignee) {
       const tKey = storyKey ? storyKey : 'default';
+      const existing = getUserStoryMetadata(tKey);
       const meta = {
         lastUpdated: new Date().toISOString(),
-        lastModuleId: moduleId
+        lastModuleId: moduleId || existing.lastModuleId,
+        epicKey: epicKey !== undefined ? epicKey : existing.epicKey,
+        assignee: assignee !== undefined ? assignee : existing.assignee
       };
       localStorage.setItem(`sop_user_story_meta_${tKey}`, JSON.stringify(meta));
     }
@@ -222,7 +301,7 @@ try {
       if (saved) {
         try { return JSON.parse(saved); } catch(e) {}
       }
-      return { lastUpdated: null, lastModuleId: null };
+      return { lastUpdated: null, lastModuleId: null, epicKey: '', assignee: '' };
     }
 
     function updateUserStoryDropdown() {
@@ -647,24 +726,76 @@ try {
       }
     }
 
-    function handleUserStoryKeyChange() {
+    window.handleEpicKeyChange = function() {
+      const epicKey = document.getElementById('epic-input')?.value.trim().toUpperCase() || '';
       const storyKey = getActiveUserStoryKey();
+      if (storyKey) {
+        saveUserStoryMetadata(storyKey, currentModuleId, epicKey, undefined);
+        if (window.syncStateToCloud && currentModuleId) {
+          saveChecklistState(currentModuleId);
+        }
+      }
+    };
+
+    window.handleUserStoryKeyChange = function() {
+      const storyKey = getActiveUserStoryKey();
+      const meta = getUserStoryMetadata(storyKey);
+      const epicInput = document.getElementById('epic-input');
+      if (epicInput) epicInput.value = meta.epicKey || '';
+      
+      const assigneeDisplay = document.getElementById('current-assignee-display');
+      if (assigneeDisplay) {
+        assigneeDisplay.innerText = meta.assignee || 'Unassigned';
+      }
+
       if (currentModuleId) {
         loadChecklistState(currentModuleId);
       }
-      updateUserStoryDashboard();
-    }
+    };
 
-    function handleUserStorySelect(storyKey) {
+    window.handleUserStorySelect = function(storyKey) {
       const input = document.getElementById('user-story-input');
       if (input) {
         input.value = storyKey;
       }
-      if (currentModuleId) {
-        loadChecklistState(currentModuleId);
+      window.handleUserStoryKeyChange();
+    };
+
+    window.assignToMe = function() {
+      const storyKey = getActiveUserStoryKey();
+      if (!storyKey) {
+        alert("Please enter a User Story first.");
+        return;
       }
-      updateUserStoryDashboard();
-    }
+      const myName = localStorage.getItem('testerName') || '';
+      if (!myName) {
+        alert("Please log in first using the profile button.");
+        return;
+      }
+      saveUserStoryMetadata(storyKey, currentModuleId, undefined, myName);
+      if (currentModuleId) saveChecklistState(currentModuleId);
+      window.handleUserStoryKeyChange();
+    };
+
+    window.showAssignModal = function() {
+      const storyKey = getActiveUserStoryKey();
+      if (!storyKey) {
+        alert("Please enter a User Story first.");
+        return;
+      }
+      document.getElementById('assign-modal').style.display = 'flex';
+    };
+
+    window.confirmAssignToOther = function() {
+      const storyKey = getActiveUserStoryKey();
+      const input = document.getElementById('assign-modal-input');
+      const newAssignee = input.value.trim();
+      if (!newAssignee) return;
+      saveUserStoryMetadata(storyKey, currentModuleId, undefined, newAssignee);
+      if (currentModuleId) saveChecklistState(currentModuleId);
+      window.handleUserStoryKeyChange();
+      document.getElementById('assign-modal').style.display = 'none';
+    };
 
     // --- SHEETJS EXCEL EXPORT WORKBOOKS ---
     function exportSingleUserStoryToExcel() {
@@ -1189,6 +1320,17 @@ try {
       const testerName = localStorage.getItem('testerName') || 'Anonymous Tester';
       const displaySpan = document.getElementById('display-profile-name');
       if (displaySpan) displaySpan.innerText = testerName;
+      
+      // Check Admin State
+      if (localStorage.getItem('isAdmin') === 'true') {
+        const adminBtn = document.getElementById('admin-dashboard-btn');
+        if (adminBtn) adminBtn.style.display = 'inline-block';
+      }
+      
+      // Fetch data for datalists
+      if (window.fetchGlobalDataForDatalists) {
+        setTimeout(() => window.fetchGlobalDataForDatalists(), 1000); // slight delay to ensure firebase init
+      }
 
       loadTheme();
       updateUserStoryDropdown();

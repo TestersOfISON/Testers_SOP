@@ -21,14 +21,144 @@
   <script src="https://cdn.jsdelivr.net/npm/mermaid@9.4.3/dist/mermaid.min.js"></script>
 </head>
 <body>
-  <div id="name-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
-    <div style="background: var(--card-bg); padding: 30px; border-radius: 8px; max-width: 400px; width: 90%; text-align: center; border: 1px solid var(--border); box-shadow: var(--shadow);">
-      <h3 style="margin-top: 0;">Update Tester Name</h3>
-      <p style="font-size: 0.9rem; color: #777;">This name will be displayed on the QA Dashboard.</p>
-      <input type="text" id="name-modal-input" class="form-input" style="width: 100%; margin: 15px 0; box-sizing: border-box;" placeholder="Enter your name">
+  <div id="name-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; text-align: center; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <h3 style="margin-top: 0; color: var(--primary);">👤 User Profile Login</h3>
+      <p style="font-size: 0.9rem; color: #777; margin-bottom: 20px;">Enter your unique Username and 4-digit PIN to securely log in and sync your assignments across devices.</p>
+      
+      <div style="text-align: left; margin-bottom: 15px;">
+        <label for="name-modal-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Username</label>
+        <input type="text" id="name-modal-input" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;" placeholder="e.g. Tester01">
+      </div>
+      
+      <div style="text-align: left; margin-bottom: 25px;">
+        <label for="pin-modal-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">4-Digit PIN</label>
+        <input type="password" id="pin-modal-input" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box; letter-spacing: 5px; font-weight: bold; text-align: center;" placeholder="••••" maxlength="4" pattern="[0-9]*" inputmode="numeric">
+        <div style="font-size: 0.75rem; color: #888; margin-top: 5px;">If the username doesn't exist, it will be automatically registered with this PIN.</div>
+      </div>
+
       <div style="display: flex; gap: 10px; justify-content: center;">
-        <button class="btn btn-primary" onclick="saveNameModal()" style="margin: 0;">Save Name</button>
+        <button class="btn btn-primary" onclick="saveNameModal()" style="margin: 0; flex-grow: 1;">Login / Register</button>
         <button class="btn btn-danger" onclick="document.getElementById('name-modal').style.display='none'" style="margin: 0;">Cancel</button>
+      </div>
+      <div style="margin-top: 15px; font-size: 0.8rem;">
+        <a href="#" onclick="document.getElementById('name-modal').style.display='none'; document.getElementById('admin-reset-modal').style.display='flex';" style="color: var(--primary); text-decoration: none;">Forgot PIN? (Admin Reset)</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="admin-reset-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; text-align: center; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <h3 style="margin-top: 0; color: #d97706;">⚠️ Admin PIN Reset</h3>
+      <p style="font-size: 0.9rem; color: #777; margin-bottom: 20px;">Use the Lead Admin Password to force-reset a tester's PIN.</p>
+      
+      <div style="text-align: left; margin-bottom: 15px;">
+        <label for="reset-username" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Tester's Username</label>
+        <input type="text" id="reset-username" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;" placeholder="e.g. Tester01">
+      </div>
+      
+      <div style="text-align: left; margin-bottom: 15px;">
+        <label for="reset-new-pin" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">New 4-Digit PIN</label>
+        <input type="password" id="reset-new-pin" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box; letter-spacing: 5px; font-weight: bold; text-align: center;" placeholder="••••" maxlength="4" pattern="[0-9]*" inputmode="numeric">
+      </div>
+
+      <div style="text-align: left; margin-bottom: 25px;">
+        <label for="reset-admin-pass" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Lead Admin Password</label>
+        <input type="password" id="reset-admin-pass" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;" placeholder="Enter Admin Password">
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button class="btn btn-primary" onclick="processAdminReset()" style="margin: 0; flex-grow: 1; background: #d97706;">Force Reset</button>
+        <button class="btn btn-danger" onclick="document.getElementById('admin-reset-modal').style.display='none'" style="margin: 0;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="assign-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; text-align: center; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <h3 style="margin-top: 0; color: var(--primary);">Assign User Story</h3>
+      <p style="font-size: 0.9rem; color: #777; margin-bottom: 20px;">Enter the exact username of the tester you want to assign this story to.</p>
+      
+      <div style="text-align: left; margin-bottom: 25px;">
+        <label for="assign-modal-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Assignee Username</label>
+        <input type="text" id="assign-modal-input" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;" placeholder="e.g. Tester02">
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button class="btn btn-primary" onclick="confirmAssignToOther()" style="margin: 0; flex-grow: 1;">Assign</button>
+        <button class="btn btn-danger" onclick="document.getElementById('assign-modal').style.display='none'" style="margin: 0;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="admin-login-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; text-align: center; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <h3 style="margin-top: 0; color: #d97706;">🔒 Admin Login</h3>
+      <p style="font-size: 0.9rem; color: #777; margin-bottom: 20px;">Enter the Lead Admin Password to access the Admin Panel.</p>
+      
+      <div style="text-align: left; margin-bottom: 25px;">
+        <label for="admin-auth-pass" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Admin Password</label>
+        <input type="password" id="admin-auth-pass" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;" placeholder="Enter password">
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button class="btn btn-primary" onclick="processAdminAuth()" style="margin: 0; flex-grow: 1; background: #d97706;">Login</button>
+        <button class="btn btn-danger" onclick="document.getElementById('admin-login-modal').style.display='none'" style="margin: 0;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="admin-dashboard-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 900px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px;">
+        <h3 style="margin: 0; color: #d97706;">👑 Lead Admin Panel</h3>
+        <button class="btn btn-danger" onclick="document.getElementById('admin-dashboard-modal').style.display='none'" style="margin: 0;">Close</button>
+      </div>
+      
+      <div style="overflow-y: auto; flex-grow: 1;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+          <thead style="background: var(--bg-color); position: sticky; top: 0; z-index: 1;">
+            <tr>
+              <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">User Story</th>
+              <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">Epic</th>
+              <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">Assignee</th>
+              <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">Last Updated</th>
+              <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: center;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="admin-dashboard-tbody">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="admin-edit-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 450px; width: 90%; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <h3 style="margin-top: 0; color: var(--primary);">✏️ Edit User Story</h3>
+      <p style="font-size: 0.85rem; color: #d97706; margin-bottom: 20px;"><strong>WARNING:</strong> Renaming the User Story will migrate all existing progress to the new name and delete the old record.</p>
+      
+      <input type="hidden" id="admin-edit-old-us">
+      
+      <div style="margin-bottom: 15px;">
+        <label for="admin-edit-us-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">User Story Name (Key)</label>
+        <input type="text" id="admin-edit-us-input" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;">
+      </div>
+      
+      <div style="margin-bottom: 15px;">
+        <label for="admin-edit-epic-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Epic</label>
+        <input type="text" id="admin-edit-epic-input" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;">
+      </div>
+
+      <div style="margin-bottom: 25px;">
+        <label for="admin-edit-assignee-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Assignee</label>
+        <input type="text" id="admin-edit-assignee-input" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;">
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="btn btn-danger" onclick="document.getElementById('admin-edit-modal').style.display='none'" style="margin: 0;">Cancel</button>
+        <button class="btn btn-primary" onclick="processAdminEditSave()" style="margin: 0;">Save Changes</button>
       </div>
     </div>
   </div>
@@ -93,11 +223,12 @@
         <div id="search-results"></div>
       </div>
       <div style="display: flex; gap: 10px; align-items: center;">
+        <button id="admin-dashboard-btn" class="btn btn-primary" style="margin: 0; padding: 4px 10px; font-size: 0.85rem; display: none;" onclick="openAdminDashboard()">Admin Panel</button>
         <div style="display: flex; align-items: center; background: rgba(37,99,235,0.05); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; gap: 8px;">
-          <span style="font-size: 0.9rem; color: var(--text-color);">👤 <span id="display-profile-name" style="font-weight: 600; color: var(--primary);">Tester</span></span>
-          <button onclick="changeTesterName()" style="background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px; display: flex; align-items: center; justify-content: center; opacity: 0.7; font-size: 0.9rem;" title="Edit User Profile Name">✏️</button>
+          <span style="font-size: 0.9rem; color: var(--text-color);">👤 <span id="display-profile-name" style="font-weight: 600; color: var(--primary);">Offline</span></span>
+          <button onclick="changeTesterName()" style="background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px; display: flex; align-items: center; justify-content: center; opacity: 0.7; font-size: 0.9rem;" title="Login / Change User">🔄</button>
+          <button onclick="showAdminLoginModal()" style="background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px; display: flex; align-items: center; justify-content: center; opacity: 0.7; font-size: 0.9rem; margin-left: 5px;" title="Admin Login">🔒</button>
         </div>
-        <a href="dashboard.html" class="btn btn-primary" style="margin: 0; padding: 8px 15px; text-decoration: none;">QA Dashboard</a>
         <button id="theme-toggle" class="theme-toggle" style="margin: 0; font-size: 1.2rem; padding: 5px 10px; background: transparent; color: var(--text-color); border: 1px solid var(--border);" onclick="toggleTheme()">🌙</button>
       </div>
     </nav>
@@ -119,15 +250,28 @@
       
       <div id="tab-checklist" class="tab-content">
         <!-- User Story Context Selector & Excel Tools -->
-        <div id="user-story-bar-container" class="user-story-bar-container" style="background: var(--bg-color); padding: 15px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: space-between;">
-          <div style="display: flex; align-items: center; gap: 10px; flex-grow: 1; min-width: 280px; flex-wrap: wrap;">
-            <span style="font-weight: 600; font-size: 0.95rem; white-space: nowrap;">User Story:</span>
-            <input type="text" id="user-story-input" placeholder="e.g. SCRT-1234" class="form-input" style="max-width: 180px; padding: 8px 12px; margin: 0;" oninput="handleUserStoryKeyChange()">
-            <select id="user-story-select" class="form-input" style="max-width: 180px; padding: 8px 12px; margin: 0;" onchange="handleUserStorySelect(this.value)">
-              <option value="">-- Recent User Stories --</option>
-            </select>
+        <div id="user-story-bar-container" class="user-story-bar-container" style="background: var(--bg-color); padding: 15px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 15px;">
+          
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span style="font-weight: 600; font-size: 0.95rem; white-space: nowrap; color: var(--primary);">Epic:</span>
+              <input type="text" id="epic-input" list="epic-list" placeholder="e.g. EPIC-100" class="form-input" style="max-width: 140px; padding: 8px 12px; margin: 0;" oninput="handleEpicKeyChange()">
+              <datalist id="epic-list"></datalist>
+              
+              <span style="font-weight: 600; font-size: 0.95rem; white-space: nowrap; margin-left: 10px;">User Story:</span>
+              <input type="text" id="user-story-input" list="us-list" placeholder="e.g. SCRT-1234" class="form-input" style="max-width: 180px; padding: 8px 12px; margin: 0;" oninput="handleUserStoryKeyChange()">
+              <datalist id="us-list"></datalist>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: rgba(37,99,235,0.05); padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border);">
+              <span style="font-size: 0.85rem; color: #777;">Assignee:</span>
+              <span id="current-assignee-display" style="font-weight: bold; color: var(--primary); min-width: 80px;">Unassigned</span>
+              <button class="btn" style="padding: 4px 8px; font-size: 0.8rem; margin: 0; background: #fff;" onclick="assignToMe()">Assign to me</button>
+              <button class="btn" style="padding: 4px 8px; font-size: 0.8rem; margin: 0; background: #fff;" onclick="showAssignModal()">Assign to...</button>
+            </div>
           </div>
-          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          
+          <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; border-top: 1px solid var(--border); padding-top: 10px;">
             <button class="btn btn-success" id="export-excel-btn" style="margin: 0; padding: 8px 15px; font-size: 0.85rem; background: var(--success);" onclick="exportSingleUserStoryToExcel()">Export User Story</button>
             <button class="btn btn-primary" id="export-all-excel-btn" style="margin: 0; padding: 8px 15px; font-size: 0.85rem; background: var(--primary);" onclick="exportAllUserStoriesToExcel()">Export Workbook</button>
           </div>
@@ -200,7 +344,7 @@
   <!-- Inline Firebase Sync to bypass local CORS restrictions -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, update, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBQG6GHxApLRSgBnQvXWrfdgrIf9sEacRA",
@@ -222,10 +366,24 @@
       try {
         const updates = {};
         const testerName = localStorage.getItem('testerName') || "Anonymous Tester";
+        
+        let epicKey = '';
+        let assignee = testerName;
+        try {
+          const metaStr = localStorage.getItem('sop_user_story_meta_' + userStoryKey);
+          if (metaStr) {
+            const meta = JSON.parse(metaStr);
+            if (meta.epicKey) epicKey = meta.epicKey;
+            if (meta.assignee) assignee = meta.assignee;
+          }
+        } catch(e){}
+
         updates['user_stories/' + userStoryKey + '/' + moduleId] = stateObject;
         updates['user_stories/' + userStoryKey + '/overallProgress'] = overallProgress;
         updates['user_stories/' + userStoryKey + '/lastUpdated'] = new Date().toISOString();
-        updates['user_stories/' + userStoryKey + '/assignedToName'] = testerName;
+        updates['user_stories/' + userStoryKey + '/assignedToName'] = assignee; // Legacy support
+        updates['user_stories/' + userStoryKey + '/assignee'] = assignee;
+        updates['user_stories/' + userStoryKey + '/epicKey'] = epicKey;
         
         await update(ref(db), updates);
         console.log(`Successfully synced ${moduleId} for ${userStoryKey} to Firebase RTDB.`);
@@ -237,8 +395,216 @@
     window.syncNameUpdateToCloud = async function(userStoryKey, newName) {
       if (!userStoryKey || userStoryKey === "default") return;
       try {
-        await update(ref(db), { ['user_stories/' + userStoryKey + '/assignedToName']: newName });
+        await update(ref(db), { ['user_stories/' + userStoryKey + '/assignedToName']: newName, ['user_stories/' + userStoryKey + '/assignee']: newName });
       } catch (e) {}
+    };
+
+    window.loginOrRegisterUser = async function(username, pin) {
+      const dbRef = ref(db);
+      try {
+        const snapshot = await get(child(dbRef, `users/${username}`));
+        if (snapshot.exists()) {
+          const userData = snapshot.val();
+          if (userData.pin === pin) {
+            return { success: true, message: "Login successful", isNew: false };
+          } else {
+            return { success: false, message: "Incorrect PIN." };
+          }
+        } else {
+          await update(dbRef, { [`users/${username}`]: { pin: pin, createdAt: new Date().toISOString() } });
+          return { success: true, message: "Registered successfully", isNew: true };
+        }
+      } catch (error) {
+        return { success: false, message: "Database error: " + error.message };
+      }
+    };
+
+    window.adminResetUserPin = async function(username, newPin) {
+      const dbRef = ref(db);
+      try {
+        const snapshot = await get(child(dbRef, `users/${username}`));
+        if (snapshot.exists()) {
+          await update(dbRef, { [`users/${username}/pin`]: newPin });
+          return { success: true, message: `PIN for ${username} has been successfully reset!` };
+        } else {
+          return { success: false, message: "User does not exist in the database." };
+        }
+      } catch (error) {
+        return { success: false, message: "Database error: " + error.message };
+      }
+    };
+
+    window.fetchGlobalDataForDatalists = async function() {
+      const dbRef = ref(db);
+      try {
+        const snapshot = await get(child(dbRef, 'user_stories'));
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const usList = document.getElementById('us-list');
+          const epicList = document.getElementById('epic-list');
+          
+          if (!usList || !epicList) return;
+          
+          usList.innerHTML = '';
+          epicList.innerHTML = '';
+          
+          const epics = new Set();
+          
+          for (const key in data) {
+            const opt = document.createElement('option');
+            opt.value = key;
+            usList.appendChild(opt);
+            
+            if (data[key].epicKey) {
+              epics.add(data[key].epicKey);
+            }
+          }
+          
+          epics.forEach(epic => {
+            const opt = document.createElement('option');
+            opt.value = epic;
+            epicList.appendChild(opt);
+          });
+        }
+      } catch(e) {
+        console.error("Failed to fetch global datalist items", e);
+      }
+    };
+
+    window.openAdminDashboard = async function() {
+      const tbody = document.getElementById('admin-dashboard-tbody');
+      if (!tbody) return;
+      
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Loading...</td></tr>';
+      document.getElementById('admin-dashboard-modal').style.display = 'flex';
+      
+      const dbRef = ref(db);
+      try {
+        const snapshot = await get(child(dbRef, 'user_stories'));
+        tbody.innerHTML = '';
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          for (const key in data) {
+            const row = data[key];
+            const epic = row.epicKey || '';
+            const assignee = row.assignee || row.assignedToName || 'Unassigned';
+            const lastUpdated = row.lastUpdated ? new Date(row.lastUpdated).toLocaleString() : 'N/A';
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td style="padding: 12px; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--primary);">${key}</td>
+              <td style="padding: 12px; border-bottom: 1px solid var(--border);">${epic}</td>
+              <td style="padding: 12px; border-bottom: 1px solid var(--border);">${assignee}</td>
+              <td style="padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.85rem; color: #777;">${lastUpdated}</td>
+              <td style="padding: 12px; border-bottom: 1px solid var(--border); text-align: center;">
+                <button class="btn btn-primary" style="margin: 0; padding: 4px 8px; font-size: 0.8rem; background: #d97706;" onclick="window.editAdminUserStory('${key}', '${epic}', '${assignee}')">Edit</button>
+              </td>
+            `;
+            tbody.appendChild(tr);
+          }
+        } else {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No user stories found.</td></tr>';
+        }
+      } catch(e) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: red;">Error: ${e.message}</td></tr>`;
+      }
+    };
+
+    window.editAdminUserStory = function(key, epic, assignee) {
+      document.getElementById('admin-edit-old-us').value = key;
+      document.getElementById('admin-edit-us-input').value = key;
+      document.getElementById('admin-edit-epic-input').value = epic;
+      document.getElementById('admin-edit-assignee-input').value = assignee;
+      document.getElementById('admin-edit-modal').style.display = 'flex';
+    };
+
+    window.processAdminEditSave = async function() {
+      const oldKey = document.getElementById('admin-edit-old-us').value;
+      const newKey = document.getElementById('admin-edit-us-input').value.trim().toUpperCase();
+      const newEpic = document.getElementById('admin-edit-epic-input').value.trim().toUpperCase();
+      const newAssignee = document.getElementById('admin-edit-assignee-input').value.trim();
+      
+      if (!newKey) { alert("User Story Name is required."); return; }
+      
+      const dbRef = ref(db);
+      try {
+        const updates = {};
+        
+        // Fetch old data to copy over
+        const oldSnapshot = await get(child(dbRef, `user_stories/${oldKey}`));
+        let oldData = {};
+        if (oldSnapshot.exists()) {
+          oldData = oldSnapshot.val();
+        }
+        
+        oldData.epicKey = newEpic;
+        oldData.assignee = newAssignee;
+        oldData.assignedToName = newAssignee;
+        
+        if (oldKey !== newKey) {
+          // Verify new key doesn't already exist to avoid accidental overwrite
+          const newSnapshot = await get(child(dbRef, `user_stories/${newKey}`));
+          if (newSnapshot.exists()) {
+            alert(`Cannot rename! The User Story '${newKey}' already exists.`);
+            return;
+          }
+          updates[`user_stories/${newKey}`] = oldData;
+          updates[`user_stories/${oldKey}`] = null;
+        } else {
+          updates[`user_stories/${oldKey}`] = oldData;
+        }
+        
+        await update(dbRef, updates);
+        
+        alert("User Story successfully updated!");
+        document.getElementById('admin-edit-modal').style.display = 'none';
+        window.openAdminDashboard(); // refresh table
+        window.fetchGlobalDataForDatalists(); // refresh datalists
+        
+      } catch(e) {
+        alert("Error saving: " + e.message);
+      }
+    };
+
+    window.fetchAssignedUserStories = async function(username) {
+      const dbRef = ref(db);
+      try {
+        const snapshot = await get(child(dbRef, `user_stories`));
+        if (snapshot.exists()) {
+           const stories = snapshot.val();
+           let fetchedCount = 0;
+           for (const [key, data] of Object.entries(stories)) {
+             if (data.assignee === username || data.assignedToName === username) {
+               // Make sure it's in local registry
+               let reg = [];
+               try {
+                 const stored = localStorage.getItem('sop_user_story_registry');
+                 if (stored) reg = JSON.parse(stored);
+               } catch(e){}
+               if (!reg.includes(key)) {
+                 reg.push(key);
+                 localStorage.setItem('sop_user_story_registry', JSON.stringify(reg));
+               }
+               // Sync state down to local storage
+               for (const [moduleId, modData] of Object.entries(data)) {
+                 if (typeof modData === 'object' && moduleId !== 'epicKey' && moduleId !== 'assignee' && moduleId !== 'overallProgress' && moduleId !== 'assignedToName' && moduleId !== 'lastUpdated') {
+                   localStorage.setItem(`checklist_state_${moduleId}_${key}`, JSON.stringify(modData));
+                 }
+               }
+               // Sync epic meta
+               const meta = { created: new Date().toISOString(), epic: data.epicKey || '' };
+               localStorage.setItem(`sop_user_story_meta_${key}`, JSON.stringify(meta));
+               fetchedCount++;
+             }
+           }
+           if (typeof updateUserStoryDropdown === 'function') updateUserStoryDropdown();
+           return fetchedCount;
+        }
+        return 0;
+      } catch (e) {
+        console.error("Error fetching stories:", e);
+        return 0;
+      }
     };
 
     window.deleteStateFromCloud = async function(userStoryKey) {

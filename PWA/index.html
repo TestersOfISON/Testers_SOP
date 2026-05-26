@@ -9,8 +9,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@9.4.3/dist/mermaid.min.js"></script>
-
   <link rel="stylesheet" href="css/style.css">
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.mini.min.js"></script>
@@ -20,8 +18,49 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@9.4.3/dist/mermaid.min.js"></script>
 </head>
 <body>
+  <div id="name-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; text-align: center; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <h3 style="margin-top: 0; color: var(--primary);">👤 User Profile Login</h3>
+      <p style="font-size: 0.9rem; color: #777; margin-bottom: 20px;">Enter your unique Username and 4-digit PIN to securely log in and sync your assignments across devices.</p>
+      
+      <div style="text-align: left; margin-bottom: 15px;">
+        <label for="name-modal-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Username</label>
+        <input type="text" id="name-modal-input" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;" placeholder="e.g. Tester01">
+      </div>
+      
+      <div style="text-align: left; margin-bottom: 25px;">
+        <label for="pin-modal-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">4-Digit PIN</label>
+        <input type="password" id="pin-modal-input" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box; letter-spacing: 5px; font-weight: bold; text-align: center;" placeholder="••••" maxlength="4" pattern="[0-9]*" inputmode="numeric">
+        <div style="font-size: 0.75rem; color: #888; margin-top: 5px;">If the username doesn't exist, it will be automatically registered with this PIN.</div>
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button class="btn btn-primary" onclick="saveNameModal()" style="margin: 0; flex-grow: 1;">Login / Register</button>
+        <button class="btn btn-danger" onclick="document.getElementById('name-modal').style.display='none'" style="margin: 0;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="assign-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; text-align: center; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <h3 style="margin-top: 0; color: var(--primary);">Assign User Story</h3>
+      <p style="font-size: 0.9rem; color: #777; margin-bottom: 20px;">Enter the exact username of the tester you want to assign this story to.</p>
+      
+      <div style="text-align: left; margin-bottom: 25px;">
+        <label for="assign-modal-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Assignee Username</label>
+        <input type="text" id="assign-modal-input" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;" placeholder="e.g. Tester02">
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button class="btn btn-primary" onclick="confirmAssignToOther()" style="margin: 0; flex-grow: 1;">Assign</button>
+        <button class="btn btn-danger" onclick="document.getElementById('assign-modal').style.display='none'" style="margin: 0;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
 
   <aside class="sidebar">
@@ -29,6 +68,8 @@
       <img src="./icon-192.png" alt="Logo" style="width: 28px; height: 28px; border-radius: 6px;">
       <span>Tester's SOP</span>
     </div>
+    
+    <button class="panel-btn" style="margin-bottom: 15px; font-weight: bold; background: rgba(37, 99, 235, 0.1);" onclick="loadModule('manual')"><span class="icon">📖</span> User Manual & Guidelines</button>
     
     <button class="accordion active">Test Design & Management</button>
     <div class="panel" style="max-height: 500px;">
@@ -80,8 +121,11 @@
         <div id="search-results"></div>
       </div>
       <div style="display: flex; gap: 10px; align-items: center;">
-        <a href="dashboard.html" class="btn btn-primary" style="margin: 0; padding: 8px 15px; text-decoration: none;">QA Dashboard</a>
-        <button id="theme-toggle" class="theme-toggle" style="margin: 0; font-size: 1.2rem; padding: 5px 10px; background: transparent; color: var(--text-color); border: 1px solid var(--border);">🌙</button>
+        <div style="display: flex; align-items: center; background: rgba(37,99,235,0.05); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; gap: 8px;">
+          <span style="font-size: 0.9rem; color: var(--text-color);">👤 <span id="display-profile-name" style="font-weight: 600; color: var(--primary);">Offline</span></span>
+          <button onclick="changeTesterName()" style="background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px; display: flex; align-items: center; justify-content: center; opacity: 0.7; font-size: 0.9rem;" title="Login / Change User">🔄</button>
+        </div>
+        <button id="theme-toggle" class="theme-toggle" style="margin: 0; font-size: 1.2rem; padding: 5px 10px; background: transparent; color: var(--text-color); border: 1px solid var(--border);" onclick="toggleTheme()">🌙</button>
       </div>
     </nav>
 
@@ -102,15 +146,29 @@
       
       <div id="tab-checklist" class="tab-content">
         <!-- User Story Context Selector & Excel Tools -->
-        <div id="user-story-bar-container" class="user-story-bar-container" style="background: var(--bg-color); padding: 15px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: space-between;">
-          <div style="display: flex; align-items: center; gap: 10px; flex-grow: 1; min-width: 280px; flex-wrap: wrap;">
-            <span style="font-weight: 600; font-size: 0.95rem; white-space: nowrap;">User Story:</span>
-            <input type="text" id="user-story-input" placeholder="e.g. SCRT-1234" class="form-input" style="max-width: 180px; padding: 8px 12px; margin: 0;" oninput="handleUserStoryKeyChange()">
-            <select id="user-story-select" class="form-input" style="max-width: 180px; padding: 8px 12px; margin: 0;" onchange="handleUserStorySelect(this.value)">
-              <option value="">-- Recent User Stories --</option>
-            </select>
+        <div id="user-story-bar-container" class="user-story-bar-container" style="background: var(--bg-color); padding: 15px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 15px;">
+          
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span style="font-weight: 600; font-size: 0.95rem; white-space: nowrap; color: var(--primary);">Epic:</span>
+              <input type="text" id="epic-input" placeholder="e.g. EPIC-100" class="form-input" style="max-width: 140px; padding: 8px 12px; margin: 0;" oninput="handleEpicKeyChange()">
+              
+              <span style="font-weight: 600; font-size: 0.95rem; white-space: nowrap; margin-left: 10px;">User Story:</span>
+              <input type="text" id="user-story-input" placeholder="e.g. SCRT-1234" class="form-input" style="max-width: 180px; padding: 8px 12px; margin: 0;" oninput="handleUserStoryKeyChange()">
+              <select id="user-story-select" class="form-input" style="max-width: 180px; padding: 8px 12px; margin: 0;" onchange="handleUserStorySelect(this.value)">
+                <option value="">-- Recent User Stories --</option>
+              </select>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: rgba(37,99,235,0.05); padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border);">
+              <span style="font-size: 0.85rem; color: #777;">Assignee:</span>
+              <span id="current-assignee-display" style="font-weight: bold; color: var(--primary); min-width: 80px;">Unassigned</span>
+              <button class="btn" style="padding: 4px 8px; font-size: 0.8rem; margin: 0; background: #fff;" onclick="assignToMe()">Assign to me</button>
+              <button class="btn" style="padding: 4px 8px; font-size: 0.8rem; margin: 0; background: #fff;" onclick="showAssignModal()">Assign to...</button>
+            </div>
           </div>
-          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          
+          <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; border-top: 1px solid var(--border); padding-top: 10px;">
             <button class="btn btn-success" id="export-excel-btn" style="margin: 0; padding: 8px 15px; font-size: 0.85rem; background: var(--success);" onclick="exportSingleUserStoryToExcel()">Export User Story</button>
             <button class="btn btn-primary" id="export-all-excel-btn" style="margin: 0; padding: 8px 15px; font-size: 0.85rem; background: var(--primary);" onclick="exportAllUserStoriesToExcel()">Export Workbook</button>
           </div>
@@ -139,9 +197,12 @@
         <div id="checklist-container" style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; overflow: hidden;"></div>
 
         <!-- Tickets Registry Dashboard -->
-        <div id="user-story-dashboard-container" style="margin-top: 35px; background: var(--bg-color); padding: 20px; border: 1px solid var(--border); border-radius: 8px;">
-          <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 1.15rem; color: var(--primary);">User Stories SOP Progress Registry</h3>
-
+        <div id="user-story-dashboard-container" style="background: var(--bg-color); padding: 25px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 2px 10px rgba(0,0,0,0.02); margin-bottom: 30px;">
+          <h3 style="margin-top: 0; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+            <span>User Stories SOP Progress Registry</span>
+            <button class="btn btn-primary" style="margin: 0; padding: 5px 15px; font-size: 0.85rem;" onclick="syncAllToCloud()">Push All to Cloud</button>
+          </h3>
+          
           <div style="display: flex; gap: 20px; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap;">
             <div style="flex: 1; min-width: 200px; max-width: 250px; background: rgba(0,0,0,0.02); padding: 10px; border-radius: 8px;">
               <canvas id="complianceChart" width="200" height="200"></canvas>
@@ -166,21 +227,147 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
 
-      <div id="tab-templates" class="tab-content"></div>
+  <div id="tab-templates" class="tab-content"></div>
       
       
         <div id="logs-container"></div>
       </div>
     </div>
   </main>
-
   <script src="js/data.js"></script>
-  <script type="module" src="js/firebase-sync.js"></script>
+  <!-- Inline Firebase Sync to bypass local CORS restrictions -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, update, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBQG6GHxApLRSgBnQvXWrfdgrIf9sEacRA",
+      authDomain: "qa-lead-dashboard.firebaseapp.com",
+      projectId: "qa-lead-dashboard",
+      storageBucket: "qa-lead-dashboard.firebasestorage.app",
+      messagingSenderId: "946430881036",
+      appId: "1:946430881036:web:1c0281b84acc89fd19ed29",
+      measurementId: "G-7Y3YPX7XNS",
+      databaseURL: "https://qa-lead-dashboard-default-rtdb.firebaseio.com"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    window.syncStateToCloud = async function(userStoryKey, moduleId, stateObject, overallProgress) {
+      if (!userStoryKey || userStoryKey === "default") return;
+      
+      try {
+        const updates = {};
+        const testerName = localStorage.getItem('testerName') || "Anonymous Tester";
+        
+        let epicKey = '';
+        let assignee = testerName;
+        try {
+          const metaStr = localStorage.getItem('sop_user_story_meta_' + userStoryKey);
+          if (metaStr) {
+            const meta = JSON.parse(metaStr);
+            if (meta.epicKey) epicKey = meta.epicKey;
+            if (meta.assignee) assignee = meta.assignee;
+          }
+        } catch(e){}
+
+        updates['user_stories/' + userStoryKey + '/' + moduleId] = stateObject;
+        updates['user_stories/' + userStoryKey + '/overallProgress'] = overallProgress;
+        updates['user_stories/' + userStoryKey + '/lastUpdated'] = new Date().toISOString();
+        updates['user_stories/' + userStoryKey + '/assignedToName'] = assignee; // Legacy support
+        updates['user_stories/' + userStoryKey + '/assignee'] = assignee;
+        updates['user_stories/' + userStoryKey + '/epicKey'] = epicKey;
+        
+        await update(ref(db), updates);
+        console.log(`Successfully synced ${moduleId} for ${userStoryKey} to Firebase RTDB.`);
+      } catch (e) {
+        console.error("Error syncing to Firebase:", e);
+      }
+    };
+
+    window.syncNameUpdateToCloud = async function(userStoryKey, newName) {
+      if (!userStoryKey || userStoryKey === "default") return;
+      try {
+        await update(ref(db), { ['user_stories/' + userStoryKey + '/assignedToName']: newName, ['user_stories/' + userStoryKey + '/assignee']: newName });
+      } catch (e) {}
+    };
+
+    window.loginOrRegisterUser = async function(username, pin) {
+      const dbRef = ref(db);
+      try {
+        const snapshot = await get(child(dbRef, `users/${username}`));
+        if (snapshot.exists()) {
+          const userData = snapshot.val();
+          if (userData.pin === pin) {
+            return { success: true, message: "Login successful", isNew: false };
+          } else {
+            return { success: false, message: "Incorrect PIN." };
+          }
+        } else {
+          await update(dbRef, { [`users/${username}`]: { pin: pin, createdAt: new Date().toISOString() } });
+          return { success: true, message: "Registered successfully", isNew: true };
+        }
+      } catch (error) {
+        return { success: false, message: "Database error: " + error.message };
+      }
+    };
+
+    window.fetchAssignedUserStories = async function(username) {
+      const dbRef = ref(db);
+      try {
+        const snapshot = await get(child(dbRef, `user_stories`));
+        if (snapshot.exists()) {
+           const stories = snapshot.val();
+           let fetchedCount = 0;
+           for (const [key, data] of Object.entries(stories)) {
+             if (data.assignee === username || data.assignedToName === username) {
+               // Make sure it's in local registry
+               let reg = [];
+               try {
+                 const stored = localStorage.getItem('sop_user_story_registry');
+                 if (stored) reg = JSON.parse(stored);
+               } catch(e){}
+               if (!reg.includes(key)) {
+                 reg.push(key);
+                 localStorage.setItem('sop_user_story_registry', JSON.stringify(reg));
+               }
+               // Sync state down to local storage
+               for (const [moduleId, modData] of Object.entries(data)) {
+                 if (typeof modData === 'object' && moduleId !== 'epicKey' && moduleId !== 'assignee' && moduleId !== 'overallProgress' && moduleId !== 'assignedToName' && moduleId !== 'lastUpdated') {
+                   localStorage.setItem(`checklist_state_${moduleId}_${key}`, JSON.stringify(modData));
+                 }
+               }
+               // Sync epic meta
+               const meta = { created: new Date().toISOString(), epic: data.epicKey || '' };
+               localStorage.setItem(`sop_user_story_meta_${key}`, JSON.stringify(meta));
+               fetchedCount++;
+             }
+           }
+           if (typeof updateUserStoryDropdown === 'function') updateUserStoryDropdown();
+           return fetchedCount;
+        }
+        return 0;
+      } catch (e) {
+        console.error("Error fetching stories:", e);
+        return 0;
+      }
+    };
+
+    window.deleteStateFromCloud = async function(userStoryKey) {
+      if (!userStoryKey || userStoryKey === "default") return;
+      try {
+        await update(ref(db), { ['user_stories/' + userStoryKey]: null });
+        console.log(`Successfully deleted ${userStoryKey} from Firebase RTDB.`);
+      } catch (e) {
+        console.error("Error deleting from Firebase:", e);
+      }
+    };
+  </script>
   <script src="js/app.js"></script>
 
-  <script src="js/data.js"></script>
-  <script type="module" src="js/firebase-sync.js"></script>
-  <script src="js/app.js"></script>
 </body>
 </html>

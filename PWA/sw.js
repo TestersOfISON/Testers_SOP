@@ -1,7 +1,6 @@
-const CACHE_NAME = 'qa-portal-cache-v5';
+const CACHE_NAME = 'qa-portal-cache-v9';
 const urlsToCache = [
   './index.html',
-  './dashboard.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
