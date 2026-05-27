@@ -4,8 +4,8 @@
       --text-color: #0f172a; /* Slate 900 */
       --sidebar-bg: #0f172a; /* Slate 900 */
       --sidebar-text: #94a3b8; /* Slate 400 */
-      --header-bg: #0f172a;
-      --card-bg: #ffffff;
+      --header-bg: rgba(15, 23, 42, 0.95);
+      --card-bg: rgba(255, 255, 255, 0.85);
       --nav-bg: rgba(255, 255, 255, 0.85);
       --primary: #2563eb; /* Blue 600 */
       --primary-hover: #1d4ed8; /* Blue 700 */
@@ -22,8 +22,8 @@
       --text-color: #f1f5f9; /* Slate 100 */
       --sidebar-bg: #1e293b; /* Slate 800 */
       --sidebar-text: #cbd5e1; /* Slate 300 */
-      --header-bg: #0f172a;
-      --card-bg: #1e293b; /* Slate 800 */
+      --header-bg: rgba(15, 23, 42, 0.95);
+      --card-bg: rgba(30, 41, 59, 0.85);
       --nav-bg: rgba(30, 41, 59, 0.85);
       --border: #334155; /* Slate 700 */
       --input-bg: #1e293b;
@@ -33,7 +33,7 @@
     }
 
     * { box-sizing: border-box; }
-    body { font-family: 'Outfit', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; display: flex; height: 100vh; background-color: var(--bg-color); background-image: var(--bg-image); background-size: cover; background-position: center; background-attachment: fixed; color: var(--text-color); transition: background-color 0.3s, color 0.3s, background-image 0.3s; }
+    body { font-family: 'Outfit', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; display: flex; height: 100vh; background-color: var(--bg-color); background-image: var(--bg-image); background-size: 50%; background-repeat: no-repeat; background-position: center; background-attachment: fixed; color: var(--text-color); transition: background-color 0.3s, color 0.3s, background-image 0.3s; }
 
     /* Layout */
     .sidebar { width: 300px; background: var(--sidebar-bg); color: var(--sidebar-text); display: flex; flex-direction: column; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.1); z-index: 10; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
