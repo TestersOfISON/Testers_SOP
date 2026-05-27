@@ -95,6 +95,26 @@
         <button class="btn btn-danger" onclick="document.getElementById('admin-dashboard-modal').style.display='none'" style="margin: 0;">Close</button>
       </div>
       
+      <!-- Create New Epic / User Story Form -->
+      <div style="background: rgba(0,0,0,0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border);">
+        <h4 style="margin-top: 0; margin-bottom: 10px; color: var(--text-color);">➕ Create New Epic / User Story</h4>
+        <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+          <div style="flex: 1; min-width: 150px;">
+            <label style="font-size: 0.8rem; font-weight: bold; display: block; margin-bottom: 5px;">Epic Key (Required)</label>
+            <input type="text" id="admin-new-epic-input" class="form-input" style="width: 100%; margin: 0; padding: 6px 10px;" placeholder="e.g. EPIC-100">
+          </div>
+          <div style="flex: 1; min-width: 150px;">
+            <label style="font-size: 0.8rem; font-weight: bold; display: block; margin-bottom: 5px;">User Story Key (Required)</label>
+            <input type="text" id="admin-new-us-input" class="form-input" style="width: 100%; margin: 0; padding: 6px 10px;" placeholder="e.g. US-200: DESCRIPTION">
+          </div>
+          <div style="flex: 1; min-width: 150px;">
+            <label style="font-size: 0.8rem; font-weight: bold; display: block; margin-bottom: 5px;">Assignee (Optional)</label>
+            <input type="text" id="admin-new-assignee-input" class="form-input" style="width: 100%; margin: 0; padding: 6px 10px;" placeholder="e.g. Vignesh E">
+          </div>
+          <button class="btn btn-primary" style="margin: 0; padding: 6px 15px; height: 35px;" onclick="createNewUserStory()">Create</button>
+        </div>
+      </div>
+      
       <div style="overflow-y: auto; flex-grow: 1;">
         <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
           <thead style="background: var(--bg-color); position: sticky; top: 0; z-index: 1;">
@@ -276,7 +296,6 @@
         <div id="user-story-dashboard-container" style="background: var(--card-bg); padding: 25px; border-radius: 12px; margin-top: 30px; box-shadow: var(--shadow); border: 1px solid var(--border);">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-color);">User Stories SOP Progress Registry</h3>
-            <button class="btn btn-primary" onclick="pushAllStatesToCloud()" style="margin: 0;">Push All to Cloud</button>
           </div>
           
           <div style="display: flex; gap: 20px; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap;">
@@ -288,7 +307,7 @@
                     <th style="padding: 10px 5px;">LAST ACTIVE MODULE</th>
                     <th style="padding: 10px 5px;">MODULE PROGRESS</th>
                     <th style="padding: 10px 5px;">OVERALL PROGRESS</th>
-                    <th style="padding: 10px 5px; text-align: center;">ACTIONS</th>
+                    <th style="padding: 10px 5px; text-align: center; min-width: 250px;">ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody id="user-story-dashboard-tbody">
@@ -414,6 +433,8 @@
           
           if (!usList || !epicList) return;
           
+          window.globalUserStories = data; // Store globally for filtering
+          
           usList.innerHTML = '';
           epicList.innerHTML = '';
           
@@ -435,8 +456,52 @@
             epicList.appendChild(opt);
           });
         }
+      } catch (error) {
+        console.error("Firebase fetch error: ", error);
+      }
+    };
+    
+    window.createNewUserStory = async function() {
+      const epic = document.getElementById('admin-new-epic-input').value.trim().toUpperCase();
+      const us = document.getElementById('admin-new-us-input').value.trim().toUpperCase();
+      const assignee = document.getElementById('admin-new-assignee-input').value.trim();
+      
+      if (!epic || !us) {
+        alert("Epic Key and User Story Key are required.");
+        return;
+      }
+      
+      if (window.globalUserStories && window.globalUserStories[us]) {
+        alert("User Story already exists!");
+        return;
+      }
+      
+      const payload = {
+        epicKey: epic,
+        assignee: assignee || "Unassigned",
+        assignedToName: assignee || "Unassigned",
+        status: "Pending",
+        lastUpdated: new Date().toISOString()
+      };
+      
+      const dbRef = ref(db);
+      try {
+        const updates = {};
+        updates[`user_stories/${us}`] = payload;
+        await update(dbRef, updates);
+        
+        alert(`Successfully created User Story: ${us} under Epic: ${epic}`);
+        
+        // Clear inputs
+        document.getElementById('admin-new-epic-input').value = '';
+        document.getElementById('admin-new-us-input').value = '';
+        document.getElementById('admin-new-assignee-input').value = '';
+        
+        // Refresh admin modal and datalists
+        if (window.openAdminDashboard) window.openAdminDashboard();
+        if (window.fetchGlobalDataForDatalists) window.fetchGlobalDataForDatalists();
       } catch(e) {
-        console.error("Failed to fetch global datalist items", e);
+        alert("Error creating user story: " + e.message);
       }
     };
 

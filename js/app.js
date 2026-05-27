@@ -448,10 +448,10 @@ try {
             </span>
           </td>
           <td style="padding: 10px 5px; text-align: center;">
-            <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: wrap;">
-              <button class="btn btn-primary" style="margin: 0; padding: 5px 10px; font-size: 0.8rem; height: auto;" onclick="handleUserStorySelect('${key}')">Switch</button>
-              <button class="btn btn-success" style="margin: 0; padding: 5px 10px; font-size: 0.8rem; height: auto;" onclick="exportUserStoryDirectly('${key}')">Export Story</button>
-              <button class="btn btn-danger" style="margin: 0; padding: 5px 10px; font-size: 0.8rem; background: var(--danger); height: auto;" onclick="deleteUserStoryFromRegistry('${key}')">Delete</button>
+            <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: nowrap;">
+              <button class="btn btn-primary" style="margin: 0; padding: 5px 10px; font-size: 0.8rem; height: auto; white-space: nowrap;" onclick="handleUserStorySelect('${key}')">Switch</button>
+              <button class="btn btn-success" style="margin: 0; padding: 5px 10px; font-size: 0.8rem; height: auto; white-space: nowrap;" onclick="exportUserStoryDirectly('${key}')">Export Story</button>
+              <button class="btn btn-danger" style="margin: 0; padding: 5px 10px; font-size: 0.8rem; background: var(--danger); height: auto; white-space: nowrap;" onclick="deleteUserStoryFromRegistry('${key}')">Delete</button>
             </div>
           </td>
         `;
@@ -1318,6 +1318,41 @@ try {
       const testerName = localStorage.getItem('testerName') || 'Anonymous Tester';
       const displaySpan = document.getElementById('display-profile-name');
       if (displaySpan) displaySpan.innerText = testerName;
+      
+      // Dynamic Epic/User Story Interaction
+      const epicInput = document.getElementById('epic-input');
+      const usInput = document.getElementById('user-story-input');
+      
+      if (usInput) {
+        usInput.addEventListener('change', function(e) {
+          const selectedUS = e.target.value.trim().toUpperCase();
+          if (window.globalUserStories && window.globalUserStories[selectedUS]) {
+            const epic = window.globalUserStories[selectedUS].epicKey;
+            if (epic && epicInput) {
+              epicInput.value = epic;
+              // Trigger datalist filtering based on new epic
+              epicInput.dispatchEvent(new Event('input'));
+            }
+          }
+        });
+      }
+      
+      if (epicInput) {
+        epicInput.addEventListener('input', function(e) {
+          const selectedEpic = e.target.value.trim().toUpperCase();
+          const usList = document.getElementById('us-list');
+          if (usList && window.globalUserStories) {
+            usList.innerHTML = '';
+            for (const key in window.globalUserStories) {
+              if (!selectedEpic || window.globalUserStories[key].epicKey === selectedEpic) {
+                const opt = document.createElement('option');
+                opt.value = key;
+                usList.appendChild(opt);
+              }
+            }
+          }
+        });
+      }
       
       // Check Admin State
       if (localStorage.getItem('isAdmin') === 'true') {
