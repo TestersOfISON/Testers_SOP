@@ -1,4 +1,5 @@
 :root {
+      --bg-image: url('../light.png');
       --bg-color: #f8fafc; /* Slate 50 */
       --text-color: #0f172a; /* Slate 900 */
       --sidebar-bg: #0f172a; /* Slate 900 */
@@ -16,6 +17,7 @@
     }
 
     [data-theme="dark"] {
+      --bg-image: url('../dark.png');
       --bg-color: #0f172a; /* Slate 900 */
       --text-color: #f1f5f9; /* Slate 100 */
       --sidebar-bg: #1e293b; /* Slate 800 */
@@ -31,7 +33,7 @@
     }
 
     * { box-sizing: border-box; }
-    body { font-family: 'Outfit', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; display: flex; height: 100vh; background: var(--bg-color); color: var(--text-color); transition: background-color 0.3s, color 0.3s; }
+    body { font-family: 'Outfit', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; display: flex; height: 100vh; background-color: var(--bg-color); background-image: var(--bg-image); background-size: cover; background-position: center; background-attachment: fixed; color: var(--text-color); transition: background-color 0.3s, color 0.3s, background-image 0.3s; }
 
     /* Layout */
     .sidebar { width: 300px; background: var(--sidebar-bg); color: var(--sidebar-text); display: flex; flex-direction: column; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.1); z-index: 10; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
