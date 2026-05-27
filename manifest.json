@@ -1,7 +1,7 @@
 {
-  "name": "iSON - Tester's SOP",
-  "short_name": "iSON - Tester's SOP",
-  "description": "iSON - Tester's SOP for Standard Operating Procedures",
+  "name": "Tester's SOP",
+  "short_name": "Tester's SOP",
+  "description": "Tester's SOP for Standard Operating Procedures",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "landscape",

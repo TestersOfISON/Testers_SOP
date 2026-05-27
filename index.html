@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>iSON - Tester's SOP</title>
+  <title>Tester's SOP</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,28 +21,25 @@
   <script src="https://cdn.jsdelivr.net/npm/mermaid@9.4.3/dist/mermaid.min.js"></script>
 </head>
 <body>
-  <div id="name-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
-    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; text-align: center; border: 1px solid var(--border); box-shadow: var(--shadow);">
-      <h3 style="margin-top: 0; color: var(--primary);">👤 User Profile Login</h3>
-      <p style="font-size: 0.9rem; color: #777; margin-bottom: 20px;">Enter your unique Username and 4-digit PIN to securely log in and sync your assignments across devices.</p>
+
+  <!-- Full Screen Login / Lock Modal -->
+  <div id="name-modal" style="display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 10000; align-items: center; justify-content: center;">
+    <div style="background: var(--card-bg); padding: 40px; border-radius: 12px; max-width: 400px; width: 90%; text-align: center; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <h2 style="margin-top: 0; color: var(--primary);">Welcome to Tester's SOP</h2>
+      <p style="font-size: 0.9rem; color: #777; margin-bottom: 25px;">Please log in with your Username and PIN to access your workspaces.</p>
       
       <div style="text-align: left; margin-bottom: 15px;">
-        <label for="name-modal-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Username</label>
-        <input type="text" id="name-modal-input" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;" placeholder="e.g. Tester01">
+        <label for="tester-name-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Username</label>
+        <input type="text" id="tester-name-input" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;" placeholder="e.g. Tester01">
       </div>
       
       <div style="text-align: left; margin-bottom: 25px;">
-        <label for="pin-modal-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">4-Digit PIN</label>
-        <input type="password" id="pin-modal-input" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box; letter-spacing: 5px; font-weight: bold; text-align: center;" placeholder="••••" maxlength="4" pattern="[0-9]*" inputmode="numeric">
-        <div style="font-size: 0.75rem; color: #888; margin-top: 5px;">If the username doesn't exist, it will be automatically registered with this PIN.</div>
+        <label for="tester-pin-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Security PIN</label>
+        <input type="password" id="tester-pin-input" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box; letter-spacing: 5px; font-weight: bold; text-align: center;" placeholder="••••">
       </div>
 
       <div style="display: flex; gap: 10px; justify-content: center;">
-        <button class="btn btn-primary" onclick="saveNameModal()" style="margin: 0; flex-grow: 1;">Login / Register</button>
-        <button class="btn btn-danger" onclick="document.getElementById('name-modal').style.display='none'" style="margin: 0;">Cancel</button>
-      </div>
-      <div style="margin-top: 15px; font-size: 0.8rem;">
-        <a href="#" onclick="document.getElementById('name-modal').style.display='none'; document.getElementById('admin-reset-modal').style.display='flex';" style="color: var(--primary); text-decoration: none;">Forgot PIN? (Admin Reset)</a>
+        <button class="btn btn-primary" onclick="saveNameModal()" style="margin: 0; flex-grow: 1;">Unlock</button>
       </div>
     </div>
   </div>
@@ -87,23 +84,6 @@
       <div style="display: flex; gap: 10px; justify-content: center;">
         <button class="btn btn-primary" onclick="confirmAssignToOther()" style="margin: 0; flex-grow: 1;">Assign</button>
         <button class="btn btn-danger" onclick="document.getElementById('assign-modal').style.display='none'" style="margin: 0;">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="admin-login-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
-    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; text-align: center; border: 1px solid var(--border); box-shadow: var(--shadow);">
-      <h3 style="margin-top: 0; color: #d97706;">🔒 Admin Login</h3>
-      <p style="font-size: 0.9rem; color: #777; margin-bottom: 20px;">Enter the Lead Admin Password to access the Admin Panel.</p>
-      
-      <div style="text-align: left; margin-bottom: 25px;">
-        <label for="admin-auth-pass" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Admin Password</label>
-        <input type="password" id="admin-auth-pass" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;" placeholder="Enter password">
-      </div>
-
-      <div style="display: flex; gap: 10px; justify-content: center;">
-        <button class="btn btn-primary" onclick="processAdminAuth()" style="margin: 0; flex-grow: 1; background: #d97706;">Login</button>
-        <button class="btn btn-danger" onclick="document.getElementById('admin-login-modal').style.display='none'" style="margin: 0;">Cancel</button>
       </div>
     </div>
   </div>
@@ -167,8 +147,7 @@
 
   <aside class="sidebar">
     <div class="sidebar-header" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-      <img src="./icon-192.png" alt="Logo" style="width: 28px; height: 28px; border-radius: 6px;">
-      <span>Tester's SOP</span>
+      <span style="font-size: 1.2rem; font-weight: bold;">Tester's SOP</span>
     </div>
     
     <button class="panel-btn" style="margin-bottom: 15px; font-weight: bold; background: rgba(37, 99, 235, 0.1);" onclick="loadModule('manual')"><span class="icon">📖</span> User Manual & Guidelines</button>
@@ -215,7 +194,6 @@
     <nav class="top-nav">
       <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
         <button class="sidebar-toggle-btn" onclick="toggleSidebar()">☰</button>
-        <img src="./icon-192.png" alt="Logo" style="width: 32px; height: 32px; border-radius: 6px;">
         <div id="current-module-title" style="font-weight: bold; font-size: 1.4rem; color: var(--primary);">Select a Module</div>
       </div>
       <div class="search-container">
@@ -226,8 +204,7 @@
         <button id="admin-dashboard-btn" class="btn btn-primary" style="margin: 0; padding: 4px 10px; font-size: 0.85rem; display: none;" onclick="openAdminDashboard()">Admin Panel</button>
         <div style="display: flex; align-items: center; background: rgba(37,99,235,0.05); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; gap: 8px;">
           <span style="font-size: 0.9rem; color: var(--text-color);">👤 <span id="display-profile-name" style="font-weight: 600; color: var(--primary);">Offline</span></span>
-          <button onclick="changeTesterName()" style="background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px; display: flex; align-items: center; justify-content: center; opacity: 0.7; font-size: 0.9rem;" title="Login / Change User">🔄</button>
-          <button onclick="showAdminLoginModal()" style="background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px; display: flex; align-items: center; justify-content: center; opacity: 0.7; font-size: 0.9rem; margin-left: 5px;" title="Admin Login">🔒</button>
+          <button onclick="lockApplication()" style="background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px; display: flex; align-items: center; justify-content: center; opacity: 0.7; font-size: 0.9rem; margin-left: 5px;" title="Lock Application">🔒</button>
         </div>
         <button id="theme-toggle" class="theme-toggle" style="margin: 0; font-size: 1.2rem; padding: 5px 10px; background: transparent; color: var(--text-color); border: 1px solid var(--border);" onclick="toggleTheme()">🌙</button>
       </div>
@@ -239,7 +216,6 @@
         <button class="tab-btn" onclick="switchTab('flowchart')">Workflow Chart</button>
         <button class="tab-btn" onclick="switchTab('checklist')">Standard Operating Procedure</button>
         <button class="tab-btn" onclick="switchTab('templates')">Templates</button>
-        
       </div>
 
       <div id="tab-guidelines" class="tab-content"></div>
@@ -249,7 +225,6 @@
       </div>
       
       <div id="tab-checklist" class="tab-content">
-        <!-- User Story Context Selector & Excel Tools -->
         <div id="user-story-bar-container" class="user-story-bar-container" style="background: var(--bg-color); padding: 15px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 15px;">
           
           <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
@@ -266,8 +241,8 @@
             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: rgba(37,99,235,0.05); padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border);">
               <span style="font-size: 0.85rem; color: #777;">Assignee:</span>
               <span id="current-assignee-display" style="font-weight: bold; color: var(--primary); min-width: 80px;">Unassigned</span>
-              <button class="btn" style="padding: 4px 8px; font-size: 0.8rem; margin: 0; background: #fff;" onclick="assignToMe()">Assign to me</button>
-              <button class="btn" style="padding: 4px 8px; font-size: 0.8rem; margin: 0; background: #fff;" onclick="showAssignModal()">Assign to...</button>
+              <button class="btn" style="padding: 4px 8px; font-size: 0.8rem; margin: 0; background: #fff; color: var(--primary); border: 1px solid var(--primary);" onclick="assignToMe()">Assign to me</button>
+              <button class="btn" style="padding: 4px 8px; font-size: 0.8rem; margin: 0; background: #fff; color: var(--primary); border: 1px solid var(--primary);" onclick="showAssignModal()">Assign to...</button>
             </div>
           </div>
           
@@ -277,7 +252,6 @@
           </div>
         </div>
 
-        <!-- Progress Indicator -->
         <div id="progress-bar-container" class="progress-wrapper" style="margin-bottom: 20px; background: var(--bg-color); padding: 15px; border: 1px solid var(--border); border-radius: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.95rem; font-weight: 600;">
             <span id="progress-text-label">Module Progress: 0%</span>
@@ -288,7 +262,6 @@
           </div>
         </div>
 
-        <!-- Checklist Controls & Container -->
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
           <h3 style="margin: 0;">Standard Operating Procedure Checklist</h3>
           <div style="display: flex; gap: 10px;">
@@ -299,34 +272,30 @@
         
         <div id="checklist-container" style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; overflow: hidden;"></div>
 
-        <!-- Tickets Registry Dashboard -->
-        <div id="user-story-dashboard-container" style="background: var(--bg-color); padding: 25px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 2px 10px rgba(0,0,0,0.02); margin-bottom: 30px;">
-          <h3 style="margin-top: 0; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-            <span>User Stories SOP Progress Registry</span>
-            <button class="btn btn-primary" style="margin: 0; padding: 5px 15px; font-size: 0.85rem;" onclick="syncAllToCloud()">Push All to Cloud</button>
-          </h3>
+        <!-- User Story Dashboard -->
+        <div id="user-story-dashboard-container" style="background: var(--card-bg); padding: 25px; border-radius: 12px; margin-top: 30px; box-shadow: var(--shadow); border: 1px solid var(--border);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-color);">User Stories SOP Progress Registry</h3>
+            <button class="btn btn-primary" onclick="pushAllStatesToCloud()" style="margin: 0;">Push All to Cloud</button>
+          </div>
           
           <div style="display: flex; gap: 20px; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap;">
-            <div style="flex: 1; min-width: 200px; max-width: 250px; background: rgba(0,0,0,0.02); padding: 10px; border-radius: 8px;">
-              <canvas id="complianceChart" width="200" height="200"></canvas>
-            </div>
             <div style="flex: 2; min-width: 300px;">
-
-          <div style="overflow-x: auto;">
-            <table id="user-story-dashboard-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
-              <thead>
-                <tr style="border-bottom: 2px solid var(--border); color: #777;">
-                  <th style="padding: 10px 5px;">User Story Key</th>
-                  <th style="padding: 10px 5px;">Last Active Module</th>
-                  <th style="padding: 10px 5px;">Module Progress</th>
-                  <th style="padding: 10px 5px;">Overall Progress</th>
-                  <th style="padding: 10px 5px; text-align: center;">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="user-story-dashboard-tbody">
-                <!-- Dynamically populated -->
-              </tbody>
-            </table>
+              <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                <thead>
+                  <tr style="border-bottom: 2px solid var(--border); color: #777; text-align: left;">
+                    <th style="padding: 10px 5px;">USER STORY KEY</th>
+                    <th style="padding: 10px 5px;">LAST ACTIVE MODULE</th>
+                    <th style="padding: 10px 5px;">MODULE PROGRESS</th>
+                    <th style="padding: 10px 5px;">OVERALL PROGRESS</th>
+                    <th style="padding: 10px 5px; text-align: center;">ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody id="user-story-dashboard-tbody">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>

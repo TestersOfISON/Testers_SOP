@@ -144,11 +144,16 @@ try {
     }
 
     // --- TESTER NAME MANAGEMENT ---
-    window.changeTesterName = function() {
+    window.lockApplication = function() {
+      // Clear admin status to fully lock it
+      localStorage.removeItem('isAdmin');
+      const adminBtn = document.getElementById('admin-dashboard-btn');
+      if (adminBtn) adminBtn.style.display = 'none';
+
       const current = localStorage.getItem('testerName') || '';
       const modal = document.getElementById('name-modal');
-      const nameInput = document.getElementById('name-modal-input');
-      const pinInput = document.getElementById('pin-modal-input');
+      const nameInput = document.getElementById('tester-name-input');
+      const pinInput = document.getElementById('tester-pin-input');
       if (modal && nameInput && pinInput) {
         nameInput.value = current;
         pinInput.value = ''; // Always clear PIN
@@ -157,8 +162,8 @@ try {
     };
 
     window.saveNameModal = async function() {
-      const nameInput = document.getElementById('name-modal-input');
-      const pinInput = document.getElementById('pin-modal-input');
+      const nameInput = document.getElementById('tester-name-input');
+      const pinInput = document.getElementById('tester-pin-input');
       if (!nameInput || !pinInput) return;
       
       const newName = nameInput.value.trim();
@@ -168,6 +173,17 @@ try {
         alert("Username is required.");
         return;
       }
+
+      // Check if entering Admin password (Discreet Admin Login)
+      if (pin === "ISON-ADMIN") {
+        localStorage.setItem('isAdmin', 'true');
+        const adminBtn = document.getElementById('admin-dashboard-btn');
+        if (adminBtn) adminBtn.style.display = 'inline-block';
+        document.getElementById('name-modal').style.display = 'none';
+        alert("Admin Mode unlocked successfully.");
+        return;
+      }
+      
       if (pin.length !== 4) {
         alert("Please enter a 4-digit PIN.");
         return;
@@ -176,7 +192,7 @@ try {
       if (window.loginOrRegisterUser) {
         const result = await window.loginOrRegisterUser(newName, pin);
         if (!result.success) {
-          alert(result.message);
+          alert(`Kindly try with correct '${newName}' user ID and password`);
           return;
         }
       }
@@ -236,24 +252,6 @@ try {
         }
       } else {
         alert("Database connection not ready.");
-      }
-    };
-
-    window.showAdminLoginModal = function() {
-      document.getElementById('admin-login-modal').style.display = 'flex';
-    };
-
-    window.processAdminAuth = function() {
-      const pass = document.getElementById('admin-auth-pass').value.trim();
-      if (pass === "ISON-ADMIN") {
-        localStorage.setItem('isAdmin', 'true');
-        document.getElementById('admin-login-modal').style.display = 'none';
-        const adminBtn = document.getElementById('admin-dashboard-btn');
-        if (adminBtn) adminBtn.style.display = 'inline-block';
-        alert("Admin Mode unlocked successfully.");
-      } else {
-        const locallyRegistered = localStorage.getItem('testerName') || 'your';
-        alert(`Kindly try with correct '${locallyRegistered}' user ID and password`);
       }
     };
 
