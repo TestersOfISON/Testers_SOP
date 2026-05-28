@@ -233,12 +233,14 @@
           <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
               <span style="font-weight: 600; font-size: 0.95rem; white-space: nowrap; color: var(--primary);">Epic:</span>
-              <input type="text" id="epic-input" list="epic-list" placeholder="e.g. EPIC-100" class="form-input" style="max-width: 140px; padding: 8px 12px; margin: 0;" oninput="handleEpicKeyChange()">
-              <datalist id="epic-list"></datalist>
+              <select id="epic-input" class="form-input" style="max-width: 200px; padding: 8px 12px; margin: 0;" onchange="handleEpicKeyChange()">
+                <option value="">-- Select Epic --</option>
+              </select>
               
               <span style="font-weight: 600; font-size: 0.95rem; white-space: nowrap; margin-left: 10px;">User Story:</span>
-              <input type="text" id="user-story-input" list="us-list" placeholder="e.g. SCRT-1234" class="form-input" style="max-width: 180px; padding: 8px 12px; margin: 0;" oninput="handleUserStoryKeyChange()">
-              <datalist id="us-list"></datalist>
+              <select id="user-story-input" class="form-input" style="max-width: 250px; padding: 8px 12px; margin: 0;" onchange="handleUserStoryKeyChange()">
+                <option value="">-- Select User Story --</option>
+              </select>
             </div>
             
             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: rgba(37,99,235,0.05); padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border);">
@@ -402,7 +404,7 @@
           return { success: false, message: "User does not exist in the database." };
         }
       } catch (error) {
-        return { success: false, message: "Database error: " + error.message };
+        return { success: false, message: "Database error" };
       }
     };
 
@@ -410,38 +412,69 @@
       const dbRef = ref(db);
       try {
         const snapshot = await get(child(dbRef, 'user_stories'));
+        let data = {};
         if (snapshot.exists()) {
-          const data = snapshot.val();
-          const usList = document.getElementById('us-list');
-          const epicList = document.getElementById('epic-list');
-          
-          if (!usList || !epicList) return;
-          
+          data = snapshot.val();
           window.globalUserStories = data;
-          
-          usList.innerHTML = '';
-          epicList.innerHTML = '';
-          
-          const epics = new Set();
-          
-          for (const key in data) {
+        }
+
+        const usList = document.getElementById('user-story-input');
+        const epicList = document.getElementById('epic-input');
+        
+        if (!usList || !epicList) return;
+        
+        const currentUS = usList.value;
+        const currentEpic = epicList.value;
+        
+        usList.innerHTML = '<option value="">-- Select User Story --</option>';
+        epicList.innerHTML = '<option value="">-- Select Epic --</option>';
+        
+        const epics = new Set();
+        const userStories = new Set();
+        
+        if (window.SOP_CONFIG) {
+          if (window.SOP_CONFIG.epics) {
+            window.SOP_CONFIG.epics.forEach(e => epics.add(e));
+          }
+          if (window.SOP_CONFIG.userStories) {
+            window.SOP_CONFIG.userStories.forEach(us => {
+              userStories.add(us.key);
+              const opt = document.createElement('option');
+              opt.value = us.key;
+              opt.textContent = us.key;
+              opt.dataset.epic = us.epic || '';
+              usList.appendChild(opt);
+              if (us.epic) epics.add(us.epic);
+            });
+          }
+        }
+        
+        for (const key in data) {
+          if (!userStories.has(key)) {
+            userStories.add(key);
             const opt = document.createElement('option');
             opt.value = key;
+            opt.textContent = key;
+            opt.dataset.epic = data[key].epicKey || '';
             usList.appendChild(opt);
-            
-            if (data[key].epicKey) {
-              epics.add(data[key].epicKey);
-            }
           }
-          
-          epics.forEach(epic => {
-            const opt = document.createElement('option');
-            opt.value = epic;
-            epicList.appendChild(opt);
-          });
+          if (data[key].epicKey) {
+            epics.add(data[key].epicKey);
+          }
         }
-      } catch (error) {
-        console.error("Firebase fetch error: ", error);
+        
+        epics.forEach(epic => {
+          const opt = document.createElement('option');
+          opt.value = epic;
+          opt.textContent = epic;
+          epicList.appendChild(opt);
+        });
+        
+        if (currentEpic) epicList.value = currentEpic;
+        if (currentUS) usList.value = currentUS;
+        
+      } catch(e) {
+        console.error("Error fetching global user stories:", e);
       }
     };
     
@@ -641,6 +674,7 @@
       }
     };
   </script>
+  <script src="js/config.js"></script>
   <script src="js/app.js"></script>
 
 </body>

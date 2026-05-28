@@ -743,8 +743,17 @@ try {
       const storyKey = getActiveUserStoryKey();
       const meta = getUserStoryMetadata(storyKey);
       const epicInput = document.getElementById('epic-input');
-      if (epicInput) epicInput.value = meta.epicKey || '';
+      const usInput = document.getElementById('user-story-input');
       
+      if (epicInput) {
+        if (meta.epicKey) {
+          epicInput.value = meta.epicKey;
+        } else if (usInput && usInput.options[usInput.selectedIndex]) {
+          epicInput.value = usInput.options[usInput.selectedIndex].dataset.epic || '';
+        } else {
+          epicInput.value = '';
+        }
+      }
       const assigneeDisplay = document.getElementById('current-assignee-display');
       if (assigneeDisplay) {
         assigneeDisplay.innerText = meta.assignee || 'Unassigned';
