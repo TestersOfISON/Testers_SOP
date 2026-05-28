@@ -261,8 +261,12 @@ try {
       return input ? input.value.trim().toUpperCase() : '';
     }
 
+    function getTesterPrefix() {
+      return localStorage.getItem('testerName') || 'Anonymous Tester';
+    }
+
     function getUserStoryRegistry() {
-      const saved = localStorage.getItem('sop_user_story_registry');
+      const saved = localStorage.getItem(`sop_user_story_registry_${getTesterPrefix()}`);
       if (!saved) return [];
       try {
         return JSON.parse(saved);
@@ -276,7 +280,7 @@ try {
       const registry = getUserStoryRegistry();
       if (!registry.includes(storyKey)) {
         registry.push(storyKey);
-        localStorage.setItem('sop_user_story_registry', JSON.stringify(registry));
+        localStorage.setItem(`sop_user_story_registry_${getTesterPrefix()}`, JSON.stringify(registry));
         updateUserStoryDropdown();
       }
     }
@@ -290,12 +294,12 @@ try {
         epicKey: epicKey !== undefined ? epicKey : existing.epicKey,
         assignee: assignee !== undefined ? assignee : existing.assignee
       };
-      localStorage.setItem(`sop_user_story_meta_${tKey}`, JSON.stringify(meta));
+      localStorage.setItem(`sop_user_story_meta_${getTesterPrefix()}_${tKey}`, JSON.stringify(meta));
     }
 
     function getUserStoryMetadata(storyKey) {
       const tKey = storyKey ? storyKey : 'default';
-      const saved = localStorage.getItem(`sop_user_story_meta_${tKey}`);
+      const saved = localStorage.getItem(`sop_user_story_meta_${getTesterPrefix()}_${tKey}`);
       if (saved) {
         try { return JSON.parse(saved); } catch(e) {}
       }
@@ -330,7 +334,7 @@ try {
       let checkedCount = 0;
       
       const tKey = storyKey ? storyKey : 'default';
-      const saved = localStorage.getItem(`checklist_state_${moduleId}_${tKey}`);
+      const saved = localStorage.getItem(`checklist_state_${getTesterPrefix()}_${moduleId}_${tKey}`);
       let states = {};
       if (saved) {
         try { states = JSON.parse(saved); } catch(e) {}
@@ -475,13 +479,13 @@ try {
         const index = registry.indexOf(key);
         if (index > -1) {
           registry.splice(index, 1);
-          localStorage.setItem('sop_user_story_registry', JSON.stringify(registry));
+          localStorage.setItem(`sop_user_story_registry_${getTesterPrefix()}`, JSON.stringify(registry));
         }
         
         activeChecklistModules.forEach(moduleId => {
-          localStorage.removeItem(`checklist_state_${moduleId}_${key}`);
+          localStorage.removeItem(`checklist_state_${getTesterPrefix()}_${moduleId}_${key}`);
         });
-        localStorage.removeItem(`sop_user_story_meta_${key}`);
+        localStorage.removeItem(`sop_user_story_meta_${getTesterPrefix()}_${key}`);
         
         const currentActiveKey = getActiveUserStoryKey();
         if (currentActiveKey === key) {
@@ -514,7 +518,7 @@ try {
         const meta = getUserStoryMetadata(storyKey);
         const progress = getUserStoryOverallProgress(storyKey);
         for (const moduleId of activeChecklistModules) {
-          const saved = localStorage.getItem(`checklist_state_${moduleId}_${storyKey}`);
+          const saved = localStorage.getItem(`checklist_state_${getTesterPrefix()}_${moduleId}_${storyKey}`);
           if (saved) {
             window.syncStateToCloud(storyKey, moduleId, JSON.parse(saved), progress);
           }
@@ -543,17 +547,17 @@ try {
         const registry = getUserStoryRegistry();
         registry.forEach(key => {
           activeChecklistModules.forEach(moduleId => {
-            localStorage.removeItem(`checklist_state_${moduleId}_${key}`);
+            localStorage.removeItem(`checklist_state_${getTesterPrefix()}_${moduleId}_${key}`);
           });
-          localStorage.removeItem(`sop_user_story_meta_${key}`);
+          localStorage.removeItem(`sop_user_story_meta_${getTesterPrefix()}_${key}`);
         });
         
         Object.keys(qaModules).forEach(moduleId => {
-          localStorage.removeItem(`checklist_state_${moduleId}_default`);
-          localStorage.removeItem(`checklist_state_${moduleId}`);
+          localStorage.removeItem(`checklist_state_${getTesterPrefix()}_${moduleId}_default`);
+          localStorage.removeItem(`checklist_state_${getTesterPrefix()}_${moduleId}`);
         });
-        localStorage.removeItem(`sop_user_story_meta_default`);
-        localStorage.removeItem('sop_user_story_registry');
+        localStorage.removeItem(`sop_user_story_meta_${getTesterPrefix()}_default`);
+        localStorage.removeItem(`sop_user_story_registry_${getTesterPrefix()}`);
         
         document.getElementById('user-story-input').value = '';
         if (currentModuleId) {
@@ -648,7 +652,7 @@ try {
       checkboxes.forEach(cb => {
         states[cb.id] = cb.checked;
       });
-            localStorage.setItem(`checklist_state_${moduleId}_${tKey}`, JSON.stringify(states));
+            localStorage.setItem(`checklist_state_${getTesterPrefix()}_${moduleId}_${tKey}`, JSON.stringify(states));
       if (window.syncStateToCloud && isSOPModule) {
         window.syncStateToCloud(tKey, moduleId, states, getUserStoryOverallProgress(tKey));
       }
@@ -698,7 +702,7 @@ try {
         checklistContainer.insertAdjacentHTML('afterbegin', bannerHtml);
       }
       
-      const saved = localStorage.getItem(`checklist_state_${moduleId}_${tKey}`);
+      const saved = localStorage.getItem(`checklist_state_${getTesterPrefix()}_${moduleId}_${tKey}`);
       if (saved) {
         try {
           const states = JSON.parse(saved);
@@ -755,6 +759,7 @@ try {
       const input = document.getElementById('user-story-input');
       if (input) {
         input.value = storyKey;
+        input.dispatchEvent(new Event('change'));
       }
       window.handleUserStoryKeyChange();
     };
@@ -868,7 +873,7 @@ try {
       activeChecklistModules.forEach(moduleId => {
         const data = qaModules[moduleId];
         const tKey = storyKey ? storyKey : 'default';
-        const saved = localStorage.getItem(`checklist_state_${moduleId}_${tKey}`);
+        const saved = localStorage.getItem(`checklist_state_${getTesterPrefix()}_${moduleId}_${tKey}`);
         let states = {};
         if (saved) {
           try { states = JSON.parse(saved); } catch(e) {}
@@ -980,7 +985,7 @@ try {
         
         activeChecklistModules.forEach(moduleId => {
           const data = qaModules[moduleId];
-          const saved = localStorage.getItem(`checklist_state_${moduleId}_${key}`);
+          const saved = localStorage.getItem(`checklist_state_${getTesterPrefix()}_${moduleId}_${key}`);
           let states = {};
           if (saved) {
             try { states = JSON.parse(saved); } catch(e) {}

@@ -366,13 +366,14 @@
           }
         } catch(e){}
 
-        updates['user_stories/' + userStoryKey + '/' + moduleId] = stateObject;
-        updates['user_stories/' + userStoryKey + '/overallProgress'] = overallProgress;
-        updates['user_stories/' + userStoryKey + '/lastUpdated'] = new Date().toISOString();
-        updates['user_stories/' + userStoryKey + '/assignedToName'] = assignee; // Legacy support
-        updates['user_stories/' + userStoryKey + '/assignee'] = assignee;
-        updates['user_stories/' + userStoryKey + '/epicKey'] = epicKey;
-        
+        updates['user_stories/' + userStoryKey + '/testers/' + testerName + '/' + moduleId] = stateObject;
+        updates['user_stories/' + userStoryKey + '/testers/' + testerName + '/overallProgress'] = overallProgress;
+        updates['user_stories/' + userStoryKey + '/testers/' + testerName + '/lastUpdated'] = new Date().toISOString();
+        if (epicKey) updates['user_stories/' + userStoryKey + '/epicKey'] = epicKey;
+        if (assignee) {
+          updates['user_stories/' + userStoryKey + '/testers/' + testerName + '/assignee'] = assignee;
+          updates['user_stories/' + userStoryKey + '/testers/' + testerName + '/assignedToName'] = assignee;
+        }
         await update(ref(db), updates);
         console.log(`Successfully synced ${moduleId} for ${userStoryKey} to Firebase RTDB.`);
       } catch (e) {
@@ -383,7 +384,8 @@
     window.syncNameUpdateToCloud = async function(userStoryKey, newName) {
       if (!userStoryKey || userStoryKey === "default") return;
       try {
-        await update(ref(db), { ['user_stories/' + userStoryKey + '/assignedToName']: newName, ['user_stories/' + userStoryKey + '/assignee']: newName });
+        const testerName = localStorage.getItem('testerName') || "Anonymous Tester";
+        await update(ref(db), { ['user_stories/' + userStoryKey + '/testers/' + testerName + '/assignedToName']: newName, ['user_stories/' + userStoryKey + '/testers/' + testerName + '/assignee']: newName });
       } catch (e) {}
     };
 
@@ -433,7 +435,7 @@
           
           if (!usList || !epicList) return;
           
-          window.globalUserStories = data; // Store globally for filtering
+          window.globalUserStories = data;
           
           usList.innerHTML = '';
           epicList.innerHTML = '';
@@ -492,12 +494,10 @@
         
         alert(`Successfully created User Story: ${us} under Epic: ${epic}`);
         
-        // Clear inputs
         document.getElementById('admin-new-epic-input').value = '';
         document.getElementById('admin-new-us-input').value = '';
         document.getElementById('admin-new-assignee-input').value = '';
         
-        // Refresh admin modal and datalists
         if (window.openAdminDashboard) window.openAdminDashboard();
         if (window.fetchGlobalDataForDatalists) window.fetchGlobalDataForDatalists();
       } catch(e) {
@@ -564,7 +564,6 @@
       try {
         const updates = {};
         
-        // Fetch old data to copy over
         const oldSnapshot = await get(child(dbRef, `user_stories/${oldKey}`));
         let oldData = {};
         if (oldSnapshot.exists()) {
@@ -576,7 +575,6 @@
         oldData.assignedToName = newAssignee;
         
         if (oldKey !== newKey) {
-          // Verify new key doesn't already exist to avoid accidental overwrite
           const newSnapshot = await get(child(dbRef, `user_stories/${newKey}`));
           if (newSnapshot.exists()) {
             alert(`Cannot rename! The User Story '${newKey}' already exists.`);
@@ -592,8 +590,8 @@
         
         alert("User Story successfully updated!");
         document.getElementById('admin-edit-modal').style.display = 'none';
-        window.openAdminDashboard(); // refresh table
-        window.fetchGlobalDataForDatalists(); // refresh datalists
+        window.openAdminDashboard(); 
+        window.fetchGlobalDataForDatalists(); 
         
       } catch(e) {
         alert("Error saving: " + e.message);
@@ -608,26 +606,36 @@
            const stories = snapshot.val();
            let fetchedCount = 0;
            for (const [key, data] of Object.entries(stories)) {
-             if (data.assignee === username || data.assignedToName === username) {
-               // Make sure it's in local registry
+            const testerData = data.testers ? data.testers[username] : null;
+            if (data.assignee === username || data.assignedToName === username || 
+               (testerData && (testerData.assignee === username || testerData.assignedToName === username))) {
+               
                let reg = [];
                try {
-                 const stored = localStorage.getItem('sop_user_story_registry');
+                 const stored = localStorage.getItem('sop_user_story_registry_' + username);
                  if (stored) reg = JSON.parse(stored);
                } catch(e){}
                if (!reg.includes(key)) {
                  reg.push(key);
-                 localStorage.setItem('sop_user_story_registry', JSON.stringify(reg));
+                 localStorage.setItem('sop_user_story_registry_' + username, JSON.stringify(reg));
                }
-               // Sync state down to local storage
-               for (const [moduleId, modData] of Object.entries(data)) {
-                 if (typeof modData === 'object' && moduleId !== 'epicKey' && moduleId !== 'assignee' && moduleId !== 'overallProgress' && moduleId !== 'assignedToName' && moduleId !== 'lastUpdated') {
-                   localStorage.setItem(`checklist_state_${moduleId}_${key}`, JSON.stringify(modData));
+               
+               if (testerData) {
+                 for (const [moduleId, modData] of Object.entries(testerData)) {
+                   if (typeof modData === 'object' && moduleId !== 'assignee' && moduleId !== 'overallProgress' && moduleId !== 'assignedToName' && moduleId !== 'lastUpdated') {
+                     localStorage.setItem(`checklist_state_${username}_${moduleId}_${key}`, JSON.stringify(modData));
+                   }
                  }
                }
                // Sync epic meta
-               const meta = { created: new Date().toISOString(), epic: data.epicKey || '' };
-               localStorage.setItem(`sop_user_story_meta_${key}`, JSON.stringify(meta));
+               let meta = {};
+               try {
+                 const stored = localStorage.getItem('sop_user_story_meta_' + username + '_' + key);
+                 if (stored) meta = JSON.parse(stored);
+               } catch(e){}
+               meta.epicKey = data.epicKey || meta.epicKey;
+               meta.assignee = (testerData && testerData.assignee) || data.assignee || meta.assignee;
+               localStorage.setItem('sop_user_story_meta_' + username + '_' + key, JSON.stringify(meta));
                fetchedCount++;
              }
            }
