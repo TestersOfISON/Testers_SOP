@@ -780,26 +780,6 @@ try {
       window.handleUserStoryKeyChange();
     };
 
-    window.showAssignModal = function() {
-      const storyKey = getActiveUserStoryKey();
-      if (!storyKey) {
-        alert("Please enter a User Story first.");
-        return;
-      }
-      document.getElementById('assign-modal').style.display = 'flex';
-    };
-
-    window.confirmAssignToOther = function() {
-      const storyKey = getActiveUserStoryKey();
-      const input = document.getElementById('assign-modal-input');
-      const newAssignee = input.value.trim();
-      if (!newAssignee) return;
-      saveUserStoryMetadata(storyKey, currentModuleId, undefined, newAssignee);
-      if (currentModuleId) saveChecklistState(currentModuleId);
-      window.handleUserStoryKeyChange();
-      document.getElementById('assign-modal').style.display = 'none';
-    };
-
     // --- SHEETJS EXCEL EXPORT WORKBOOKS ---
     function exportSingleUserStoryToExcel() {
       const storyKey = getActiveUserStoryKey();
