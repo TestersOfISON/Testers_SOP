@@ -1,14 +1,42 @@
 const qaModules = {
       "manual": {
         title: "User Manual & Guidelines",
-        guidelines: `<h3>About This Tool</h3>
-          <p style="font-size: 1.1rem; border-left: 4px solid var(--primary); padding-left: 15px; margin: 20px 0; background: rgba(37,99,235,0.05); padding: 15px;"><strong>Note:</strong> This is not a monitoring tool. It's a self evaluation tool which helps fellow testers to follow the prescribed standard testing procedure. Happy testing!</p>
-          <h3>How to Use</h3>
+        guidelines: `<h3>1. Application Layout & Navigation</h3>
+          <p>The application consists of a persistent left-hand sidebar for navigation and a main content area for viewing guidelines, flowcharts, checklists, and documentation.</p>
           <ul class="guideline-list">
-            <li><strong>Sequential Flow:</strong> Modules unlock sequentially. You must complete 100% of the previous module to unlock the next.</li>
-            <li><strong>Checklists:</strong> Follow the entry and exit criteria. Items marked <em>(If applicable)</em> are optional and can be skipped.</li>
-            <li><strong>Deleting Data:</strong> If you delete a user story from your local registry, it will also be permanently deleted from the cloud.</li>
-          </ul>`,
+            <li><strong>Test Design & Management</strong>: Workflows for AI scenario generation and test validation.</li>
+            <li><strong>Test Execution</strong>: Testing procedures across UAT, Smoke, PRL, and Regression.</li>
+            <li><strong>Defect Management</strong>: Logging and processing workflows for Bugs and Incidents.</li>
+            <li><strong>Specialized Testing</strong>: API, UI/UX, Smartwatch, and Mobile testing guidelines.</li>
+          </ul>
+
+          <h3>2. Authentication & Profiles</h3>
+          <p>The application includes a profile-based logging system to ensure that all tasks, checklists, and notes are securely saved to your local device and synchronized with your assigned tasks.</p>
+          <p><strong>How to Log In:</strong> If this is your first time using the application, you will need to create a profile.</p>
+          <ol class="guideline-list" style="list-style-type: decimal; padding-left: 20px;">
+            <li>Enter your desired <strong>Username</strong> (e.g., <code>Tester01</code>).</li>
+            <li>Create and enter a secure <strong>4-digit PIN</strong> that you will use to log in going forward.</li>
+            <li>Click <strong>Unlock</strong>. The system will register your new profile instantly!</li>
+          </ol>
+          <p style="font-size: 1.1rem; border-left: 4px solid var(--danger); padding-left: 15px; margin: 20px 0; background: rgba(239,68,68,0.05); padding: 15px;"><strong>IMPORTANT:</strong> Your session state is saved locally. If you see the ☁️🚫 icon, it means you are working offline. All progress is cached locally and will sync once you are back online.</p>
+
+          <h3>3. Thematic Customization (Light Mode)</h3>
+          <p>By default, the application runs in a beautifully designed Light mode which proudly displays the ISON and Libra logos in the background to make you feel right at home!</p>
+          <ul class="guideline-list">
+            <li><strong>Toggle Button</strong>: If you prefer, you can click the 🌙/☀️ icon in the top right corner to instantly switch to the dark theme.</li>
+            <li>Your preference is saved and will automatically apply upon your next visit.</li>
+          </ul>
+
+          <h3>4. SOP Checklists & Progress Management</h3>
+          <p>Each module includes actionable checklists and standard operating procedures. As you progress through a module, your completion status is dynamically logged.</p>
+          <ul class="guideline-list">
+            <li><strong>Checkboxes</strong>: Click the checkboxes next to each SOP item to mark it as completed.</li>
+            <li><strong>Progress Bar</strong>: The progress bar at the top of the checklist visually displays your module progress (e.g., "75% - 3 of 4 items checked").</li>
+            <li><strong>Notes & Flags</strong>: Click the 📝 icon next to any checklist item to add a specific note or flag a risk for that step.</li>
+          </ul>
+
+          <h3>5. Global Search</h3>
+          <p>Looking for a specific procedure, like "API Testing" or "UAT"? Use the <strong>Global Search</strong> bar located in the top navigation menu. It provides real-time, fuzzy-search suggestions across all guidelines, templates, and checklists to help you find exactly what you need in seconds.</p>`,
         mermaid: ``,
         checklist: null,
         templates: ""

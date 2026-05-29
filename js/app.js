@@ -1,11 +1,11 @@
-
+﻿
 document.addEventListener('DOMContentLoaded', () => {
   // Theme Initialization
   const themeToggle = document.getElementById('theme-toggle');
   if (themeToggle) {
     const currentTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', currentTheme);
-    themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+    themeToggle.textContent = currentTheme === 'dark' ? 'â˜€ï¸' : 'ðŸŒ™';
   }
 
   // Sidebar Search Logic
@@ -118,7 +118,7 @@ try {
         localStorage.setItem('sop_theme', newTheme);
         
         const btn = document.getElementById('theme-toggle');
-        if (btn) btn.innerText = newTheme === 'dark' ? '☀️' : '🌙';
+        if (btn) btn.innerText = newTheme === 'dark' ? 'â˜€ï¸' : 'ðŸŒ™';
         
         if (typeof complianceChart !== 'undefined' && complianceChart) {
           complianceChart.data.datasets[0].backgroundColor[1] = newTheme === 'dark' ? '#334155' : '#e2e8f0';
@@ -804,7 +804,7 @@ try {
       if (moduleLocked) {
         const prevModuleName = qaModules[activeChecklistModules[activeChecklistModules.indexOf(moduleId) - 1]].title;
         const bannerHtml = `<div id="module-locked-banner" style="background: #fee2e2; color: #991b1b; padding: 15px; margin: 15px; border-radius: 6px; border: 1px solid #f87171; display: flex; align-items: center; gap: 10px; font-weight: 500;">
-          <span style="font-size: 1.2rem;">🔒</span>
+          <span style="font-size: 1.2rem;">ðŸ”’</span>
           Please complete 100% of "${prevModuleName}" to unlock this module.
         </div>`;
         checklistContainer.insertAdjacentHTML('afterbegin', bannerHtml);
@@ -1250,8 +1250,8 @@ try {
                 <label for="${id}" style="flex-grow: 1;">${formatLabel(item)}</label>
               </div>
               <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
-                <span id="note-icon-${moduleId}-${id}" style="display: none; color: #ef4444; font-size: 1.1rem; cursor: pointer;" title="View Note" onclick="openNoteModal('${moduleId}', '${id}')">🚩</span>
-                <button onclick="openNoteModal('${moduleId}', '${id}')" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0 5px; color: #94a3b8; line-height: 1;" title="Add Note/Flag">⋮</button>
+                <span id="note-icon-${moduleId}-${id}" style="display: none; color: #ef4444; font-size: 1.1rem; cursor: pointer;" title="View Note" onclick="openNoteModal('${moduleId}', '${id}')">ðŸš©</span>
+                <button onclick="openNoteModal('${moduleId}', '${id}')" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0 5px; color: #94a3b8; line-height: 1;" title="Add Note/Flag">â‹®</button>
               </div>
             </div>`;
         });
@@ -1267,8 +1267,8 @@ try {
                   <label for="${id}" style="flex-grow: 1;">${formatLabel(item)}</label>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
-                  <span id="note-icon-${moduleId}-${id}" style="display: none; color: #ef4444; font-size: 1.1rem; cursor: pointer;" title="View Note" onclick="openNoteModal('${moduleId}', '${id}')">🚩</span>
-                  <button onclick="openNoteModal('${moduleId}', '${id}')" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0 5px; color: #94a3b8; line-height: 1;" title="Add Note/Flag">⋮</button>
+                  <span id="note-icon-${moduleId}-${id}" style="display: none; color: #ef4444; font-size: 1.1rem; cursor: pointer;" title="View Note" onclick="openNoteModal('${moduleId}', '${id}')">ðŸš©</span>
+                  <button onclick="openNoteModal('${moduleId}', '${id}')" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0 5px; color: #94a3b8; line-height: 1;" title="Add Note/Flag">â‹®</button>
                 </div>
               </div>`;
           });
@@ -1284,8 +1284,8 @@ try {
                   <label for="${id}" style="flex-grow: 1;">${formatLabel(item)}</label>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
-                  <span id="note-icon-${moduleId}-${id}" style="display: none; color: #ef4444; font-size: 1.1rem; cursor: pointer;" title="View Note" onclick="openNoteModal('${moduleId}', '${id}')">🚩</span>
-                  <button onclick="openNoteModal('${moduleId}', '${id}')" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0 5px; color: #94a3b8; line-height: 1;" title="Add Note/Flag">⋮</button>
+                  <span id="note-icon-${moduleId}-${id}" style="display: none; color: #ef4444; font-size: 1.1rem; cursor: pointer;" title="View Note" onclick="openNoteModal('${moduleId}', '${id}')">ðŸš©</span>
+                  <button onclick="openNoteModal('${moduleId}', '${id}')" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0 5px; color: #94a3b8; line-height: 1;" title="Add Note/Flag">â‹®</button>
                 </div>
               </div>`;
           });
@@ -1584,4 +1584,43 @@ try {
       updateUserStoryDropdown();
       updateUserStoryDashboard();
       loadModule('ai_generation');
+      initJiraAlarm();
     });
+ 
+ / /   - - -   J i r a   L o g g i n g   A l a r m   L o g i c   - - -  
+ f u n c t i o n   i n i t J i r a A l a r m ( )   {  
+     s e t I n t e r v a l ( c h e c k J i r a A l a r m ,   6 0 0 0 0 ) ;   / /   C h e c k   e v e r y   m i n u t e  
+     c h e c k J i r a A l a r m ( ) ;   / /   C h e c k   i m m e d i a t e l y  
+ }  
+  
+ f u n c t i o n   c h e c k J i r a A l a r m ( )   {  
+     c o n s t   n o w   =   n e w   D a t e ( ) ;  
+     c o n s t   o p t i o n s   =   {   t i m e Z o n e :   ' E u r o p e / B u c h a r e s t ' ,   w e e k d a y :   ' l o n g ' ,   h o u r :   ' n u m e r i c ' ,   m i n u t e :   ' n u m e r i c ' ,   h o u r 1 2 :   f a l s e   } ;  
+     c o n s t   f o r m a t t e r   =   n e w   I n t l . D a t e T i m e F o r m a t ( ' e n - U S ' ,   o p t i o n s ) ;  
+     c o n s t   p a r t s   =   f o r m a t t e r . f o r m a t T o P a r t s ( n o w ) ;  
+      
+     l e t   w e e k d a y   =   ' ' ;  
+     l e t   h o u r   =   0 ;  
+      
+     f o r   ( c o n s t   p a r t   o f   p a r t s )   {  
+         i f   ( p a r t . t y p e   = = =   ' w e e k d a y ' )   w e e k d a y   =   p a r t . v a l u e ;  
+         i f   ( p a r t . t y p e   = = =   ' h o u r ' )   h o u r   =   p a r s e I n t ( p a r t . v a l u e ,   1 0 ) ;  
+     }  
+      
+     / /   C h e c k   i f   i t ' s   W e d n e s d a y ,   b e t w e e n   0 9 : 0 0   a n d   0 9 : 5 9   E E T  
+     i f   ( w e e k d a y   = = =   ' W e d n e s d a y '   & &   h o u r   = = =   9 )   {  
+         c o n s t   t o d a y S t r   =   n o w . t o I S O S t r i n g ( ) . s p l i t ( ' T ' ) [ 0 ] ;  
+         i f   ( l o c a l S t o r a g e . g e t I t e m ( ' j i r a A l a r m D i s m i s s e d ' )   ! = =   t o d a y S t r )   {  
+             c o n s t   t o a s t   =   d o c u m e n t . g e t E l e m e n t B y I d ( ' j i r a - a l a r m - t o a s t ' ) ;  
+             i f   ( t o a s t )   t o a s t . s t y l e . d i s p l a y   =   ' b l o c k ' ;  
+         }  
+     }  
+ }  
+  
+ w i n d o w . d i s m i s s J i r a A l a r m   =   f u n c t i o n ( )   {  
+     c o n s t   t o a s t   =   d o c u m e n t . g e t E l e m e n t B y I d ( ' j i r a - a l a r m - t o a s t ' ) ;  
+     i f   ( t o a s t )   t o a s t . s t y l e . d i s p l a y   =   ' n o n e ' ;  
+     c o n s t   t o d a y S t r   =   n e w   D a t e ( ) . t o I S O S t r i n g ( ) . s p l i t ( ' T ' ) [ 0 ] ;  
+     l o c a l S t o r a g e . s e t I t e m ( ' j i r a A l a r m D i s m i s s e d ' ,   t o d a y S t r ) ;  
+ } ;  
+ 

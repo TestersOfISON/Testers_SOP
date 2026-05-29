@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -35,7 +35,7 @@
       
       <div style="text-align: left; margin-bottom: 25px;">
         <label for="tester-pin-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Security PIN</label>
-        <input type="password" id="tester-pin-input" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box; letter-spacing: 5px; font-weight: bold; text-align: center;" placeholder="••••">
+        <input type="password" id="tester-pin-input" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box; letter-spacing: 5px; font-weight: bold; text-align: center;" placeholder="â€¢â€¢â€¢â€¢">
       </div>
 
       <div style="display: flex; gap: 10px; justify-content: center;">
@@ -46,7 +46,7 @@
 
   <div id="admin-reset-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
     <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; text-align: center; border: 1px solid var(--border); box-shadow: var(--shadow);">
-      <h3 style="margin-top: 0; color: #d97706;">⚠️ Admin PIN Reset</h3>
+      <h3 style="margin-top: 0; color: #d97706;">âš ï¸ Admin PIN Reset</h3>
       <p style="font-size: 0.9rem; color: #777; margin-bottom: 20px;">Use the Lead Admin Password to force-reset a tester's PIN.</p>
       
       <div style="text-align: left; margin-bottom: 15px;">
@@ -56,7 +56,7 @@
       
       <div style="text-align: left; margin-bottom: 15px;">
         <label for="reset-new-pin" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">New 4-Digit PIN</label>
-        <input type="password" id="reset-new-pin" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box; letter-spacing: 5px; font-weight: bold; text-align: center;" placeholder="••••" maxlength="4" pattern="[0-9]*" inputmode="numeric">
+        <input type="password" id="reset-new-pin" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box; letter-spacing: 5px; font-weight: bold; text-align: center;" placeholder="â€¢â€¢â€¢â€¢" maxlength="4" pattern="[0-9]*" inputmode="numeric">
       </div>
 
       <div style="text-align: left; margin-bottom: 25px;">
@@ -74,13 +74,13 @@
   <div id="admin-dashboard-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
     <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 900px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px;">
-        <h3 style="margin: 0; color: #d97706; cursor: default; user-select: none;" ondblclick="openGlobalAnalytics()">👑 Lead Admin Panel</h3>
+        <h3 style="margin: 0; color: #d97706; cursor: default; user-select: none;" ondblclick="openGlobalAnalytics()">ðŸ‘‘ Lead Admin Panel</h3>
         <button class="btn btn-danger" onclick="document.getElementById('admin-dashboard-modal').style.display='none'" style="margin: 0;">Close</button>
       </div>
       
       <!-- Create New Epic / User Story Form -->
       <div style="background: rgba(0,0,0,0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border);">
-        <h4 style="margin-top: 0; margin-bottom: 10px; color: var(--text-color);">➕ Create New Epic / User Story</h4>
+        <h4 style="margin-top: 0; margin-bottom: 10px; color: var(--text-color);">âž• Create New Epic / User Story</h4>
         <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
           <div style="flex: 1; min-width: 150px;">
             <label style="font-size: 0.8rem; font-weight: bold; display: block; margin-bottom: 5px;">Epic Key (Required)</label>
@@ -121,7 +121,7 @@
   <div id="global-analytics-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(8px);">
     <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 1000px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px;">
-        <h3 style="margin: 0; color: #10b981;">📊 Global Team Analytics</h3>
+        <h3 style="margin: 0; color: #10b981;">ðŸ“Š Global Team Analytics</h3>
         <button class="btn btn-danger" onclick="document.getElementById('global-analytics-modal').style.display='none'" style="margin: 0;">Close</button>
       </div>
       
@@ -147,7 +147,7 @@
   <!-- NOTES MODAL -->
   <div id="notes-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
     <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
-      <h3 style="margin-top: 0; color: var(--primary);">📝 Add Note / Flag</h3>
+      <h3 style="margin-top: 0; color: var(--primary);">ðŸ“ Add Note / Flag</h3>
       <p style="font-size: 0.9rem; color: #777; margin-bottom: 15px;">Add a note or flag an issue for this checklist item.</p>
       
       <input type="hidden" id="note-module-id">
@@ -164,7 +164,7 @@
 
   <div id="admin-edit-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
     <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 450px; width: 90%; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
-      <h3 style="margin-top: 0; color: var(--primary);">✏️ Edit User Story</h3>
+      <h3 style="margin-top: 0; color: var(--primary);">âœï¸ Edit User Story</h3>
       <p style="font-size: 0.85rem; color: #d97706; margin-bottom: 20px;"><strong>WARNING:</strong> Renaming the User Story will migrate all existing progress to the new name and delete the old record.</p>
       
       <input type="hidden" id="admin-edit-old-us">
@@ -198,7 +198,7 @@
       <span style="font-size: 1.2rem; font-weight: bold;">Tester's SOP</span>
     </div>
     
-    <button class="panel-btn" style="margin-bottom: 15px; font-weight: bold; background: rgba(37, 99, 235, 0.1);" onclick="loadModule('manual')"><span class="icon">📖</span> User Manual & Guidelines</button>
+    <button class="panel-btn" style="margin-bottom: 15px; font-weight: bold; background: rgba(37, 99, 235, 0.1);" onclick="loadModule('manual')"><span class="icon">ðŸ“–</span> User Manual & Guidelines</button>
     
     <button class="accordion active">Test Design & Management</button>
     <div class="panel" style="max-height: 500px;">
@@ -241,7 +241,7 @@
   <main class="main-content">
     <nav class="top-nav">
       <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
-        <button class="sidebar-toggle-btn" onclick="toggleSidebar()">☰</button>
+        <button class="sidebar-toggle-btn" onclick="toggleSidebar()">â˜°</button>
         <div id="current-module-title" style="font-weight: bold; font-size: 1.4rem; color: var(--primary);">Select a Module</div>
       </div>
       <div class="search-container">
@@ -251,11 +251,11 @@
       <div style="display: flex; gap: 10px; align-items: center;">
         <button id="admin-dashboard-btn" class="btn btn-primary" style="margin: 0; padding: 4px 10px; font-size: 0.85rem; display: none;" onclick="openAdminDashboard()">Admin Panel</button>
         <div style="display: flex; align-items: center; background: rgba(37,99,235,0.05); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; gap: 8px;">
-          <span id="offline-indicator" style="display: none; color: #ef4444; font-size: 1.1rem; margin-right: 5px;" title="Working Offline - Changes saved locally">☁️🚫</span>
-          <span style="font-size: 0.9rem; color: var(--text-color);">👤 <span id="display-profile-name" style="font-weight: 600; color: var(--primary);">Offline</span></span>
-          <button onclick="lockApplication()" style="background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px; display: flex; align-items: center; justify-content: center; opacity: 0.7; font-size: 0.9rem; margin-left: 5px;" title="Lock Application">🔒</button>
+          <span id="offline-indicator" style="display: none; color: #ef4444; font-size: 1.1rem; margin-right: 5px;" title="Working Offline - Changes saved locally">â˜ï¸ðŸš«</span>
+          <span style="font-size: 0.9rem; color: var(--text-color);">ðŸ‘¤ <span id="display-profile-name" style="font-weight: 600; color: var(--primary);">Offline</span></span>
+          <button onclick="lockApplication()" style="background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px; display: flex; align-items: center; justify-content: center; opacity: 0.7; font-size: 0.9rem; margin-left: 5px;" title="Lock Application">ðŸ”’</button>
         </div>
-        <button id="theme-toggle" class="theme-toggle" style="margin: 0; font-size: 1.2rem; padding: 5px 10px; background: transparent; color: var(--text-color); border: 1px solid var(--border);" onclick="toggleTheme()">🌙</button>
+        <button id="theme-toggle" class="theme-toggle" style="margin: 0; font-size: 1.2rem; padding: 5px 10px; background: transparent; color: var(--text-color); border: 1px solid var(--border);" onclick="toggleTheme()">ðŸŒ™</button>
       </div>
     </nav>
 
@@ -274,7 +274,7 @@
       </div>
       
       <div id="tab-checklist" class="tab-content">
-        <div id="user-story-bar-container" class="user-story-bar-container" style="background: var(--bg-color); padding: 15px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 15px;">
+        <div id="user-story-bar-container" class="user-story-bar-container" style="background: var(--bg-color); padding: 15px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 15px; position: relative;">
           
           <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
@@ -288,7 +288,7 @@
                 <option value="">-- Select User Story --</option>
               </select>
               
-              <div style="display: flex; align-items: center; gap: 15px; margin-left: auto; background: rgba(37,99,235,0.05); padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border);">
+              <div style="position: absolute; top: 15px; right: 15px; display: flex; align-items: center; gap: 15px; background: rgba(37,99,235,0.05); padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border);">
                 <label style="display: flex; align-items: center; gap: 5px; font-size: 0.9rem; cursor: pointer; color: var(--text-color); margin-right: 10px; padding-right: 10px; border-right: 1px solid #ccc;">
                   <input type="checkbox" id="top-my-stories-filter" onchange="window.fetchGlobalDataForDatalists()" checked>
                   My Stories
@@ -806,5 +806,15 @@
   <script src="js/config.js"></script>
   <script src="js/app.js"></script>
 
+<div id="jira-alarm-toast" style="display: none; position: fixed; bottom: 30px; right: 30px; background: #3b82f6; color: white; padding: 20px 25px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 9999; max-width: 350px; font-family: 'Outfit', sans-serif; animation: fadeIn 0.5s ease-out;">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+    <h3 style="margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 1.3rem;">⏰</span> Jira Work Log Reminder
+    </h3>
+    <button onclick="dismissJiraAlarm()" style="background: none; border: none; color: white; cursor: pointer; font-size: 1.2rem; line-height: 1; padding: 0; margin-top: -2px;">&times;</button>
+  </div>
+  <p style="margin: 0; font-size: 0.95rem; line-height: 1.5; opacity: 0.9;">Please ensure you have logged all your testing hours on the respective Jira sub-tasks. The automated weekly export runs today at <strong>10:00 EET</strong>.</p>
+  <button onclick="dismissJiraAlarm()" style="margin-top: 15px; width: 100%; padding: 8px; background: white; color: #3b82f6; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">I've logged my time</button>
+</div>
 </body>
 </html>
