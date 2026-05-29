@@ -287,6 +287,11 @@
               <select id="user-story-input" class="form-input" style="max-width: 250px; padding: 8px 12px; margin: 0;" onchange="handleUserStoryKeyChange()">
                 <option value="">-- Select User Story --</option>
               </select>
+              
+              <label style="display: flex; align-items: center; gap: 5px; font-size: 0.9rem; margin-left: 15px; cursor: pointer; color: var(--text-color);">
+                <input type="checkbox" id="top-my-stories-filter" onchange="window.fetchGlobalDataForDatalists()" checked>
+                My Stories
+              </label>
             </div>
             
             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: rgba(37,99,235,0.05); padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border);">
@@ -495,23 +500,34 @@
         
         const epics = new Set();
         const userStories = new Set();
+        const topFilter = document.getElementById('top-my-stories-filter');
+        const showOnlyMine = topFilter ? topFilter.checked : false;
+        const myName = localStorage.getItem('testerName') || '';
         
         if (window.SOP_CONFIG) {
-          if (window.SOP_CONFIG.epics) {
-            window.SOP_CONFIG.epics.forEach(e => epics.add(e));
-          }
           if (window.SOP_CONFIG.userStories) {
             window.SOP_CONFIG.userStories.forEach(us => {
+              if (showOnlyMine && myName && us.assignee !== myName) {
+                return;
+              }
               userStories.add(us.key);
+              if (us.epic) epics.add(us.epic);
+              
               const opt = document.createElement('option');
               opt.value = us.key;
               opt.textContent = us.key;
               opt.dataset.epic = us.epic || '';
               usList.appendChild(opt);
-              if (us.epic) epics.add(us.epic);
             });
           }
         }
+        
+        epics.forEach(e => {
+          const opt = document.createElement('option');
+          opt.value = e;
+          opt.textContent = e;
+          epicList.appendChild(opt);
+        });
         
         for (const key in data) {
           if (!userStories.has(key)) {
@@ -596,7 +612,14 @@
         tbody.innerHTML = '';
         if (snapshot.exists()) {
           const data = snapshot.val();
+          const validKeys = window.SOP_CONFIG ? new Set(window.SOP_CONFIG.userStories.map(u => u.key)) : null;
+          
           for (const [storyKey, storyData] of Object.entries(data)) {
+            if (validKeys && !validKeys.has(storyKey)) {
+              // Optionally delete old story from DB here to clean up completely
+              remove(child(dbRef, 'user_stories/' + storyKey)).catch(e => console.error(e));
+              continue;
+            }
             if (storyData.testers) {
               for (const [testerName, testerData] of Object.entries(storyData.testers)) {
                 const tr = document.createElement('tr');
@@ -633,7 +656,11 @@
         tbody.innerHTML = '';
         if (snapshot.exists()) {
           const data = snapshot.val();
+          const validKeys = window.SOP_CONFIG ? new Set(window.SOP_CONFIG.userStories.map(u => u.key)) : null;
+
           for (const key in data) {
+            if (validKeys && !validKeys.has(key)) continue;
+            
             const row = data[key];
             const epic = row.epicKey || '';
             const assignee = row.assignee || row.assignedToName || 'Unassigned';
@@ -719,8 +746,11 @@
         const snapshot = await get(child(dbRef, `user_stories`));
         if (snapshot.exists()) {
            const stories = snapshot.val();
+           const validKeys = window.SOP_CONFIG ? new Set(window.SOP_CONFIG.userStories.map(u => u.key)) : null;
            let fetchedCount = 0;
            for (const [key, data] of Object.entries(stories)) {
+             if (validKeys && !validKeys.has(key)) continue;
+             
             const testerData = data.testers ? data.testers[username] : null;
             if (data.assignee === username || data.assignedToName === username || 
                (testerData && (testerData.assignee === username || testerData.assignedToName === username))) {
