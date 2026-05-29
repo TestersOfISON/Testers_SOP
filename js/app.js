@@ -207,10 +207,20 @@ try {
       // Check if entering Admin password (Discreet Admin Login)
       if (pin === "ISON-ADMIN") {
         localStorage.setItem('isAdmin', 'true');
+        localStorage.setItem('testerName', 'Lead Admin');
+        
         const adminBtn = document.getElementById('admin-dashboard-btn');
         if (adminBtn) adminBtn.style.display = 'inline-block';
+        
+        const displaySpan = document.getElementById('display-profile-name');
+        if (displaySpan) displaySpan.innerText = 'Lead Admin';
+        
+        if (window.fetchGlobalDataForDatalists) {
+          window.fetchGlobalDataForDatalists();
+        }
+        
         document.getElementById('name-modal').style.display = 'none';
-        alert("Admin Mode unlocked successfully.");
+        alert("Admin Mode unlocked successfully as 'Lead Admin'.");
         return;
       }
       
