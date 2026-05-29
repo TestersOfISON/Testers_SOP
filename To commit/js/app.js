@@ -203,9 +203,16 @@ try {
         alert("Username is required.");
         return;
       }
+      
+      // Convert PIN to SHA-256 Hash
+      const encoder = new TextEncoder();
+      const data = encoder.encode(pin);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
       // Check if entering Admin password (Discreet Admin Login)
-      if (pin === "ISON-ADMIN") {
+      if (hashHex === "712cd4faa4d2eabd52f431cd01f8db5b2deffed9c0511af9a4d503302e7b3414") {
         localStorage.setItem('isAdmin', 'true');
         localStorage.setItem('testerName', 'Lead Admin');
         
