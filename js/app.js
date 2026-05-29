@@ -105,12 +105,8 @@ try {
       if (tabContent) tabContent.classList.add('active');
     }
 
-    // --- THEME TOGGLE ---
     window.toggleTheme = function() {
-      document.body.style.transition = 'opacity 0.15s ease-in-out';
-      document.body.style.opacity = 0;
-      
-      setTimeout(() => {
+      const updateThemeDOM = () => {
         const root = document.documentElement;
         const currentTheme = root.getAttribute('data-theme');
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -128,9 +124,17 @@ try {
           complianceChart.data.datasets[0].backgroundColor[1] = newTheme === 'dark' ? '#334155' : '#e2e8f0';
           complianceChart.update();
         }
-        
-        document.body.style.opacity = 1;
-      }, 150);
+      };
+
+      // Use the modern View Transitions API for a beautiful native cross-fade
+      if (document.startViewTransition) {
+        document.startViewTransition(() => {
+          updateThemeDOM();
+        });
+      } else {
+        // Fallback for older browsers
+        updateThemeDOM();
+      }
     };
 
     // --- OFFLINE / ONLINE LOGIC ---
@@ -811,8 +815,19 @@ try {
         }
       }
       const assigneeDisplay = document.getElementById('current-assignee-display');
+      const assignBtn = document.getElementById('assign-to-me-btn');
+      const myName = localStorage.getItem('testerName') || '';
+      
       if (assigneeDisplay) {
         assigneeDisplay.innerText = meta.assignee || 'Unassigned';
+      }
+      
+      if (assignBtn) {
+        if (meta.assignee === myName && myName !== '') {
+          assignBtn.style.display = 'none';
+        } else {
+          assignBtn.style.display = 'inline-block';
+        }
       }
 
       if (currentModuleId) {

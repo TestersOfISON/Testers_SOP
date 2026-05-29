@@ -292,12 +292,12 @@
                 <input type="checkbox" id="top-my-stories-filter" onchange="window.fetchGlobalDataForDatalists()" checked>
                 My Stories
               </label>
-            </div>
-            
-            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: rgba(37,99,235,0.05); padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border);">
-              <span style="font-size: 0.85rem; color: #777;">Assignee:</span>
-              <span id="current-assignee-display" style="font-weight: bold; color: var(--primary); min-width: 80px;">Unassigned</span>
-              <button class="btn" style="padding: 4px 8px; font-size: 0.8rem; margin: 0; background: #fff; color: var(--primary); border: 1px solid var(--primary);" onclick="assignToMe()">Assign to me</button>
+              
+              <div style="display: flex; align-items: center; gap: 10px; margin-left: auto; background: rgba(37,99,235,0.05); padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border);">
+                <span style="font-size: 0.85rem; color: #777;">Assignee:</span>
+                <span id="current-assignee-display" style="font-weight: bold; color: var(--primary); font-size: 0.9rem;">Unassigned</span>
+                <button id="assign-to-me-btn" class="btn" style="padding: 4px 8px; font-size: 0.8rem; margin: 0; background: #fff; color: var(--primary); border: 1px solid var(--primary); display: none;" onclick="assignToMe()">Assign to me</button>
+              </div>
             </div>
           </div>
           
@@ -507,8 +507,14 @@
         if (window.SOP_CONFIG) {
           if (window.SOP_CONFIG.userStories) {
             window.SOP_CONFIG.userStories.forEach(us => {
-              if (showOnlyMine && myName && us.assignee !== myName) {
-                return;
+              if (showOnlyMine && myName) {
+                // Check if assigned in config or in Firebase
+                const fbData = window.globalUserStories ? window.globalUserStories[us.key] : null;
+                const assignedInFb = fbData && (fbData.assignee === myName || fbData.assignedToName === myName || (fbData.testers && fbData.testers[myName]));
+                const assignedInConfig = us.assignee === myName;
+                if (!assignedInFb && !assignedInConfig) {
+                  return; // Not assigned to current user
+                }
               }
               userStories.add(us.key);
               if (us.epic) epics.add(us.epic);
