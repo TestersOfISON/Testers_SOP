@@ -244,6 +244,11 @@ try {
         saveChecklistState(currentModuleId);
       }
       
+      // Fix 1: Refresh dropdowns with the new user's assigned stories
+      if (window.fetchGlobalDataForDatalists) {
+        window.fetchGlobalDataForDatalists();
+      }
+      
       document.getElementById('name-modal').style.display = 'none';
     };
 
@@ -883,6 +888,12 @@ try {
       }
       saveUserStoryMetadata(storyKey, currentModuleId, undefined, myName);
       if (currentModuleId) saveChecklistState(currentModuleId);
+      
+      // Fix 3: Update local cache so the UI filters know you own it instantly
+      if (!window.globalUserStories) window.globalUserStories = {};
+      if (!window.globalUserStories[storyKey]) window.globalUserStories[storyKey] = {};
+      window.globalUserStories[storyKey].assignee = myName;
+      
       window.handleUserStoryKeyChange();
     };
 
