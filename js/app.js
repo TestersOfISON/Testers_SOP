@@ -116,6 +116,9 @@ try {
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
         
         root.setAttribute('data-theme', newTheme);
+        document.body.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        localStorage.setItem('theme_preference', newTheme);
         localStorage.setItem('sop_theme', newTheme);
         
         const btn = document.getElementById('theme-toggle');
