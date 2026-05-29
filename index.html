@@ -74,7 +74,7 @@
   <div id="admin-dashboard-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
     <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 900px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px;">
-        <h3 style="margin: 0; color: #d97706;">👑 Lead Admin Panel</h3>
+        <h3 style="margin: 0; color: #d97706; cursor: default; user-select: none;" ondblclick="openGlobalAnalytics()">👑 Lead Admin Panel</h3>
         <button class="btn btn-danger" onclick="document.getElementById('admin-dashboard-modal').style.display='none'" style="margin: 0;">Close</button>
       </div>
       
@@ -113,6 +113,51 @@
             <!-- Populated via JS -->
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- HIDDEN GLOBAL ANALYTICS MODAL -->
+  <div id="global-analytics-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(8px);">
+    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 1000px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px;">
+        <h3 style="margin: 0; color: #10b981;">📊 Global Team Analytics</h3>
+        <button class="btn btn-danger" onclick="document.getElementById('global-analytics-modal').style.display='none'" style="margin: 0;">Close</button>
+      </div>
+      
+      <div style="overflow-y: auto; flex-grow: 1;">
+        <table class="table" style="width: 100%;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--border); color: #777; text-align: left;">
+              <th style="padding: 10px 5px;">TESTER</th>
+              <th style="padding: 10px 5px;">USER STORY</th>
+              <th style="padding: 10px 5px;">EPIC</th>
+              <th style="padding: 10px 5px;">PROGRESS</th>
+              <th style="padding: 10px 5px;">LAST UPDATED</th>
+            </tr>
+          </thead>
+          <tbody id="global-analytics-tbody">
+            <!-- Analytics data populated here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTES MODAL -->
+  <div id="notes-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <h3 style="margin-top: 0; color: var(--primary);">📝 Add Note / Flag</h3>
+      <p style="font-size: 0.9rem; color: #777; margin-bottom: 15px;">Add a note or flag an issue for this checklist item.</p>
+      
+      <input type="hidden" id="note-module-id">
+      <input type="hidden" id="note-item-id">
+      
+      <textarea id="note-text-input" class="form-input" style="width: 100%; height: 100px; padding: 10px; margin-bottom: 20px; resize: vertical;" placeholder="Type your note here..."></textarea>
+      
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="btn btn-danger" onclick="document.getElementById('notes-modal').style.display='none'" style="margin: 0; background: transparent; color: #777; border: 1px solid #ddd;">Cancel</button>
+        <button class="btn btn-primary" onclick="saveNote()" style="margin: 0;">Save Note</button>
       </div>
     </div>
   </div>
@@ -206,6 +251,7 @@
       <div style="display: flex; gap: 10px; align-items: center;">
         <button id="admin-dashboard-btn" class="btn btn-primary" style="margin: 0; padding: 4px 10px; font-size: 0.85rem; display: none;" onclick="openAdminDashboard()">Admin Panel</button>
         <div style="display: flex; align-items: center; background: rgba(37,99,235,0.05); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; gap: 8px;">
+          <span id="offline-indicator" style="display: none; color: #ef4444; font-size: 1.1rem; margin-right: 5px;" title="Working Offline - Changes saved locally">☁️🚫</span>
           <span style="font-size: 0.9rem; color: var(--text-color);">👤 <span id="display-profile-name" style="font-weight: 600; color: var(--primary);">Offline</span></span>
           <button onclick="lockApplication()" style="background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px; display: flex; align-items: center; justify-content: center; opacity: 0.7; font-size: 0.9rem; margin-left: 5px;" title="Lock Application">🔒</button>
         </div>
@@ -278,8 +324,17 @@
 
         <!-- User Story Dashboard -->
         <div id="user-story-dashboard-container" style="background: var(--card-bg); padding: 25px; border-radius: 12px; margin-top: 30px; box-shadow: var(--shadow); border: 1px solid var(--border);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-color);">User Stories SOP Progress Registry</h3>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+            <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-color);">My SOP Task List</h3>
+            <div style="display: flex; gap: 15px; align-items: center;">
+              <select id="dashboard-epic-filter" class="form-input" style="padding: 5px 10px; margin: 0; font-size: 0.9rem;" onchange="updateUserStoryDashboard()">
+                <option value="ALL">All Epics</option>
+              </select>
+              <select id="dashboard-assignee-filter" class="form-input" style="padding: 5px 10px; margin: 0; font-size: 0.9rem;" onchange="updateUserStoryDashboard()">
+                <option value="ALL">All Stories</option>
+                <option value="MINE">My Stories</option>
+              </select>
+            </div>
           </div>
           
           <div style="display: flex; gap: 20px; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap;">
@@ -289,8 +344,8 @@
                   <tr style="border-bottom: 2px solid var(--border); color: #777; text-align: left;">
                     <th style="padding: 10px 5px;">USER STORY KEY</th>
                     <th style="padding: 10px 5px;">LAST ACTIVE MODULE</th>
-                    <th style="padding: 10px 5px;">MODULE PROGRESS</th>
-                    <th style="padding: 10px 5px;">OVERALL PROGRESS</th>
+                    <th style="padding: 10px 5px;">ACTIVE STATUS</th>
+                    <th style="padding: 10px 5px;">COMPLETION STATUS</th>
                     <th style="padding: 10px 5px; text-align: center; min-width: 250px;">ACTIONS</th>
                   </tr>
                 </thead>
@@ -353,6 +408,15 @@
         updates['user_stories/' + userStoryKey + '/testers/' + testerName + '/' + moduleId] = stateObject;
         updates['user_stories/' + userStoryKey + '/testers/' + testerName + '/overallProgress'] = overallProgress;
         updates['user_stories/' + userStoryKey + '/testers/' + testerName + '/lastUpdated'] = new Date().toISOString();
+        
+        // Also sync notes
+        try {
+          const notesStr = localStorage.getItem(`checklist_notes_${testerName}_${moduleId}_${userStoryKey}`);
+          if (notesStr) {
+            updates['user_stories/' + userStoryKey + '/testers/' + testerName + '/' + moduleId + '_notes'] = JSON.parse(notesStr);
+          }
+        } catch(e) {}
+        
         if (epicKey) updates['user_stories/' + userStoryKey + '/epicKey'] = epicKey;
         if (assignee) {
           updates['user_stories/' + userStoryKey + '/testers/' + testerName + '/assignee'] = assignee;
@@ -520,6 +584,42 @@
       }
     };
 
+    window.openGlobalAnalytics = async function() {
+      const tbody = document.getElementById('global-analytics-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Fetching global data...</td></tr>';
+      document.getElementById('global-analytics-modal').style.display = 'flex';
+      
+      const dbRef = ref(db);
+      try {
+        const snapshot = await get(child(dbRef, 'user_stories'));
+        tbody.innerHTML = '';
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          for (const [storyKey, storyData] of Object.entries(data)) {
+            if (storyData.testers) {
+              for (const [testerName, testerData] of Object.entries(storyData.testers)) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                  <td style="padding: 10px 5px; font-weight: bold; color: var(--primary);">${testerName}</td>
+                  <td style="padding: 10px 5px;">${storyKey}</td>
+                  <td style="padding: 10px 5px; color: #777;">${storyData.epicKey || 'N/A'}</td>
+                  <td style="padding: 10px 5px; font-weight: bold;">${testerData.overallProgress || '0'}%</td>
+                  <td style="padding: 10px 5px; font-size: 0.9rem; color: #777;">${testerData.lastUpdated ? new Date(testerData.lastUpdated).toLocaleString() : 'N/A'}</td>
+                `;
+                tbody.appendChild(tr);
+              }
+            }
+          }
+        }
+        if (tbody.innerHTML === '') {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No tester data found.</td></tr>';
+        }
+      } catch(e) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: red;">Error: ${e.message}</td></tr>`;
+      }
+    };
+
     window.openAdminDashboard = async function() {
       const tbody = document.getElementById('admin-dashboard-tbody');
       if (!tbody) return;
@@ -637,8 +737,12 @@
                
                if (testerData) {
                  for (const [moduleId, modData] of Object.entries(testerData)) {
-                   if (typeof modData === 'object' && moduleId !== 'assignee' && moduleId !== 'overallProgress' && moduleId !== 'assignedToName' && moduleId !== 'lastUpdated') {
+                   if (typeof modData === 'object' && moduleId !== 'assignee' && moduleId !== 'overallProgress' && moduleId !== 'assignedToName' && moduleId !== 'lastUpdated' && !moduleId.endsWith('_notes')) {
                      localStorage.setItem(`checklist_state_${username}_${moduleId}_${key}`, JSON.stringify(modData));
+                   }
+                   if (moduleId.endsWith('_notes')) {
+                     const actualModuleId = moduleId.replace('_notes', '');
+                     localStorage.setItem(`checklist_notes_${username}_${actualModuleId}_${key}`, JSON.stringify(modData));
                    }
                  }
                }

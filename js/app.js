@@ -106,25 +106,48 @@ try {
     }
 
     // --- THEME TOGGLE ---
-    function toggleTheme() {
-      const current = document.documentElement.getAttribute('data-theme');
-      const newTheme = current === 'dark' ? 'light' : 'dark';
+    window.toggleTheme = function() {
+      document.body.style.transition = 'opacity 0.3s ease-in-out';
+      document.body.style.opacity = 0;
       
-      document.documentElement.setAttribute('data-theme', newTheme);
-      document.body.setAttribute('data-theme', newTheme);
-      localStorage.setItem('theme', newTheme);
-      localStorage.setItem('theme_preference', newTheme);
-      
-      const themeToggle = document.getElementById('theme-toggle');
-      if (themeToggle) {
-        themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+      setTimeout(() => {
+        const root = document.documentElement;
+        const currentTheme = root.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        
+        root.setAttribute('data-theme', newTheme);
+        localStorage.setItem('sop_theme', newTheme);
+        
+        const btn = document.getElementById('theme-toggle');
+        if (btn) btn.innerText = newTheme === 'dark' ? '☀️' : '🌙';
+        
+        if (typeof complianceChart !== 'undefined' && complianceChart) {
+          complianceChart.data.datasets[0].backgroundColor[1] = newTheme === 'dark' ? '#334155' : '#e2e8f0';
+          complianceChart.update();
+        }
+        
+        document.body.style.opacity = 1;
+      }, 300);
+    };
+
+    // --- OFFLINE / ONLINE LOGIC ---
+    window.addEventListener('online', () => {
+      const ind = document.getElementById('offline-indicator');
+      if (ind) ind.style.display = 'none';
+      // Sync happens naturally on next action, but we could force a sync here if needed.
+    });
+    
+    window.addEventListener('offline', () => {
+      const ind = document.getElementById('offline-indicator');
+      if (ind) ind.style.display = 'inline-block';
+    });
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!navigator.onLine) {
+        const ind = document.getElementById('offline-indicator');
+        if (ind) ind.style.display = 'inline-block';
       }
-      
-      if (typeof complianceChart !== 'undefined' && complianceChart) {
-        complianceChart.data.datasets[0].backgroundColor[1] = newTheme === 'dark' ? '#334155' : '#e2e8f0';
-        complianceChart.update();
-      }
-    }
+    });
 
     // --- SIDEBAR TOGGLE FOR MOBILE ---
     function toggleSidebar() {
@@ -381,7 +404,7 @@ try {
       const fractionLabel = document.getElementById('progress-fraction-label');
       
       if (!currentModuleId) {
-        if (textLabel) textLabel.innerText = "Module Progress: 0%";
+        if (textLabel) textLabel.innerText = "Active Status: 0%";
         if (fractionLabel) fractionLabel.innerText = "";
         if (fill) fill.style.width = "0%";
         return;
@@ -391,7 +414,7 @@ try {
       const { percent, checkedCount, totalCount } = getModuleProgress(currentModuleId, storyKey);
       
       if (textLabel) {
-        textLabel.innerText = `Module Progress: ${percent}%`;
+        textLabel.innerText = `Active Status: ${percent}%`;
       }
       if (fractionLabel) {
         fractionLabel.innerText = `${checkedCount} of ${totalCount} items checked`;
@@ -403,25 +426,56 @@ try {
       }
     }
 
-    function updateUserStoryDashboard() {
+    window.updateUserStoryDashboard = function() {
       const tbody = document.getElementById('user-story-dashboard-tbody');
       if (!tbody) return;
       
       tbody.innerHTML = '';
       const registry = getUserStoryRegistry();
       
-      if (registry.length === 0) {
+      // Update epic filter options if needed
+      const epicFilterSelect = document.getElementById('dashboard-epic-filter');
+      if (epicFilterSelect && epicFilterSelect.options.length <= 1) {
+        const epics = new Set();
+        if (window.SOP_CONFIG && window.SOP_CONFIG.epics) {
+          window.SOP_CONFIG.epics.forEach(e => epics.add(e));
+        }
+        registry.forEach(key => {
+          const meta = getUserStoryMetadata(key);
+          if (meta.epicKey) epics.add(meta.epicKey);
+        });
+        epics.forEach(e => {
+          const opt = document.createElement('option');
+          opt.value = e;
+          opt.textContent = e;
+          epicFilterSelect.appendChild(opt);
+        });
+      }
+      
+      const epicFilter = epicFilterSelect ? epicFilterSelect.value : 'ALL';
+      const assigneeFilterSelect = document.getElementById('dashboard-assignee-filter');
+      const assigneeFilter = assigneeFilterSelect ? assigneeFilterSelect.value : 'ALL';
+      const myName = localStorage.getItem('testerName') || '';
+      
+      let filteredRegistry = registry.filter(key => {
+        const meta = getUserStoryMetadata(key);
+        if (epicFilter !== 'ALL' && meta.epicKey !== epicFilter) return false;
+        if (assigneeFilter === 'MINE' && meta.assignee !== myName) return false;
+        return true;
+      });
+      
+      if (filteredRegistry.length === 0) {
         tbody.innerHTML = `
           <tr>
             <td colspan="5" style="text-align: center; color: #777; padding: 20px;">
-              No active user stories in registry. Enter a User Story Key above to start tracking.
+              No matching user stories in list. Adjust filters or select a User Story to begin.
             </td>
           </tr>`;
         updateComplianceChart(0);
         return;
       }
       
-      registry.forEach(key => {
+      filteredRegistry.forEach(key => {
         const meta = getUserStoryMetadata(key);
         const activeModuleTitle = meta.lastModuleId && qaModules[meta.lastModuleId] 
           ? qaModules[meta.lastModuleId].title 
@@ -452,10 +506,9 @@ try {
             </span>
           </td>
           <td style="padding: 10px 5px; text-align: center;">
-            <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: nowrap;">
+            <div style="display: flex; gap: 8px; justify-content: center; align-items: center; width: 100%;">
               <button class="btn btn-primary" style="margin: 0; padding: 5px 10px; font-size: 0.8rem; height: auto; white-space: nowrap;" onclick="handleUserStorySelect('${key}')">Switch</button>
               <button class="btn btn-success" style="margin: 0; padding: 5px 10px; font-size: 0.8rem; height: auto; white-space: nowrap;" onclick="exportUserStoryDirectly('${key}')">Export Story</button>
-              <button class="btn btn-danger" style="margin: 0; padding: 5px 10px; font-size: 0.8rem; background: var(--danger); height: auto; white-space: nowrap;" onclick="deleteUserStoryFromRegistry('${key}')">Delete</button>
             </div>
           </td>
         `;
@@ -806,11 +859,11 @@ try {
       
       // SUMMARY SHEET
       const summaryData = [
-        ["iSON - Tester's SOP Progress Report"],
+        ["iSON - Tester's SOP Data Export"],
         ["User Story Reference:", displayKey],
         ["Generated Date:", new Date().toLocaleString()],
         [],
-        ["Module Name", "Module Progress Rate", "Items Checked", "Total Items", "Last Updated"]
+        ["Module Name", "Active Status", "Items Checked", "Total Items", "Last Updated"]
       ];
       
       let grandTotal = 0;
@@ -837,7 +890,7 @@ try {
       
       summaryData.push([]);
       summaryData.push([
-        "OVERALL COMPLIANCE RATE", 
+        "SOP CHECKLIST COMPLETION", 
         `${grandTotal > 0 ? Math.round((grandChecked / grandTotal) * 100) : 0}%`,
         grandChecked,
         grandTotal,
@@ -923,7 +976,7 @@ try {
         ["iSON - Tester's SOP Global Registry Dashboard"],
         ["Generated Date:", new Date().toLocaleString()],
         [],
-        ["User Story Key", "Last Active Module", "Active Module Progress", "Overall SOP Compliance", "Last Updated"]
+        ["User Story Key", "Last Active Module", "Active Status", "Checklist Completion", "Last Updated"]
       ];
       
       registry.forEach(key => {
@@ -966,7 +1019,7 @@ try {
         const auditData = [
           ["User Story SOP Audit Log"],
           ["User Story Key:", key],
-          ["Overall Compliance:", `${getUserStoryOverallProgress(key)}%`],
+          ["Checklist Completion:", `${getUserStoryOverallProgress(key)}%`],
           ["Generated Date:", new Date().toLocaleString()],
           [],
           ["Module", "Criteria Group", "Checklist Item Description", "Checked Status"]
@@ -1026,7 +1079,7 @@ try {
         XLSX.utils.book_append_sheet(wb, wsStory, safeSheetName);
       });
       
-      XLSX.writeFile(wb, "Testers_SOP_All_User_Stories_Report.xlsx");
+      XLSX.writeFile(wb, "Testers_SOP_All_User_Stories_Export.xlsx");
     }
 
     // --- LOAD MODULE ---
@@ -1119,9 +1172,15 @@ try {
         data.checklist.forEach((item, index) => {
           const id = `check-${moduleId}-${index}`;
           checklistContainer.innerHTML += `
-            <div class="checklist-item">
-              <input type="checkbox" id="${id}">
-              <label for="${id}">${formatLabel(item)}</label>
+            <div class="checklist-item" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 10px; border-bottom: 1px solid var(--border);">
+              <div style="display: flex; gap: 10px; flex-grow: 1;">
+                <input type="checkbox" id="${id}" style="margin-top: 4px;">
+                <label for="${id}" style="flex-grow: 1;">${formatLabel(item)}</label>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+                <span id="note-icon-${moduleId}-${id}" style="display: none; color: #ef4444; font-size: 1.1rem; cursor: pointer;" title="View Note" onclick="openNoteModal('${moduleId}', '${id}')">🚩</span>
+                <button onclick="openNoteModal('${moduleId}', '${id}')" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0 5px; color: #94a3b8; line-height: 1;" title="Add Note/Flag">⋮</button>
+              </div>
             </div>`;
         });
       } else if (data.checklist) {
@@ -1130,9 +1189,15 @@ try {
           data.checklist.entry_criteria.forEach((item, index) => {
             const id = `check-entry-${moduleId}-${index}`;
             checklistContainer.innerHTML += `
-              <div class="checklist-item">
-                <input type="checkbox" id="${id}">
-                <label for="${id}">${formatLabel(item)}</label>
+              <div class="checklist-item" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 10px; border-bottom: 1px solid var(--border);">
+                <div style="display: flex; gap: 10px; flex-grow: 1;">
+                  <input type="checkbox" id="${id}" style="margin-top: 4px;">
+                  <label for="${id}" style="flex-grow: 1;">${formatLabel(item)}</label>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+                  <span id="note-icon-${moduleId}-${id}" style="display: none; color: #ef4444; font-size: 1.1rem; cursor: pointer;" title="View Note" onclick="openNoteModal('${moduleId}', '${id}')">🚩</span>
+                  <button onclick="openNoteModal('${moduleId}', '${id}')" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0 5px; color: #94a3b8; line-height: 1;" title="Add Note/Flag">⋮</button>
+                </div>
               </div>`;
           });
         }
@@ -1141,9 +1206,15 @@ try {
           data.checklist.exit_criteria.forEach((item, index) => {
             const id = `check-exit-${moduleId}-${index}`;
             checklistContainer.innerHTML += `
-              <div class="checklist-item">
-                <input type="checkbox" id="${id}">
-                <label for="${id}">${formatLabel(item)}</label>
+              <div class="checklist-item" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 10px; border-bottom: 1px solid var(--border);">
+                <div style="display: flex; gap: 10px; flex-grow: 1;">
+                  <input type="checkbox" id="${id}" style="margin-top: 4px;">
+                  <label for="${id}" style="flex-grow: 1;">${formatLabel(item)}</label>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+                  <span id="note-icon-${moduleId}-${id}" style="display: none; color: #ef4444; font-size: 1.1rem; cursor: pointer;" title="View Note" onclick="openNoteModal('${moduleId}', '${id}')">🚩</span>
+                  <button onclick="openNoteModal('${moduleId}', '${id}')" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0 5px; color: #94a3b8; line-height: 1;" title="Add Note/Flag">⋮</button>
+                </div>
               </div>`;
           });
         }
@@ -1151,9 +1222,76 @@ try {
 
       // Restore checklist checked state from localStorage
       loadChecklistState(moduleId);
+      loadChecklistNotes(moduleId);
 
       switchTab('guidelines'); // Default to Guidelines instead of Standard Operating Procedure now that it's simpler
     }
+
+    // --- NOTES LOGIC ---
+    function getNotesKey(moduleId) {
+      const storyKey = getActiveUserStoryKey();
+      const testerName = localStorage.getItem('testerName') || 'default';
+      return `checklist_notes_${testerName}_${moduleId}_${storyKey}`;
+    }
+
+    function loadChecklistNotes(moduleId) {
+      const notesKey = getNotesKey(moduleId);
+      let notes = {};
+      try {
+        const stored = localStorage.getItem(notesKey);
+        if (stored) notes = JSON.parse(stored);
+      } catch(e) {}
+      
+      for (const [itemId, noteData] of Object.entries(notes)) {
+        const icon = document.getElementById(`note-icon-${moduleId}-${itemId}`);
+        if (icon && noteData && noteData.text) {
+          icon.style.display = 'inline-block';
+          icon.title = `Note: ${noteData.text}\n(${new Date(noteData.timestamp).toLocaleString()})`;
+        }
+      }
+    }
+
+    window.openNoteModal = function(moduleId, itemId) {
+      const notesKey = getNotesKey(moduleId);
+      let notes = {};
+      try {
+        const stored = localStorage.getItem(notesKey);
+        if (stored) notes = JSON.parse(stored);
+      } catch(e) {}
+      
+      document.getElementById('note-module-id').value = moduleId;
+      document.getElementById('note-item-id').value = itemId;
+      document.getElementById('note-text-input').value = (notes[itemId] && notes[itemId].text) ? notes[itemId].text : '';
+      
+      document.getElementById('notes-modal').style.display = 'flex';
+    };
+
+    window.saveNote = function() {
+      const moduleId = document.getElementById('note-module-id').value;
+      const itemId = document.getElementById('note-item-id').value;
+      const text = document.getElementById('note-text-input').value.trim();
+      
+      const notesKey = getNotesKey(moduleId);
+      let notes = {};
+      try {
+        const stored = localStorage.getItem(notesKey);
+        if (stored) notes = JSON.parse(stored);
+      } catch(e) {}
+      
+      if (text) {
+        notes[itemId] = { text, timestamp: new Date().toISOString() };
+      } else {
+        delete notes[itemId];
+      }
+      
+      localStorage.setItem(notesKey, JSON.stringify(notes));
+      document.getElementById('notes-modal').style.display = 'none';
+      
+      loadChecklistNotes(moduleId);
+      
+      // Also sync to cloud when a note is added
+      saveChecklistState(moduleId);
+    };
 
     // Set up global event delegation for saving checkbox changes
     document.getElementById('checklist-container').addEventListener('change', function(e) {
