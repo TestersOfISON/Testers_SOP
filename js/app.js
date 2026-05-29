@@ -329,11 +329,37 @@ try {
 
     function getUserStoryMetadata(storyKey) {
       const tKey = storyKey ? storyKey : 'default';
+      let meta = { lastUpdated: null, lastModuleId: null, epicKey: '', assignee: '' };
+      
       const saved = localStorage.getItem(`sop_user_story_meta_${getTesterPrefix()}_${tKey}`);
       if (saved) {
-        try { return JSON.parse(saved); } catch(e) {}
+        try { meta = { ...meta, ...JSON.parse(saved) }; } catch(e) {}
       }
-      return { lastUpdated: null, lastModuleId: null, epicKey: '', assignee: '' };
+      
+      if (window.globalUserStories && window.globalUserStories[tKey]) {
+        const fbData = window.globalUserStories[tKey];
+        if (fbData.epicKey) meta.epicKey = fbData.epicKey;
+        if (fbData.assignee || fbData.assignedToName) {
+           meta.assignee = fbData.assignee || fbData.assignedToName;
+        } else if (fbData.testers) {
+           for (const tName in fbData.testers) {
+             if (fbData.testers[tName].assignee === tName) {
+               meta.assignee = tName;
+               break;
+             }
+           }
+        }
+      }
+      
+      if (window.SOP_CONFIG && window.SOP_CONFIG.userStories) {
+        const configStory = window.SOP_CONFIG.userStories.find(u => u.key === tKey);
+        if (configStory) {
+          if (configStory.epic) meta.epicKey = configStory.epic;
+          if (configStory.assignee) meta.assignee = configStory.assignee;
+        }
+      }
+      
+      return meta;
     }
 
     function updateUserStoryDropdown() {
@@ -789,14 +815,14 @@ try {
     }
 
     window.handleEpicKeyChange = function() {
-      const epicKey = document.getElementById('epic-input')?.value.trim().toUpperCase() || '';
-      const storyKey = getActiveUserStoryKey();
-      if (storyKey) {
-        saveUserStoryMetadata(storyKey, currentModuleId, epicKey, undefined);
-        if (window.syncStateToCloud && currentModuleId) {
-          saveChecklistState(currentModuleId);
-        }
+      const usInput = document.getElementById('user-story-input');
+      if (usInput) usInput.value = '';
+      
+      if (window.fetchGlobalDataForDatalists) {
+        window.fetchGlobalDataForDatalists();
       }
+      
+      window.handleUserStoryKeyChange();
     };
 
     window.handleUserStoryKeyChange = function() {

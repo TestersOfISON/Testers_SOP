@@ -1,0 +1,65 @@
+# Analysis of WF-8178: Automated Services for Guarantee Updates - LBK.ACTUALIZARE.CASH.COLL
+
+## 1. Overview
+The **WF-8178** issue focuses on adapting the existing daily batch job (`LBK.ACTUALIZARE.CASH.COLL`) to support the new Arrangement Architecture (AA) module for collateral deposits. The core objective is to ensure that the total evaluated value (`VAL.EVAL.INT`) of cash-collateral guarantees is automatically kept in sync with the underlying collateral (either an AA deposit or a standard account). 
+
+This automation replaces or augments the legacy system which pulled data from the legacy Money Market (MM) module.
+
+## 2. Acceptance Criteria
+
+Based on the `Collatoral epic.pdf` and corroborating documents, the following acceptance criteria must be met for WF-8178 to be considered complete:
+
+### 2.1 Job Execution and Scheduling
+- **AC 1.1**: The batch job `LBK.ACTUALIZARE.CASH.COLL` must run automatically on a daily basis.
+- **AC 1.2**: The job must execute *before* Close of Business (COB) to ensure downstream revaluations and accruals use the updated `VAL.EVAL.INT`.
+
+### 2.2 Selection Criteria
+- **AC 2.1**: The job must select only active guarantee records of the "cash-collateral" type.
+- **AC 2.2**: The job must only process guarantees where `VAL.EVAL.INT > 0` at the time of selection.
+- **AC 2.3**: The guarantee must have a valid reference populated in the `APPLICATION.ID` field (pointing to an AA or an Account).
+
+### 2.3 Data Processing and Updating Rules
+- **AC 3.1 (AA Deposit Rule)**: If `APPLICATION.ID` points to an AA deposit, the system must read the `PRINCIPAL` (Suma atrasa) value and set `VAL.EVAL.INT` equal to this `PRINCIPAL` value.
+- **AC 3.2 (Account Rule - Positive Balance)**: If `APPLICATION.ID` points to an Account, the system must read the `WORKING.BALANCE`. If `WORKING.BALANCE > 0`, the system must set `VAL.EVAL.INT` equal to the `WORKING.BALANCE`.
+- **AC 3.3 (Account Rule - Zero Balance)**: If `APPLICATION.ID` points to an Account and the `WORKING.BALANCE <= 0`, the system must set `VAL.EVAL.INT` equal to a technical minimum value of `0.01`.
+- **AC 3.4 (Value Change Verification)**: The system must only perform an update if the newly calculated value is different from the currently stored `VAL.EVAL.INT`.
+
+### 2.4 Priority, Audit, and Error Handling
+- **AC 4.1 (Priority)**: If the system design allows both an AA and an Account to be attached, the system must prioritize evaluating the AA first. If no AA is found, it falls back to the Account.
+- **AC 4.2 (Auditability)**: All updates must be persisted with a proper audit trail (User/Job ID, timestamp, old value, and new value). No manual authorization is required since it is a system job.
+- **AC 4.3 (Error Handling - Missing Reference)**: If the referenced AA or Account is missing, the job must skip the record and log a Warning (including guarantee ID and `APPLICATION.ID`).
+- **AC 4.4 (Error Handling - Invalid Type)**: If `APPLICATION.ID` points to an unsupported type, the job must skip the record and log an Error for data remediation.
+- **AC 4.5 (Error Handling - Locked Records)**: If the guarantee record is in a locked or unauthorized state, the job must skip the record and log an Error.
+
+---
+
+## 3. Ambiguities and Gaps for Clarification
+
+During the analysis of the Epic and cross-referencing with other project documentation (e.g., `T24_Collateral_Deposit_Creation_Flow.md`), several ambiguities and logical gaps were identified. These must be resolved with the Product Owner (PO) and Business Analyst (BA) before development.
+
+> [!WARNING]
+> The following items require clarification to avoid production bugs or integration failures.
+
+1. **Zero Principal for AA Deposits**
+   - *Issue*: The epic explicitly defines that if an Account `WORKING.BALANCE` reaches `0`, the `VAL.EVAL.INT` must be set to `0.01`. However, it does not define the behavior if an **AA Deposit's `PRINCIPAL`** reaches `0` (e.g., through partial/full withdrawals while the guarantee remains open).
+   - *Question*: Should `VAL.EVAL.INT` also default to `0.01` if an AA `PRINCIPAL` evaluates to `0` or negative?
+
+2. **Contradiction in "As-Is" Documentation**
+   - *Issue*: The `T24_Collateral_Deposit_Creation_Flow.md` document states (Step 5: Valuation Update) that in the As-Is state, `VAL.EVAL.INT` had to be manually entered. However, the Epic specifically mentions that `LBK.ACTUALIZARE.CASH.COLL` already exists in the As-Is state and updates this automatically for MM deposits.
+   - *Question*: Is `T24_Collateral_Deposit_Creation_Flow.md` referring to the *initial* creation of the guarantee requiring a manual entry, while the daily batch updates it thereafter? Please confirm the baseline behavior.
+
+3. **Differentiation of Reference Types in `APPLICATION.ID`**
+   - *Issue*: The job logic branches depending on whether `APPLICATION.ID` points to an AA or an Account. 
+   - *Question*: How does the system technically determine the object type from the string in `APPLICATION.ID`? Is it based on a prefix (e.g., `AA...` vs an account number), or does the system attempt a read operation on both tables?
+
+4. **Handling Negative Balances/Principals**
+   - *Issue*: The epic mentions: *"Negative balances or principal... Apply the same mapping rule. If product policy forbids negative guarantees, log Error and skip update."*
+   - *Question*: Are AA collateral deposits technically capable of having negative `PRINCIPAL` in this T24 implementation? We need a definitive business rule on whether to log an error or update the negative value.
+
+5. **Locked/Unauthorized State Retry Logic**
+   - *Issue*: If a record is skipped because it is locked/unauthorized, it is logged.
+   - *Question*: Does the system automatically attempt to update these skipped records in the next day's batch run, or does it trigger an alert for manual intervention by the Credit Administration team?
+
+6. **"Cash-Collateral Type" Definition**
+   - *Issue*: The selection criteria mentions selecting guarantees of "cash-collateral type (per bank's configuration)".
+   - *Question*: Which exact `COLLATERAL.CODE` values define a "cash-collateral" guarantee for this job? (e.g., is it strictly code `100` as mentioned in the creation flow document, or does it include others like `21037` cache-secured deposits?)

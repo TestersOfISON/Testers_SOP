@@ -1,30 +1,11 @@
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Theme Logic
+  // Theme Initialization
   const themeToggle = document.getElementById('theme-toggle');
   if (themeToggle) {
     const currentTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', currentTheme);
     themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
-
-    themeToggle.addEventListener('click', () => {
-      let theme = document.documentElement.getAttribute('data-theme');
-      if (theme === 'dark') {
-        theme = 'light';
-        themeToggle.textContent = '🌙';
-      } else {
-        theme = 'dark';
-        themeToggle.textContent = '☀️';
-      }
-      document.documentElement.setAttribute('data-theme', theme);
-      localStorage.setItem('theme', theme);
-      
-      // Update chart colors if it exists
-      if (complianceChart) {
-        complianceChart.data.datasets[0].backgroundColor[1] = theme === 'dark' ? '#334155' : '#e2e8f0';
-        complianceChart.update();
-      }
-    });
   }
 
   // Sidebar Search Logic
@@ -78,7 +59,13 @@ function updateComplianceChart(percent) {
   }
 }
 
-mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
+try {
+  if (typeof mermaid !== 'undefined') {
+    mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
+  }
+} catch(e) {
+  console.error("Mermaid initialization failed", e);
+}
 
     // Apply saved theme preference on page load
     const savedTheme = localStorage.getItem('theme_preference');
@@ -102,17 +89,72 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
       });
     }
 
-    // --- THEME TOGGLE ---
-    function toggleTheme() {
-      const body = document.body;
-      if (body.getAttribute('data-theme') === 'dark') { 
-        body.removeAttribute('data-theme'); 
-        localStorage.setItem('theme_preference', 'light');
-      } else { 
-        body.setAttribute('data-theme', 'dark'); 
-        localStorage.setItem('theme_preference', 'dark');
+    // --- TAB LOGIC ---
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      
+      if (typeof event !== 'undefined' && event && event.target && event.target.classList) {
+        event.target.classList.add('active');
+      } else {
+        const btn = document.querySelector(`.tab-btn[onclick*="${tabId}"]`);
+        if (btn) btn.classList.add('active');
       }
+      
+      const tabContent = document.getElementById(`tab-${tabId}`);
+      if (tabContent) tabContent.classList.add('active');
     }
+
+    window.toggleTheme = function() {
+      const updateThemeDOM = () => {
+        const root = document.documentElement;
+        const currentTheme = root.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        
+        root.setAttribute('data-theme', newTheme);
+        document.body.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        localStorage.setItem('theme_preference', newTheme);
+        localStorage.setItem('sop_theme', newTheme);
+        
+        const btn = document.getElementById('theme-toggle');
+        if (btn) btn.innerText = newTheme === 'dark' ? '☀️' : '🌙';
+        
+        if (typeof complianceChart !== 'undefined' && complianceChart) {
+          complianceChart.data.datasets[0].backgroundColor[1] = newTheme === 'dark' ? '#334155' : '#e2e8f0';
+          complianceChart.update();
+        }
+      };
+
+      // Use the modern View Transitions API for a beautiful native cross-fade
+      if (document.startViewTransition) {
+        document.startViewTransition(() => {
+          updateThemeDOM();
+        });
+      } else {
+        // Fallback for older browsers
+        updateThemeDOM();
+      }
+    };
+
+    // --- OFFLINE / ONLINE LOGIC ---
+    window.addEventListener('online', () => {
+      const ind = document.getElementById('offline-indicator');
+      if (ind) ind.style.display = 'none';
+      // Sync happens naturally on next action, but we could force a sync here if needed.
+    });
+    
+    window.addEventListener('offline', () => {
+      const ind = document.getElementById('offline-indicator');
+      if (ind) ind.style.display = 'inline-block';
+    });
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!navigator.onLine) {
+        const ind = document.getElementById('offline-indicator');
+        if (ind) ind.style.display = 'inline-block';
+      }
+    });
 
     // --- SIDEBAR TOGGLE FOR MOBILE ---
     function toggleSidebar() {
@@ -131,14 +173,130 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
       }
     }
 
+    // --- TESTER NAME MANAGEMENT ---
+    window.lockApplication = function() {
+      // Clear admin status to fully lock it
+      localStorage.removeItem('isAdmin');
+      const adminBtn = document.getElementById('admin-dashboard-btn');
+      if (adminBtn) adminBtn.style.display = 'none';
+
+      const current = localStorage.getItem('testerName') || '';
+      const modal = document.getElementById('name-modal');
+      const nameInput = document.getElementById('tester-name-input');
+      const pinInput = document.getElementById('tester-pin-input');
+      if (modal && nameInput && pinInput) {
+        nameInput.value = current;
+        pinInput.value = ''; // Always clear PIN
+        modal.style.display = 'flex';
+      }
+    };
+
+    window.saveNameModal = async function() {
+      const nameInput = document.getElementById('tester-name-input');
+      const pinInput = document.getElementById('tester-pin-input');
+      if (!nameInput || !pinInput) return;
+      
+      const newName = nameInput.value.trim();
+      const pin = pinInput.value.trim();
+      
+      if (!newName) {
+        alert("Username is required.");
+        return;
+      }
+
+      // Check if entering Admin password (Discreet Admin Login)
+      if (pin === "ISON-ADMIN") {
+        localStorage.setItem('isAdmin', 'true');
+        const adminBtn = document.getElementById('admin-dashboard-btn');
+        if (adminBtn) adminBtn.style.display = 'inline-block';
+        document.getElementById('name-modal').style.display = 'none';
+        alert("Admin Mode unlocked successfully.");
+        return;
+      }
+      
+      if (pin.length !== 4) {
+        alert("Please enter a 4-digit PIN.");
+        return;
+      }
+      
+      if (window.loginOrRegisterUser) {
+        const result = await window.loginOrRegisterUser(newName, pin);
+        if (!result.success) {
+          alert(`Kindly try with correct '${newName}' user ID and password`);
+          return;
+        }
+      }
+
+      localStorage.setItem('testerName', newName);
+      const displaySpan = document.getElementById('display-profile-name');
+      if (displaySpan) displaySpan.innerText = newName;
+      
+      // Fetch assigned user stories
+      if (window.fetchAssignedUserStories) {
+        const count = await window.fetchAssignedUserStories(newName);
+        alert(`Login successful! Synced ${count} user stories to your device.`);
+      } else {
+        alert("Name updated successfully!");
+      }
+      
+      // Force sync current state
+      if (typeof currentModuleId !== 'undefined' && currentModuleId) {
+        saveChecklistState(currentModuleId);
+      }
+      
+      document.getElementById('name-modal').style.display = 'none';
+    };
+
+    window.processAdminReset = async function() {
+      const usernameInput = document.getElementById('reset-username');
+      const pinInput = document.getElementById('reset-new-pin');
+      const passInput = document.getElementById('reset-admin-pass');
+      
+      const username = usernameInput.value.trim();
+      const newPin = pinInput.value.trim();
+      const adminPass = passInput.value.trim();
+      
+      if (!username || !newPin || !adminPass) {
+        alert("All fields are required.");
+        return;
+      }
+      
+      if (newPin.length !== 4) {
+        alert("New PIN must be 4 digits.");
+        return;
+      }
+      
+      if (adminPass !== "ISON-ADMIN") {
+        alert("Incorrect Lead Admin Password!");
+        return;
+      }
+      
+      if (window.adminResetUserPin) {
+        const result = await window.adminResetUserPin(username, newPin);
+        alert(result.message);
+        if (result.success) {
+          document.getElementById('admin-reset-modal').style.display = 'none';
+          usernameInput.value = '';
+          pinInput.value = '';
+          passInput.value = '';
+        }
+      } else {
+        alert("Database connection not ready.");
+      }
+    };
+
     // --- TICKET & REGISTRY UTILITIES ---
     function getActiveUserStoryKey() {
       const input = document.getElementById('user-story-input');
       return input ? input.value.trim().toUpperCase() : '';
     }
 
+    function getTesterPrefix() {
+      return localStorage.getItem('testerName') || 'Anonymous Tester';
+    }
+
     function getUserStoryRegistry() {
-      const saved = localStorage.getItem('sop_user_story_registry');
+      const saved = localStorage.getItem(`sop_user_story_registry_${getTesterPrefix()}`);
       if (!saved) return [];
       try {
         return JSON.parse(saved);
@@ -152,27 +310,56 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
       const registry = getUserStoryRegistry();
       if (!registry.includes(storyKey)) {
         registry.push(storyKey);
-        localStorage.setItem('sop_user_story_registry', JSON.stringify(registry));
+        localStorage.setItem(`sop_user_story_registry_${getTesterPrefix()}`, JSON.stringify(registry));
         updateUserStoryDropdown();
       }
     }
 
-    function saveUserStoryMetadata(storyKey, moduleId) {
+    function saveUserStoryMetadata(storyKey, moduleId, epicKey, assignee) {
       const tKey = storyKey ? storyKey : 'default';
+      const existing = getUserStoryMetadata(tKey);
       const meta = {
         lastUpdated: new Date().toISOString(),
-        lastModuleId: moduleId
+        lastModuleId: moduleId || existing.lastModuleId,
+        epicKey: epicKey !== undefined ? epicKey : existing.epicKey,
+        assignee: assignee !== undefined ? assignee : existing.assignee
       };
-      localStorage.setItem(`sop_user_story_meta_${tKey}`, JSON.stringify(meta));
+      localStorage.setItem(`sop_user_story_meta_${getTesterPrefix()}_${tKey}`, JSON.stringify(meta));
     }
 
     function getUserStoryMetadata(storyKey) {
       const tKey = storyKey ? storyKey : 'default';
-      const saved = localStorage.getItem(`sop_user_story_meta_${tKey}`);
+      let meta = { lastUpdated: null, lastModuleId: null, epicKey: '', assignee: '' };
+      
+      const saved = localStorage.getItem(`sop_user_story_meta_${getTesterPrefix()}_${tKey}`);
       if (saved) {
-        try { return JSON.parse(saved); } catch(e) {}
+        try { meta = { ...meta, ...JSON.parse(saved) }; } catch(e) {}
       }
-      return { lastUpdated: null, lastModuleId: null };
+      
+      if (window.globalUserStories && window.globalUserStories[tKey]) {
+        const fbData = window.globalUserStories[tKey];
+        if (fbData.epicKey) meta.epicKey = fbData.epicKey;
+        if (fbData.assignee || fbData.assignedToName) {
+           meta.assignee = fbData.assignee || fbData.assignedToName;
+        } else if (fbData.testers) {
+           for (const tName in fbData.testers) {
+             if (fbData.testers[tName].assignee === tName) {
+               meta.assignee = tName;
+               break;
+             }
+           }
+        }
+      }
+      
+      if (window.SOP_CONFIG && window.SOP_CONFIG.userStories) {
+        const configStory = window.SOP_CONFIG.userStories.find(u => u.key === tKey);
+        if (configStory) {
+          if (configStory.epic) meta.epicKey = configStory.epic;
+          if (configStory.assignee) meta.assignee = configStory.assignee;
+        }
+      }
+      
+      return meta;
     }
 
     function updateUserStoryDropdown() {
@@ -203,7 +390,7 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
       let checkedCount = 0;
       
       const tKey = storyKey ? storyKey : 'default';
-      const saved = localStorage.getItem(`checklist_state_${moduleId}_${tKey}`);
+      const saved = localStorage.getItem(`checklist_state_${getTesterPrefix()}_${moduleId}_${tKey}`);
       let states = {};
       if (saved) {
         try { states = JSON.parse(saved); } catch(e) {}
@@ -250,7 +437,7 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
       const fractionLabel = document.getElementById('progress-fraction-label');
       
       if (!currentModuleId) {
-        if (textLabel) textLabel.innerText = "Module Progress: 0%";
+        if (textLabel) textLabel.innerText = "Active Status: 0%";
         if (fractionLabel) fractionLabel.innerText = "";
         if (fill) fill.style.width = "0%";
         return;
@@ -260,7 +447,7 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
       const { percent, checkedCount, totalCount } = getModuleProgress(currentModuleId, storyKey);
       
       if (textLabel) {
-        textLabel.innerText = `Module Progress: ${percent}%`;
+        textLabel.innerText = `Active Status: ${percent}%`;
       }
       if (fractionLabel) {
         fractionLabel.innerText = `${checkedCount} of ${totalCount} items checked`;
@@ -272,24 +459,56 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
       }
     }
 
-    function updateUserStoryDashboard() {
+    window.updateUserStoryDashboard = function() {
       const tbody = document.getElementById('user-story-dashboard-tbody');
       if (!tbody) return;
       
       tbody.innerHTML = '';
       const registry = getUserStoryRegistry();
       
-      if (registry.length === 0) {
+      // Update epic filter options if needed
+      const epicFilterSelect = document.getElementById('dashboard-epic-filter');
+      if (epicFilterSelect && epicFilterSelect.options.length <= 1) {
+        const epics = new Set();
+        if (window.SOP_CONFIG && window.SOP_CONFIG.epics) {
+          window.SOP_CONFIG.epics.forEach(e => epics.add(e));
+        }
+        registry.forEach(key => {
+          const meta = getUserStoryMetadata(key);
+          if (meta.epicKey) epics.add(meta.epicKey);
+        });
+        epics.forEach(e => {
+          const opt = document.createElement('option');
+          opt.value = e;
+          opt.textContent = e;
+          epicFilterSelect.appendChild(opt);
+        });
+      }
+      
+      const epicFilter = epicFilterSelect ? epicFilterSelect.value : 'ALL';
+      const assigneeFilterSelect = document.getElementById('dashboard-assignee-filter');
+      const assigneeFilter = assigneeFilterSelect ? assigneeFilterSelect.value : 'ALL';
+      const myName = localStorage.getItem('testerName') || '';
+      
+      let filteredRegistry = registry.filter(key => {
+        const meta = getUserStoryMetadata(key);
+        if (epicFilter !== 'ALL' && meta.epicKey !== epicFilter) return false;
+        if (assigneeFilter === 'MINE' && meta.assignee !== myName) return false;
+        return true;
+      });
+      
+      if (filteredRegistry.length === 0) {
         tbody.innerHTML = `
           <tr>
             <td colspan="5" style="text-align: center; color: #777; padding: 20px;">
-              No active user stories in registry. Enter a User Story Key above to start tracking.
+              No matching user stories in list. Adjust filters or select a User Story to begin.
             </td>
           </tr>`;
+        updateComplianceChart(0);
         return;
       }
       
-      registry.forEach(key => {
+      filteredRegistry.forEach(key => {
         const meta = getUserStoryMetadata(key);
         const activeModuleTitle = meta.lastModuleId && qaModules[meta.lastModuleId] 
           ? qaModules[meta.lastModuleId].title 
@@ -320,13 +539,24 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
             </span>
           </td>
           <td style="padding: 10px 5px; text-align: center;">
-            <button class="btn btn-primary" style="margin: 0 5px 0 0; padding: 5px 10px; font-size: 0.8rem; height: auto;" onclick="handleUserStorySelect('${key}')">Switch</button>
-            <button class="btn btn-success" style="margin: 0 5px 0 0; padding: 5px 10px; font-size: 0.8rem; height: auto;" onclick="exportUserStoryDirectly('${key}')">Export Story</button>
-            <button class="btn btn-danger" style="margin: 0; padding: 5px 10px; font-size: 0.8rem; background: var(--danger); height: auto;" onclick="deleteUserStoryFromRegistry('${key}')">Delete</button>
+            <div style="display: flex; gap: 8px; justify-content: center; align-items: center; width: 100%;">
+              <button class="btn btn-primary" style="margin: 0; padding: 5px 10px; font-size: 0.8rem; height: auto; white-space: nowrap;" onclick="handleUserStorySelect('${key}')">Switch</button>
+              <button class="btn btn-success" style="margin: 0; padding: 5px 10px; font-size: 0.8rem; height: auto; white-space: nowrap;" onclick="exportUserStoryDirectly('${key}')">Export Story</button>
+            </div>
           </td>
         `;
         tbody.appendChild(tr);
       });
+      
+      // Update the compliance chart visually
+      const currentKey = getActiveUserStoryKey();
+      if (currentKey) {
+        updateComplianceChart(getUserStoryOverallProgress(currentKey));
+      } else if (registry.length > 0) {
+        updateComplianceChart(getUserStoryOverallProgress(registry[0]));
+      } else {
+        updateComplianceChart(0);
+      }
     }
 
     function deleteUserStoryFromRegistry(key) {
@@ -335,25 +565,52 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
         const index = registry.indexOf(key);
         if (index > -1) {
           registry.splice(index, 1);
-          localStorage.setItem('sop_user_story_registry', JSON.stringify(registry));
+          localStorage.setItem(`sop_user_story_registry_${getTesterPrefix()}`, JSON.stringify(registry));
         }
         
         activeChecklistModules.forEach(moduleId => {
-          localStorage.removeItem(`checklist_state_${moduleId}_${key}`);
+          localStorage.removeItem(`checklist_state_${getTesterPrefix()}_${moduleId}_${key}`);
         });
-        localStorage.removeItem(`sop_user_story_meta_${key}`);
+        localStorage.removeItem(`sop_user_story_meta_${getTesterPrefix()}_${key}`);
         
         const currentActiveKey = getActiveUserStoryKey();
         if (currentActiveKey === key) {
           document.getElementById('user-story-input').value = '';
-          if (currentModuleId) {
-            loadChecklistState(currentModuleId);
-          }
+          handleUserStoryKeyChange();
+        }
+        
+        // Push deletion to Firebase Cloud
+        if (window.deleteStateFromCloud) {
+          window.deleteStateFromCloud(key);
         }
         
         updateUserStoryDropdown();
         updateUserStoryDashboard();
       }
+    }
+
+    window.syncAllToCloud = function() {
+      if (!window.syncStateToCloud) {
+        alert("Firebase is not initialized or accessible in this environment.");
+        return;
+      }
+      const registry = getUserStoryRegistry();
+      if (registry.length === 0) {
+        alert("No local stories to push.");
+        return;
+      }
+      
+      registry.forEach(storyKey => {
+        const meta = getUserStoryMetadata(storyKey);
+        const progress = getUserStoryOverallProgress(storyKey);
+        for (const moduleId of activeChecklistModules) {
+          const saved = localStorage.getItem(`checklist_state_${getTesterPrefix()}_${moduleId}_${storyKey}`);
+          if (saved) {
+            window.syncStateToCloud(storyKey, moduleId, JSON.parse(saved), progress);
+          }
+        }
+      });
+      alert(`Successfully pushed all ${registry.length} local user stories to the cloud database!`);
     }
 
     // --- RESET ACTIONS ---
@@ -376,17 +633,17 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
         const registry = getUserStoryRegistry();
         registry.forEach(key => {
           activeChecklistModules.forEach(moduleId => {
-            localStorage.removeItem(`checklist_state_${moduleId}_${key}`);
+            localStorage.removeItem(`checklist_state_${getTesterPrefix()}_${moduleId}_${key}`);
           });
-          localStorage.removeItem(`sop_user_story_meta_${key}`);
+          localStorage.removeItem(`sop_user_story_meta_${getTesterPrefix()}_${key}`);
         });
         
         Object.keys(qaModules).forEach(moduleId => {
-          localStorage.removeItem(`checklist_state_${moduleId}_default`);
-          localStorage.removeItem(`checklist_state_${moduleId}`);
+          localStorage.removeItem(`checklist_state_${getTesterPrefix()}_${moduleId}_default`);
+          localStorage.removeItem(`checklist_state_${getTesterPrefix()}_${moduleId}`);
         });
-        localStorage.removeItem(`sop_user_story_meta_default`);
-        localStorage.removeItem('sop_user_story_registry');
+        localStorage.removeItem(`sop_user_story_meta_${getTesterPrefix()}_default`);
+        localStorage.removeItem(`sop_user_story_registry_${getTesterPrefix()}`);
         
         document.getElementById('user-story-input').value = '';
         if (currentModuleId) {
@@ -400,6 +657,10 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
     }
 
     // --- CHECKLIST LOGIC ---
+
+    function isOptional(itemText) {
+      return typeof itemText === 'string' && itemText.includes('(If applicable)');
+    }
 
     function evaluateChecklistLogic(moduleId) {
       if (!moduleId) return;
@@ -418,7 +679,7 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
               cb.checked = false;
               stateChanged = true;
             }
-            if (!cb.checked) {
+            if (!cb.checked && !isOptional(item)) {
               allPreviousChecked = false;
             }
           }
@@ -436,7 +697,7 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
                 cb.checked = false;
                 stateChanged = true;
               }
-              if (!cb.checked) {
+              if (!cb.checked && !isOptional(item)) {
                 allPreviousChecked = false;
                 entryAllChecked = false;
               }
@@ -455,7 +716,7 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
                 cb.checked = false;
                 stateChanged = true;
               }
-              if (!cb.checked) {
+              if (!cb.checked && !isOptional(item)) {
                 allPreviousChecked = false;
               }
             }
@@ -477,7 +738,7 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
       checkboxes.forEach(cb => {
         states[cb.id] = cb.checked;
       });
-            localStorage.setItem(`checklist_state_${moduleId}_${tKey}`, JSON.stringify(states));
+            localStorage.setItem(`checklist_state_${getTesterPrefix()}_${moduleId}_${tKey}`, JSON.stringify(states));
       if (window.syncStateToCloud && isSOPModule) {
         window.syncStateToCloud(tKey, moduleId, states, getUserStoryOverallProgress(tKey));
       }
@@ -500,8 +761,34 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
       
       const checkboxes = document.querySelectorAll('#checklist-container input[type="checkbox"]');
       checkboxes.forEach(cb => cb.checked = false);
+
+      // --- SEQUENTIAL MODULE LOCKING ---
+      let moduleLocked = false;
+      if (isSOPModule) {
+        const moduleIndex = activeChecklistModules.indexOf(moduleId);
+        if (moduleIndex > 0) {
+          const prevModuleId = activeChecklistModules[moduleIndex - 1];
+          const prevProgress = getModuleProgress(prevModuleId, storyKey);
+          if (prevProgress.percent < 100) {
+            moduleLocked = true;
+          }
+        }
+      }
+
+      const checklistContainer = document.getElementById('checklist-container');
+      const existingBanner = document.getElementById('module-locked-banner');
+      if (existingBanner) existingBanner.remove();
+
+      if (moduleLocked) {
+        const prevModuleName = qaModules[activeChecklistModules[activeChecklistModules.indexOf(moduleId) - 1]].title;
+        const bannerHtml = `<div id="module-locked-banner" style="background: #fee2e2; color: #991b1b; padding: 15px; margin: 15px; border-radius: 6px; border: 1px solid #f87171; display: flex; align-items: center; gap: 10px; font-weight: 500;">
+          <span style="font-size: 1.2rem;">🔒</span>
+          Please complete 100% of "${prevModuleName}" to unlock this module.
+        </div>`;
+        checklistContainer.insertAdjacentHTML('afterbegin', bannerHtml);
+      }
       
-      const saved = localStorage.getItem(`checklist_state_${moduleId}_${tKey}`);
+      const saved = localStorage.getItem(`checklist_state_${getTesterPrefix()}_${moduleId}_${tKey}`);
       if (saved) {
         try {
           const states = JSON.parse(saved);
@@ -518,29 +805,86 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
       
       evaluateChecklistLogic(moduleId);
       
+      if (moduleLocked) {
+        checkboxes.forEach(cb => cb.disabled = true);
+      }
+
       if (isSOPModule) {
         updateProgressBar();
       }
     }
 
-    function handleUserStoryKeyChange() {
+    window.handleEpicKeyChange = function() {
+      const usInput = document.getElementById('user-story-input');
+      if (usInput) usInput.value = '';
+      
+      if (window.fetchGlobalDataForDatalists) {
+        window.fetchGlobalDataForDatalists();
+      }
+      
+      window.handleUserStoryKeyChange();
+    };
+
+    window.handleUserStoryKeyChange = function() {
       const storyKey = getActiveUserStoryKey();
+      const meta = getUserStoryMetadata(storyKey);
+      const epicInput = document.getElementById('epic-input');
+      const usInput = document.getElementById('user-story-input');
+      
+      if (epicInput) {
+        if (meta.epicKey) {
+          epicInput.value = meta.epicKey;
+        } else if (usInput && usInput.options[usInput.selectedIndex]) {
+          epicInput.value = usInput.options[usInput.selectedIndex].dataset.epic || '';
+        } else {
+          epicInput.value = '';
+        }
+      }
+      const assigneeDisplay = document.getElementById('current-assignee-display');
+      const assignBtn = document.getElementById('assign-to-me-btn');
+      const myName = localStorage.getItem('testerName') || '';
+      
+      if (assigneeDisplay) {
+        assigneeDisplay.innerText = meta.assignee || 'Unassigned';
+      }
+      
+      if (assignBtn) {
+        if (meta.assignee === myName && myName !== '') {
+          assignBtn.style.display = 'none';
+        } else {
+          assignBtn.style.display = 'inline-block';
+        }
+      }
+
       if (currentModuleId) {
         loadChecklistState(currentModuleId);
       }
-      updateUserStoryDashboard();
-    }
+    };
 
-    function handleUserStorySelect(storyKey) {
+    window.handleUserStorySelect = function(storyKey) {
       const input = document.getElementById('user-story-input');
       if (input) {
         input.value = storyKey;
+        input.dispatchEvent(new Event('change'));
       }
-      if (currentModuleId) {
-        loadChecklistState(currentModuleId);
+      window.handleUserStoryKeyChange();
+    };
+
+    window.assignToMe = function() {
+      const storyKey = getActiveUserStoryKey();
+      if (!storyKey) {
+        alert("Please enter a User Story first.");
+        return;
       }
-      updateUserStoryDashboard();
-    }
+      const myName = localStorage.getItem('testerName') || '';
+      if (!myName) {
+        alert("Please log in first using the profile button.");
+        return;
+      }
+      saveUserStoryMetadata(storyKey, currentModuleId, undefined, myName);
+      if (currentModuleId) saveChecklistState(currentModuleId);
+      window.handleUserStoryKeyChange();
+    };
 
     // --- SHEETJS EXCEL EXPORT WORKBOOKS ---
     function exportSingleUserStoryToExcel() {
@@ -559,11 +903,11 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
       
       // SUMMARY SHEET
       const summaryData = [
-        ["iSON - Tester's SOP Progress Report"],
+        ["iSON - Tester's SOP Data Export"],
         ["User Story Reference:", displayKey],
         ["Generated Date:", new Date().toLocaleString()],
         [],
-        ["Module Name", "Module Progress Rate", "Items Checked", "Total Items", "Last Updated"]
+        ["Module Name", "Active Status", "Items Checked", "Total Items", "Last Updated"]
       ];
       
       let grandTotal = 0;
@@ -590,7 +934,7 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
       
       summaryData.push([]);
       summaryData.push([
-        "OVERALL COMPLIANCE RATE", 
+        "SOP CHECKLIST COMPLETION", 
         `${grandTotal > 0 ? Math.round((grandChecked / grandTotal) * 100) : 0}%`,
         grandChecked,
         grandTotal,
@@ -615,7 +959,7 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
       activeChecklistModules.forEach(moduleId => {
         const data = qaModules[moduleId];
         const tKey = storyKey ? storyKey : 'default';
-        const saved = localStorage.getItem(`checklist_state_${moduleId}_${tKey}`);
+        const saved = localStorage.getItem(`checklist_state_${getTesterPrefix()}_${moduleId}_${tKey}`);
         let states = {};
         if (saved) {
           try { states = JSON.parse(saved); } catch(e) {}
@@ -676,7 +1020,7 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
         ["iSON - Tester's SOP Global Registry Dashboard"],
         ["Generated Date:", new Date().toLocaleString()],
         [],
-        ["User Story Key", "Last Active Module", "Active Module Progress", "Overall SOP Compliance", "Last Updated"]
+        ["User Story Key", "Last Active Module", "Active Status", "Checklist Completion", "Last Updated"]
       ];
       
       registry.forEach(key => {
@@ -719,7 +1063,7 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
         const auditData = [
           ["User Story SOP Audit Log"],
           ["User Story Key:", key],
-          ["Overall Compliance:", `${getUserStoryOverallProgress(key)}%`],
+          ["Checklist Completion:", `${getUserStoryOverallProgress(key)}%`],
           ["Generated Date:", new Date().toLocaleString()],
           [],
           ["Module", "Criteria Group", "Checklist Item Description", "Checked Status"]
@@ -727,7 +1071,7 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
         
         activeChecklistModules.forEach(moduleId => {
           const data = qaModules[moduleId];
-          const saved = localStorage.getItem(`checklist_state_${moduleId}_${key}`);
+          const saved = localStorage.getItem(`checklist_state_${getTesterPrefix()}_${moduleId}_${key}`);
           let states = {};
           if (saved) {
             try { states = JSON.parse(saved); } catch(e) {}
@@ -779,7 +1123,7 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
         XLSX.utils.book_append_sheet(wb, wsStory, safeSheetName);
       });
       
-      XLSX.writeFile(wb, "Testers_SOP_All_User_Stories_Report.xlsx");
+      XLSX.writeFile(wb, "Testers_SOP_All_User_Stories_Export.xlsx");
     }
 
     // --- LOAD MODULE ---
@@ -832,26 +1176,55 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
           }
       }
       
+      // Handle Flowchart & Checklist Tabs visibility
+      const flowchartTabBtn = document.querySelector('.tab-btn[onclick*="flowchart"]');
+      const checklistTabBtn = document.querySelector('.tab-btn[onclick*="checklist"]');
+      if (moduleId === 'manual') {
+          if (flowchartTabBtn) flowchartTabBtn.style.display = 'none';
+          if (checklistTabBtn) checklistTabBtn.style.display = 'none';
+      } else {
+          if (flowchartTabBtn) flowchartTabBtn.style.display = 'inline-block';
+          if (checklistTabBtn) checklistTabBtn.style.display = 'inline-block';
+      }
+      
       // Render Mermaid Flowchart
       const mermaidContainer = document.getElementById('mermaid-container');
-      try {
-        mermaid.render('dynamic-mermaid-svg', data.mermaid, function(svgCode) {
-          mermaidContainer.innerHTML = svgCode;
-        });
-      } catch (err) {
-        mermaidContainer.innerHTML = `<p style="color:red; font-weight:bold;">Chart Syntax Error. Please check Mermaid code formatting.</p>`;
+      if (data.mermaid && data.mermaid.trim() !== '') {
+        try {
+          mermaid.render('dynamic-mermaid-svg', data.mermaid, function(svgCode) {
+            mermaidContainer.innerHTML = svgCode;
+          });
+        } catch (err) {
+          mermaidContainer.innerHTML = `<p style="color:red; font-weight:bold;">Chart Syntax Error. Please check Mermaid code formatting.</p>`;
+        }
+      } else {
+        mermaidContainer.innerHTML = '';
       }
 
       // Build Interactive Checklist
       const checklistContainer = document.getElementById('checklist-container');
       checklistContainer.innerHTML = '';
+      
+      function formatLabel(text) {
+        if (text.includes('(If applicable)')) {
+          return text.replace('(If applicable)', '<span style="color: #64748b; font-size: 0.9em; font-style: italic; font-weight: normal; margin-left: 5px;">(If applicable)</span>');
+        }
+        return text;
+      }
+
       if (Array.isArray(data.checklist)) {
         data.checklist.forEach((item, index) => {
           const id = `check-${moduleId}-${index}`;
           checklistContainer.innerHTML += `
-            <div class="checklist-item">
-              <input type="checkbox" id="${id}">
-              <label for="${id}">${item}</label>
+            <div class="checklist-item" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 10px; border-bottom: 1px solid var(--border);">
+              <div style="display: flex; gap: 10px; flex-grow: 1;">
+                <input type="checkbox" id="${id}" style="margin-top: 4px;">
+                <label for="${id}" style="flex-grow: 1;">${formatLabel(item)}</label>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+                <span id="note-icon-${moduleId}-${id}" style="display: none; color: #ef4444; font-size: 1.1rem; cursor: pointer;" title="View Note" onclick="openNoteModal('${moduleId}', '${id}')">🚩</span>
+                <button onclick="openNoteModal('${moduleId}', '${id}')" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0 5px; color: #94a3b8; line-height: 1;" title="Add Note/Flag">⋮</button>
+              </div>
             </div>`;
         });
       } else if (data.checklist) {
@@ -860,9 +1233,15 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
           data.checklist.entry_criteria.forEach((item, index) => {
             const id = `check-entry-${moduleId}-${index}`;
             checklistContainer.innerHTML += `
-              <div class="checklist-item">
-                <input type="checkbox" id="${id}">
-                <label for="${id}">${item}</label>
+              <div class="checklist-item" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 10px; border-bottom: 1px solid var(--border);">
+                <div style="display: flex; gap: 10px; flex-grow: 1;">
+                  <input type="checkbox" id="${id}" style="margin-top: 4px;">
+                  <label for="${id}" style="flex-grow: 1;">${formatLabel(item)}</label>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+                  <span id="note-icon-${moduleId}-${id}" style="display: none; color: #ef4444; font-size: 1.1rem; cursor: pointer;" title="View Note" onclick="openNoteModal('${moduleId}', '${id}')">🚩</span>
+                  <button onclick="openNoteModal('${moduleId}', '${id}')" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0 5px; color: #94a3b8; line-height: 1;" title="Add Note/Flag">⋮</button>
+                </div>
               </div>`;
           });
         }
@@ -871,9 +1250,15 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
           data.checklist.exit_criteria.forEach((item, index) => {
             const id = `check-exit-${moduleId}-${index}`;
             checklistContainer.innerHTML += `
-              <div class="checklist-item">
-                <input type="checkbox" id="${id}">
-                <label for="${id}">${item}</label>
+              <div class="checklist-item" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 10px; border-bottom: 1px solid var(--border);">
+                <div style="display: flex; gap: 10px; flex-grow: 1;">
+                  <input type="checkbox" id="${id}" style="margin-top: 4px;">
+                  <label for="${id}" style="flex-grow: 1;">${formatLabel(item)}</label>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+                  <span id="note-icon-${moduleId}-${id}" style="display: none; color: #ef4444; font-size: 1.1rem; cursor: pointer;" title="View Note" onclick="openNoteModal('${moduleId}', '${id}')">🚩</span>
+                  <button onclick="openNoteModal('${moduleId}', '${id}')" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0 5px; color: #94a3b8; line-height: 1;" title="Add Note/Flag">⋮</button>
+                </div>
               </div>`;
           });
         }
@@ -881,9 +1266,87 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
 
       // Restore checklist checked state from localStorage
       loadChecklistState(moduleId);
+      loadChecklistNotes(moduleId);
 
       switchTab('guidelines'); // Default to Guidelines instead of Standard Operating Procedure now that it's simpler
     }
+
+    // --- NOTES LOGIC ---
+    function getNotesKey(moduleId, explicitStoryKey) {
+      const storyKey = explicitStoryKey || getActiveUserStoryKey();
+      const testerName = localStorage.getItem('testerName') || 'default';
+      return `checklist_notes_${testerName}_${moduleId}_${storyKey}`;
+    }
+
+    function loadChecklistNotes(moduleId) {
+      if (!moduleId) return;
+      
+      // First, hide all existing note icons in this module
+      const allIcons = document.querySelectorAll(`[id^="note-icon-${moduleId}-"]`);
+      allIcons.forEach(icon => {
+        icon.style.display = 'none';
+        icon.title = '';
+      });
+      
+      const tKey = document.getElementById('current-user-story-key').innerText.trim();
+      const notesKey = getNotesKey(moduleId, tKey);
+      
+      try {
+        const stored = localStorage.getItem(notesKey);
+        if (stored) {
+          const notes = JSON.parse(stored);
+          for (const [itemId, noteData] of Object.entries(notes)) {
+            const icon = document.getElementById(`note-icon-${moduleId}-${itemId}`);
+            if (icon && noteData && noteData.text) {
+              icon.style.display = 'inline-block';
+              icon.title = `Note: ${noteData.text}\n(${new Date(noteData.timestamp).toLocaleString()})`;
+            }
+          }
+        }
+      } catch(e) {}
+    }
+
+    window.openNoteModal = function(moduleId, itemId) {
+      const notesKey = getNotesKey(moduleId);
+      let notes = {};
+      try {
+        const stored = localStorage.getItem(notesKey);
+        if (stored) notes = JSON.parse(stored);
+      } catch(e) {}
+      
+      document.getElementById('note-module-id').value = moduleId;
+      document.getElementById('note-item-id').value = itemId;
+      document.getElementById('note-text-input').value = (notes[itemId] && notes[itemId].text) ? notes[itemId].text : '';
+      
+      document.getElementById('notes-modal').style.display = 'flex';
+    };
+
+    window.saveNote = function() {
+      const moduleId = document.getElementById('note-module-id').value;
+      const itemId = document.getElementById('note-item-id').value;
+      const text = document.getElementById('note-text-input').value.trim();
+      
+      const notesKey = getNotesKey(moduleId);
+      let notes = {};
+      try {
+        const stored = localStorage.getItem(notesKey);
+        if (stored) notes = JSON.parse(stored);
+      } catch(e) {}
+      
+      if (text) {
+        notes[itemId] = { text, timestamp: new Date().toISOString() };
+      } else {
+        delete notes[itemId];
+      }
+      
+      localStorage.setItem(notesKey, JSON.stringify(notes));
+      document.getElementById('notes-modal').style.display = 'none';
+      
+      loadChecklistNotes(moduleId);
+      
+      // Also sync to cloud when a note is added
+      saveChecklistState(moduleId);
+    };
 
     // Set up global event delegation for saving checkbox changes
     document.getElementById('checklist-container').addEventListener('change', function(e) {
@@ -947,13 +1410,16 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
         }
         
         let checklistMatch = false;
-        if (Array.isArray(module.checklist)) {
-          checklistMatch = module.checklist.some(item => item.toLowerCase().includes(q));
-        } else {
-          const entryMatch = module.checklist.entry_criteria ? module.checklist.entry_criteria.some(item => item.toLowerCase().includes(q)) : false;
-          const exitMatch = module.checklist.exit_criteria ? module.checklist.exit_criteria.some(item => item.toLowerCase().includes(q)) : false;
-          checklistMatch = entryMatch || exitMatch;
+        if (module.checklist) {
+          if (Array.isArray(module.checklist)) {
+            checklistMatch = module.checklist.some(item => typeof item === 'string' && item.toLowerCase().includes(q));
+          } else {
+            const entryMatch = module.checklist.entry_criteria ? module.checklist.entry_criteria.some(item => typeof item === 'string' && item.toLowerCase().includes(q)) : false;
+            const exitMatch = module.checklist.exit_criteria ? module.checklist.exit_criteria.some(item => typeof item === 'string' && item.toLowerCase().includes(q)) : false;
+            checklistMatch = entryMatch || exitMatch;
+          }
         }
+        
         if (checklistMatch) {
           matchScore += 3;
           matchDetails.push("Standard Operating Procedure");
@@ -1033,7 +1499,60 @@ mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose
       }
     });
 
-    window.addEventListener('DOMContentLoaded', () => {
+    // INITIALIZATION
+    document.addEventListener('DOMContentLoaded', () => {
+      // Set tester profile name in UI
+      const testerName = localStorage.getItem('testerName') || 'Anonymous Tester';
+      const displaySpan = document.getElementById('display-profile-name');
+      if (displaySpan) displaySpan.innerText = testerName;
+      
+      // Dynamic Epic/User Story Interaction
+      const epicInput = document.getElementById('epic-input');
+      const usInput = document.getElementById('user-story-input');
+      
+      if (usInput) {
+        usInput.addEventListener('change', function(e) {
+          const selectedUS = e.target.value.trim().toUpperCase();
+          if (window.globalUserStories && window.globalUserStories[selectedUS]) {
+            const epic = window.globalUserStories[selectedUS].epicKey;
+            if (epic && epicInput) {
+              epicInput.value = epic;
+              // Trigger datalist filtering based on new epic
+              epicInput.dispatchEvent(new Event('input'));
+            }
+          }
+        });
+      }
+      
+      if (epicInput) {
+        epicInput.addEventListener('input', function(e) {
+          const selectedEpic = e.target.value.trim().toUpperCase();
+          const usList = document.getElementById('us-list');
+          if (usList && window.globalUserStories) {
+            usList.innerHTML = '';
+            for (const key in window.globalUserStories) {
+              if (!selectedEpic || window.globalUserStories[key].epicKey === selectedEpic) {
+                const opt = document.createElement('option');
+                opt.value = key;
+                usList.appendChild(opt);
+              }
+            }
+          }
+        });
+      }
+      
+      // Check Admin State
+      if (localStorage.getItem('isAdmin') === 'true') {
+        const adminBtn = document.getElementById('admin-dashboard-btn');
+        if (adminBtn) adminBtn.style.display = 'inline-block';
+      }
+      
+      // Fetch data for datalists
+      if (window.fetchGlobalDataForDatalists) {
+        setTimeout(() => window.fetchGlobalDataForDatalists(), 1000); // slight delay to ensure firebase init
+      }
+
+      loadTheme();
       updateUserStoryDropdown();
       updateUserStoryDashboard();
       loadModule('ai_generation');

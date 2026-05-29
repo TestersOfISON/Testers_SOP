@@ -288,12 +288,11 @@
                 <option value="">-- Select User Story --</option>
               </select>
               
-              <label style="display: flex; align-items: center; gap: 5px; font-size: 0.9rem; margin-left: 15px; cursor: pointer; color: var(--text-color);">
-                <input type="checkbox" id="top-my-stories-filter" onchange="window.fetchGlobalDataForDatalists()" checked>
-                My Stories
-              </label>
-              
-              <div style="display: flex; align-items: center; gap: 10px; margin-left: auto; background: rgba(37,99,235,0.05); padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border);">
+              <div style="display: flex; align-items: center; gap: 15px; margin-left: auto; background: rgba(37,99,235,0.05); padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border);">
+                <label style="display: flex; align-items: center; gap: 5px; font-size: 0.9rem; cursor: pointer; color: var(--text-color); margin-right: 10px; padding-right: 10px; border-right: 1px solid #ccc;">
+                  <input type="checkbox" id="top-my-stories-filter" onchange="window.fetchGlobalDataForDatalists()" checked>
+                  My Stories
+                </label>
                 <span style="font-size: 0.85rem; color: #777;">Assignee:</span>
                 <span id="current-assignee-display" style="font-weight: bold; color: var(--primary); font-size: 0.9rem;">Unassigned</span>
                 <button id="assign-to-me-btn" class="btn" style="padding: 4px 8px; font-size: 0.8rem; margin: 0; background: #fff; color: var(--primary); border: 1px solid var(--primary); display: none;" onclick="assignToMe()">Assign to me</button>
@@ -508,7 +507,6 @@
           if (window.SOP_CONFIG.userStories) {
             window.SOP_CONFIG.userStories.forEach(us => {
               if (showOnlyMine && myName) {
-                // Check if assigned in config or in Firebase
                 const fbData = window.globalUserStories ? window.globalUserStories[us.key] : null;
                 const assignedInFb = fbData && (fbData.assignee === myName || fbData.assignedToName === myName || (fbData.testers && fbData.testers[myName]));
                 const assignedInConfig = us.assignee === myName;
@@ -516,9 +514,15 @@
                   return; // Not assigned to current user
                 }
               }
-              userStories.add(us.key);
+              
               if (us.epic) epics.add(us.epic);
               
+              // Filter user story dropdown by selected epic
+              if (currentEpic && us.epic !== currentEpic) {
+                return;
+              }
+              
+              userStories.add(us.key);
               const opt = document.createElement('option');
               opt.value = us.key;
               opt.textContent = us.key;

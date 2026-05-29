@@ -1,4 +1,18 @@
 const qaModules = {
+      "manual": {
+        title: "User Manual & Guidelines",
+        guidelines: `<h3>About This Tool</h3>
+          <p style="font-size: 1.1rem; border-left: 4px solid var(--primary); padding-left: 15px; margin: 20px 0; background: rgba(37,99,235,0.05); padding: 15px;"><strong>Note:</strong> This is not a monitoring tool. It's a self evaluation tool which helps fellow testers to follow the prescribed standard testing procedure. Happy testing!</p>
+          <h3>How to Use</h3>
+          <ul class="guideline-list">
+            <li><strong>Sequential Flow:</strong> Modules unlock sequentially. You must complete 100% of the previous module to unlock the next.</li>
+            <li><strong>Checklists:</strong> Follow the entry and exit criteria. Items marked <em>(If applicable)</em> are optional and can be skipped.</li>
+            <li><strong>Deleting Data:</strong> If you delete a user story from your local registry, it will also be permanently deleted from the cloud.</li>
+          </ul>`,
+        mermaid: ``,
+        checklist: null,
+        templates: ""
+      },
       "ai_generation": {
         title: "AI Scenario Generation via UiPath",
         guidelines: `<h3>Core Rules</h3>
@@ -22,7 +36,7 @@ const qaModules = {
             J --> K["Assign to Self & Move to Scrum Subfolder"]`,
         checklist: {
           entry_criteria: [
-            "Authenticate to UiPath Test Manager using QA Email.",
+            "Login to UiPath Test Manager using QA Email.",
             "Select appropriate prompt from library.",
             "Select User Story attachments for context."
           ],
@@ -136,8 +150,8 @@ Mandatory Labels:
           ],
           exit_criteria: [
             "Execute ALL test scenarios (No 'Aborted' statuses without comment).",
-            "If Bug found: Create Issue with Env 'UAT'.",
-            "Retest all bugs after Dev fix.",
+            "If Bug found: Create Issue with Env 'UAT'. (If applicable)",
+            "Retest all bugs after Dev fix. (If applicable)",
             "Transition US to 'Approval Required'."
           ]
         },
@@ -169,7 +183,7 @@ Mandatory Labels:
           ],
           exit_criteria: [
             "Execute. Interrupt immediately if any step fails.",
-            "If Bug: Label 'Smoke', Env 'Prelive'."
+            "If Bug: Label 'Smoke', Env 'Prelive'. (If applicable)"
           ]
         },
         templates: ""
@@ -196,11 +210,11 @@ Mandatory Labels:
         checklist: {
           entry_criteria: [
             "Verify Smoke Testing is 100% PASS.",
-            "Add Happy path LX(s) to Sub-Test Execution.",
-            "Retest UAT bugs (Major/Blocker severity ONLY)."
+            "Add Happy path LX(s) to Sub-Test Execution."
           ],
           exit_criteria: [
-            "Check 'Retested in Prelive' for verified bugs.",
+            "Retest UAT bugs (Major/Blocker severity ONLY). (If applicable)",
+            "Check 'Retested in Prelive' for verified bugs. (If applicable)",
             "Execute Happy path LXs."
           ]
         },
@@ -229,7 +243,7 @@ Mandatory Labels:
           ],
           exit_criteria: [
             "Execute all regression scenarios.",
-            "If Bug: Label 'regression', Env 'Prelive'."
+            "If Bug: Label 'regression', Env 'Prelive'. (If applicable)"
           ]
         },
         templates: ""
@@ -447,7 +461,43 @@ Expected Result: The system processes the payment and shows success screen.</div
             <li><strong>Estimates:</strong> Testing effort must be estimated in Story Points alongside dev effort.</li>
             <li><strong>Testing Stages:</strong> Defining scenarios in sprint -> UAT execution -> Bug reporting -> Demo.</li>
             <li><strong>Escalation:</strong> Immediately escalate to TLTesting@librabank.ro if blockages appear.</li>
-          </ul>`,
+          </ul>
+          <br/>
+          <h3>Estimates in Agile\\SCRUM (Story Points Estimation)</h3>
+          <p>How user stories are estimated in story points:</p>
+          <ol class="guideline-list" style="list-style-type: decimal; padding-left: 20px;">
+            <li><strong>A baseline reference is chosen:</strong> Each team refers to the reference user stories.</li>
+            <li><strong>Complexity is analyzed:</strong> The total effort necessary for completion is considered, including: complexity, duration, uncertainty.</li>
+            <li><strong>The modified Fibonacci sequence is used:</strong> The values are: 1, 2, 3, 5, 8, 13 SP.</li>
+            <li><strong>The estimation is done as a team (Planning Poker):</strong> Each member votes. Differences are discussed and re-voted. If a US exceeds 20 SP, it should be split. Estimation must include both testing and development effort.</li>
+          </ol>
+          <br/>
+          <p><strong>Example Estimates:</strong></p>
+          <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem;">
+            <tr style="background: var(--bg-color); border-bottom: 2px solid var(--border);">
+              <th style="padding: 8px; text-align: left;">Story Point</th>
+              <th style="padding: 8px; text-align: left;">Defining Scenarios</th>
+              <th style="padding: 8px; text-align: left;">UAT Testing</th>
+              <th style="padding: 8px; text-align: left;">PRL Testing</th>
+              <th style="padding: 8px; text-align: left;">Total</th>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border);">
+              <td style="padding: 8px;">1 SP</td><td style="padding: 8px;">30m</td><td style="padding: 8px;">45m</td><td style="padding: 8px;">15m</td><td style="padding: 8px;">1.5h</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border);">
+              <td style="padding: 8px;">2 SP</td><td style="padding: 8px;">1h</td><td style="padding: 8px;">1.5h</td><td style="padding: 8px;">0.5h</td><td style="padding: 8px;">3h</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border);">
+              <td style="padding: 8px;">3 SP</td><td style="padding: 8px;">1h</td><td style="padding: 8px;">2.5h</td><td style="padding: 8px;">1h</td><td style="padding: 8px;">4.5h</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border);">
+              <td style="padding: 8px;">5 SP</td><td style="padding: 8px;">2h</td><td style="padding: 8px;">4h</td><td style="padding: 8px;">1.5h</td><td style="padding: 8px;">7.5h</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border);">
+              <td style="padding: 8px;">8 SP</td><td style="padding: 8px;">3h</td><td style="padding: 8px;">7h</td><td style="padding: 8px;">2h</td><td style="padding: 8px;">12h</td>
+            </tr>
+          </table>
+          <p style="font-size: 0.8rem; margin-top: 10px;"><em>* IMPORTANT: These values are purely indicative, each team adjusts its estimates based on experience.</em></p>`,
         mermaid: `flowchart TD
             A["Sprint Planning"] --> B["Analyze US & Story Points"]
             B --> C["Sprint Backlog Created"]
