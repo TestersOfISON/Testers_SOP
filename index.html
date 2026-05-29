@@ -535,29 +535,14 @@
           epicList.appendChild(opt);
         });
         
-        for (const key in data) {
-          if (!userStories.has(key)) {
-            userStories.add(key);
-            const opt = document.createElement('option');
-            opt.value = key;
-            opt.textContent = key;
-            opt.dataset.epic = data[key].epicKey || '';
-            usList.appendChild(opt);
-          }
-          if (data[key].epicKey) {
-            epics.add(data[key].epicKey);
-          }
+        // Ensure default selections
+        if (currentEpic && epics.has(currentEpic)) {
+          epicList.value = currentEpic;
         }
         
-        epics.forEach(epic => {
-          const opt = document.createElement('option');
-          opt.value = epic;
-          opt.textContent = epic;
-          epicList.appendChild(opt);
-        });
-        
-        if (currentEpic) epicList.value = currentEpic;
-        if (currentUS) usList.value = currentUS;
+        if (currentUS && userStories.has(currentUS)) {
+          usList.value = currentUS;
+        }
         
       } catch(e) {
         console.error("Error fetching global user stories:", e);
