@@ -36,7 +36,7 @@ const qaModules = {
             J --> K["Assign to Self & Move to Scrum Subfolder"]`,
         checklist: {
           entry_criteria: [
-            "Authenticate to UiPath Test Manager using QA Email.",
+            "Login to UiPath Test Manager using QA Email.",
             "Select appropriate prompt from library.",
             "Select User Story attachments for context."
           ],
