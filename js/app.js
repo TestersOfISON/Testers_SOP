@@ -107,7 +107,7 @@ try {
 
     // --- THEME TOGGLE ---
     window.toggleTheme = function() {
-      document.body.style.transition = 'opacity 0.3s ease-in-out';
+      document.body.style.transition = 'opacity 0.15s ease-in-out';
       document.body.style.opacity = 0;
       
       setTimeout(() => {
@@ -130,7 +130,7 @@ try {
         }
         
         document.body.style.opacity = 1;
-      }, 300);
+      }, 150);
     };
 
     // --- OFFLINE / ONLINE LOGIC ---
@@ -1231,27 +1231,38 @@ try {
     }
 
     // --- NOTES LOGIC ---
-    function getNotesKey(moduleId) {
-      const storyKey = getActiveUserStoryKey();
+    function getNotesKey(moduleId, explicitStoryKey) {
+      const storyKey = explicitStoryKey || getActiveUserStoryKey();
       const testerName = localStorage.getItem('testerName') || 'default';
       return `checklist_notes_${testerName}_${moduleId}_${storyKey}`;
     }
 
     function loadChecklistNotes(moduleId) {
-      const notesKey = getNotesKey(moduleId);
-      let notes = {};
+      if (!moduleId) return;
+      
+      // First, hide all existing note icons in this module
+      const allIcons = document.querySelectorAll(`[id^="note-icon-${moduleId}-"]`);
+      allIcons.forEach(icon => {
+        icon.style.display = 'none';
+        icon.title = '';
+      });
+      
+      const tKey = document.getElementById('current-user-story-key').innerText.trim();
+      const notesKey = getNotesKey(moduleId, tKey);
+      
       try {
         const stored = localStorage.getItem(notesKey);
-        if (stored) notes = JSON.parse(stored);
-      } catch(e) {}
-      
-      for (const [itemId, noteData] of Object.entries(notes)) {
-        const icon = document.getElementById(`note-icon-${moduleId}-${itemId}`);
-        if (icon && noteData && noteData.text) {
-          icon.style.display = 'inline-block';
-          icon.title = `Note: ${noteData.text}\n(${new Date(noteData.timestamp).toLocaleString()})`;
+        if (stored) {
+          const notes = JSON.parse(stored);
+          for (const [itemId, noteData] of Object.entries(notes)) {
+            const icon = document.getElementById(`note-icon-${moduleId}-${itemId}`);
+            if (icon && noteData && noteData.text) {
+              icon.style.display = 'inline-block';
+              icon.title = `Note: ${noteData.text}\n(${new Date(noteData.timestamp).toLocaleString()})`;
+            }
+          }
         }
-      }
+      } catch(e) {}
     }
 
     window.openNoteModal = function(moduleId, itemId) {
