@@ -612,10 +612,10 @@
         tbody.innerHTML = '';
         if (snapshot.exists()) {
           const data = snapshot.val();
-          const validKeys = window.SOP_CONFIG ? new Set(window.SOP_CONFIG.userStories.map(u => u.key)) : null;
+          const validKeys = window.SOP_CONFIG ? new Set(window.SOP_CONFIG.userStories.map(u => u.key.toUpperCase())) : null;
           
           for (const [storyKey, storyData] of Object.entries(data)) {
-            if (validKeys && !validKeys.has(storyKey)) {
+            if (validKeys && !validKeys.has(storyKey.toUpperCase())) {
               // Optionally delete old story from DB here to clean up completely
               remove(child(dbRef, 'user_stories/' + storyKey)).catch(e => console.error(e));
               continue;
@@ -656,10 +656,10 @@
         tbody.innerHTML = '';
         if (snapshot.exists()) {
           const data = snapshot.val();
-          const validKeys = window.SOP_CONFIG ? new Set(window.SOP_CONFIG.userStories.map(u => u.key)) : null;
+          const validKeys = window.SOP_CONFIG ? new Set(window.SOP_CONFIG.userStories.map(u => u.key.toUpperCase())) : null;
 
           for (const key in data) {
-            if (validKeys && !validKeys.has(key)) continue;
+            if (validKeys && !validKeys.has(key.toUpperCase())) continue;
             
             const row = data[key];
             const epic = row.epicKey || '';
@@ -765,10 +765,10 @@
         const snapshot = await get(child(dbRef, `user_stories`));
         if (snapshot.exists()) {
            const stories = snapshot.val();
-           const validKeys = window.SOP_CONFIG ? new Set(window.SOP_CONFIG.userStories.map(u => u.key)) : null;
+           const validKeys = window.SOP_CONFIG ? new Set(window.SOP_CONFIG.userStories.map(u => u.key.toUpperCase())) : null;
            let fetchedCount = 0;
            for (const [key, data] of Object.entries(stories)) {
-             if (validKeys && !validKeys.has(key)) continue;
+             if (validKeys && !validKeys.has(key.toUpperCase())) continue;
              
             const testerData = data.testers ? data.testers[username] : null;
             if (data.assignee === username || data.assignedToName === username || 
