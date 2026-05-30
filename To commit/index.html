@@ -507,7 +507,7 @@
           if (window.SOP_CONFIG.userStories) {
             window.SOP_CONFIG.userStories.forEach(us => {
               if (showOnlyMine && myName) {
-                const fbData = window.globalUserStories ? window.globalUserStories[us.key] : null;
+                const fbData = window.globalUserStories ? window.globalUserStories[us.key.toUpperCase()] : null;
                 const assignedInFb = fbData && (fbData.assignee === myName || fbData.assignedToName === myName || (fbData.testers && fbData.testers[myName]));
                 const assignedInConfig = us.assignee === myName;
                 if (!assignedInFb && !assignedInConfig) {

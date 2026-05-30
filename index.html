@@ -279,7 +279,8 @@
       <div id="tab-checklist" class="tab-content">
         <div id="user-story-bar-container" class="user-story-bar-container" style="background: var(--bg-color); padding: 15px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 15px; position: relative;">
           
-          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; width: 100%;">
+            <!-- Left: Dropdowns -->
             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
               <span style="font-weight: 600; font-size: 0.95rem; white-space: nowrap; color: var(--primary);">Epic:</span>
               <select id="epic-input" class="form-input" style="max-width: 200px; padding: 8px 12px; margin: 0;" onchange="handleEpicKeyChange()">
@@ -290,16 +291,17 @@
               <select id="user-story-input" class="form-input" style="max-width: 250px; padding: 8px 12px; margin: 0;" onchange="handleUserStoryKeyChange()">
                 <option value="">-- Select User Story --</option>
               </select>
-              
-              <div style="position: absolute; top: 15px; right: 15px; display: flex; align-items: center; gap: 15px; background: rgba(37,99,235,0.05); padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border);">
-                <label style="display: flex; align-items: center; gap: 5px; font-size: 0.9rem; cursor: pointer; color: var(--text-color); margin-right: 10px; padding-right: 10px; border-right: 1px solid #ccc;">
-                  <input type="checkbox" id="top-my-stories-filter" onchange="window.fetchGlobalDataForDatalists()" checked>
-                  My Stories
-                </label>
-                <span style="font-size: 0.85rem; color: #777;">Assignee:</span>
-                <span id="current-assignee-display" style="font-weight: bold; color: var(--primary); font-size: 0.9rem;">Unassigned</span>
-                <button id="assign-to-me-btn" class="btn" style="padding: 4px 8px; font-size: 0.8rem; margin: 0; background: #fff; color: var(--primary); border: 1px solid var(--primary); display: none;" onclick="assignToMe()">Assign to me</button>
-              </div>
+            </div>
+            
+            <!-- Right: Filter & Assignee -->
+            <div style="display: flex; align-items: center; gap: 15px; background: rgba(37,99,235,0.05); padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border); flex-shrink: 0; margin-left: auto;">
+              <label style="display: flex; align-items: center; gap: 5px; font-size: 0.9rem; cursor: pointer; color: var(--text-color); margin-right: 10px; padding-right: 10px; border-right: 1px solid #ccc; margin-bottom: 0;">
+                <input type="checkbox" id="top-my-stories-filter" onchange="window.fetchGlobalDataForDatalists()" checked>
+                My Stories
+              </label>
+              <span style="font-size: 0.85rem; color: #777;">Assignee:</span>
+              <span id="current-assignee-display" style="font-weight: bold; color: var(--primary); font-size: 0.9rem;">Unassigned</span>
+              <button id="assign-to-me-btn" class="btn" style="padding: 4px 8px; font-size: 0.8rem; margin: 0; background: #fff; color: var(--primary); border: 1px solid var(--primary); display: none;" onclick="assignToMe()">Assign to me</button>
             </div>
           </div>
           
@@ -512,7 +514,7 @@
           if (window.SOP_CONFIG.userStories) {
             window.SOP_CONFIG.userStories.forEach(us => {
               if (showOnlyMine && myName) {
-                const fbData = window.globalUserStories ? window.globalUserStories[us.key] : null;
+                const fbData = window.globalUserStories ? window.globalUserStories[us.key.toUpperCase()] : null;
                 const assignedInFb = fbData && (fbData.assignee === myName || fbData.assignedToName === myName || (fbData.testers && fbData.testers[myName]));
                 const assignedInConfig = us.assignee === myName;
                 if (!assignedInFb && !assignedInConfig) {
