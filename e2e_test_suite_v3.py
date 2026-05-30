@@ -36,7 +36,7 @@ def run_e2e_tests():
         # PHASE 1: AUTHENTICATION
         # =========================================================
         print("\n--- Phase 1: Authentication Workflow ---")
-        driver.get("https://testersofison.github.io/Testers_SOP/")
+        driver.get(r"file:///c:/Users/vigne/Downloads/Libra/index.html")
         time.sleep(3)
         
         driver.find_element(By.ID, "tester-name-input").send_keys("E2E-Automated-Tester-V3")

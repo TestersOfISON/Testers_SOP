@@ -323,17 +323,11 @@
         if (snapshot.exists()) {
            const stories = snapshot.val();
            let fetchedCount = 0;
+           let reg = [];
            for (const [key, data] of Object.entries(stories)) {
              if (data.assignee === username || data.assignedToName === username) {
-               // Make sure it's in local registry
-               let reg = [];
-               try {
-                 const stored = localStorage.getItem('sop_user_story_registry');
-                 if (stored) reg = JSON.parse(stored);
-               } catch(e){}
                if (!reg.includes(key)) {
                  reg.push(key);
-                 localStorage.setItem('sop_user_story_registry', JSON.stringify(reg));
                }
                // Sync state down to local storage
                for (const [moduleId, modData] of Object.entries(data)) {
@@ -347,6 +341,7 @@
                fetchedCount++;
              }
            }
+           localStorage.setItem('sop_user_story_registry', JSON.stringify(reg));
            if (typeof updateUserStoryDropdown === 'function') updateUserStoryDropdown();
            return fetchedCount;
         }

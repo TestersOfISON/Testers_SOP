@@ -341,8 +341,8 @@
                 <option value="ALL">All Epics</option>
               </select>
               <select id="dashboard-assignee-filter" class="form-input" style="padding: 5px 10px; margin: 0; font-size: 0.9rem;" onchange="updateUserStoryDashboard()">
+                <option value="MINE" selected>My Stories</option>
                 <option value="ALL">All Stories</option>
-                <option value="MINE">My Stories</option>
               </select>
             </div>
           </div>
@@ -749,6 +749,7 @@
            const stories = snapshot.val();
            const validKeys = window.SOP_CONFIG ? new Set(window.SOP_CONFIG.userStories.map(u => u.key.toUpperCase())) : null;
            let fetchedCount = 0;
+           let reg = [];
            for (const [key, data] of Object.entries(stories)) {
              if (validKeys && !validKeys.has(key.toUpperCase())) continue;
              
@@ -756,14 +757,8 @@
             if (data.assignee === username || data.assignedToName === username || 
                (testerData && (testerData.assignee === username || testerData.assignedToName === username))) {
                
-               let reg = [];
-               try {
-                 const stored = localStorage.getItem('sop_user_story_registry_' + username);
-                 if (stored) reg = JSON.parse(stored);
-               } catch(e){}
                if (!reg.includes(key)) {
                  reg.push(key);
-                 localStorage.setItem('sop_user_story_registry_' + username, JSON.stringify(reg));
                }
                
                if (testerData) {
@@ -789,6 +784,7 @@
                fetchedCount++;
              }
            }
+           localStorage.setItem('sop_user_story_registry_' + username, JSON.stringify(reg));
            if (typeof updateUserStoryDropdown === 'function') updateUserStoryDropdown();
            return fetchedCount;
         }

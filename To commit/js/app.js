@@ -248,6 +248,13 @@ try {
       const displaySpan = document.getElementById('display-profile-name');
       if (displaySpan) displaySpan.innerText = newName;
       
+      // Clear active story selection before fetching new user's stories to prevent registry leakage
+      const epicInput = document.getElementById('epic-input');
+      const usInput = document.getElementById('user-story-input');
+      if (epicInput) epicInput.value = '';
+      if (usInput) usInput.value = '';
+      window.handleUserStoryKeyChange();
+
       // Fetch assigned user stories
       if (window.fetchAssignedUserStories) {
         const count = await window.fetchAssignedUserStories(newName);
@@ -256,14 +263,13 @@ try {
         alert("Name updated successfully!");
       }
       
-      // Force sync current state
-      if (typeof currentModuleId !== 'undefined' && currentModuleId) {
-        saveChecklistState(currentModuleId);
-      }
-      
-      // Fix 1: Refresh dropdowns with the new user's assigned stories
+      // Refresh dropdowns with the new user's assigned stories
       if (window.fetchGlobalDataForDatalists) {
         window.fetchGlobalDataForDatalists();
+      }
+      
+      if (window.updateUserStoryDashboard) {
+        window.updateUserStoryDashboard();
       }
       
       document.getElementById('name-modal').style.display = 'none';
@@ -361,7 +367,10 @@ try {
       if (window.globalUserStories && window.globalUserStories[tKey]) {
         const fbData = window.globalUserStories[tKey];
         if (fbData.epicKey) meta.epicKey = fbData.epicKey;
-        if (fbData.assignee || fbData.assignedToName) {
+        const myName = localStorage.getItem('testerName') || '';
+        if (fbData.testers && fbData.testers[myName]) {
+          meta.assignee = myName;
+        } else if (fbData.assignee || fbData.assignedToName) {
            meta.assignee = fbData.assignee || fbData.assignedToName;
         } else if (fbData.testers) {
            for (const tName in fbData.testers) {
