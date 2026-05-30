@@ -276,27 +276,33 @@
       <div id="tab-checklist" class="tab-content">
         <div id="user-story-bar-container" class="user-story-bar-container" style="background: var(--bg-color); padding: 15px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 15px;">
           
-          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
-            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-              <span style="font-weight: 600; font-size: 0.95rem; white-space: nowrap; color: var(--primary);">Epic:</span>
-              <select id="epic-input" class="form-input" style="max-width: 200px; padding: 8px 12px; margin: 0;" onchange="handleEpicKeyChange()">
-                <option value="">-- Select Epic --</option>
-              </select>
-              
-              <span style="font-weight: 600; font-size: 0.95rem; white-space: nowrap; margin-left: 10px;">User Story:</span>
-              <select id="user-story-input" class="form-input" style="max-width: 250px; padding: 8px 12px; margin: 0;" onchange="handleUserStoryKeyChange()">
-                <option value="">-- Select User Story --</option>
-              </select>
-              
-              <div style="display: flex; align-items: center; gap: 15px; margin-left: auto; background: rgba(37,99,235,0.05); padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border);">
-                <label style="display: flex; align-items: center; gap: 5px; font-size: 0.9rem; cursor: pointer; color: var(--text-color); margin-right: 10px; padding-right: 10px; border-right: 1px solid #ccc;">
-                  <input type="checkbox" id="top-my-stories-filter" onchange="window.fetchGlobalDataForDatalists()" checked>
-                  My Stories
-                </label>
-                <span style="font-size: 0.85rem; color: #777;">Assignee:</span>
-                <span id="current-assignee-display" style="font-weight: bold; color: var(--primary); font-size: 0.9rem;">Unassigned</span>
-                <button id="assign-to-me-btn" class="btn" style="padding: 4px 8px; font-size: 0.8rem; margin: 0; background: #fff; color: var(--primary); border: 1px solid var(--primary); display: none;" onclick="assignToMe()">Assign to me</button>
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; width: 100%;">
+            <!-- Left: Dropdowns -->
+            <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 10px; white-space: nowrap;">
+                <span style="font-weight: 600; font-size: 0.95rem; color: var(--primary);">Epic:</span>
+                <select id="epic-input" class="form-input" style="max-width: 200px; width: 200px; padding: 8px 12px; margin: 0;" onchange="handleEpicKeyChange()">
+                  <option value="">-- Select Epic --</option>
+                </select>
               </div>
+              
+              <div style="display: flex; align-items: center; gap: 10px; white-space: nowrap;">
+                <span style="font-weight: 600; font-size: 0.95rem;">User Story:</span>
+                <select id="user-story-input" class="form-input" style="max-width: 250px; width: 250px; padding: 8px 12px; margin: 0;" onchange="handleUserStoryKeyChange()">
+                  <option value="">-- Select User Story --</option>
+                </select>
+              </div>
+            </div>
+            
+            <!-- Right: Filter & Assignee -->
+            <div style="display: flex; align-items: center; gap: 15px; background: rgba(37,99,235,0.05); padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border); flex-shrink: 0; margin-left: auto;">
+              <label style="display: flex; align-items: center; gap: 5px; font-size: 0.9rem; cursor: pointer; color: var(--text-color); margin-right: 10px; padding-right: 10px; border-right: 1px solid #ccc; margin-bottom: 0;">
+                <input type="checkbox" id="top-my-stories-filter" onchange="window.fetchGlobalDataForDatalists()" checked>
+                My Stories
+              </label>
+              <span style="font-size: 0.85rem; color: #777;">Assignee:</span>
+              <span id="current-assignee-display" style="font-weight: bold; color: var(--primary); font-size: 0.9rem;">Unassigned</span>
+              <button id="assign-to-me-btn" class="btn" style="padding: 4px 8px; font-size: 0.8rem; margin: 0; background: #fff; color: var(--primary); border: 1px solid var(--primary); display: none;" onclick="assignToMe()">Assign to me</button>
             </div>
           </div>
           
@@ -607,10 +613,10 @@
         tbody.innerHTML = '';
         if (snapshot.exists()) {
           const data = snapshot.val();
-          const validKeys = window.SOP_CONFIG ? new Set(window.SOP_CONFIG.userStories.map(u => u.key)) : null;
+          const validKeys = window.SOP_CONFIG ? new Set(window.SOP_CONFIG.userStories.map(u => u.key.toUpperCase())) : null;
           
           for (const [storyKey, storyData] of Object.entries(data)) {
-            if (validKeys && !validKeys.has(storyKey)) {
+            if (validKeys && !validKeys.has(storyKey.toUpperCase())) {
               // Optionally delete old story from DB here to clean up completely
               remove(child(dbRef, 'user_stories/' + storyKey)).catch(e => console.error(e));
               continue;
@@ -651,10 +657,10 @@
         tbody.innerHTML = '';
         if (snapshot.exists()) {
           const data = snapshot.val();
-          const validKeys = window.SOP_CONFIG ? new Set(window.SOP_CONFIG.userStories.map(u => u.key)) : null;
+          const validKeys = window.SOP_CONFIG ? new Set(window.SOP_CONFIG.userStories.map(u => u.key.toUpperCase())) : null;
 
           for (const key in data) {
-            if (validKeys && !validKeys.has(key)) continue;
+            if (validKeys && !validKeys.has(key.toUpperCase())) continue;
             
             const row = data[key];
             const epic = row.epicKey || '';
@@ -741,10 +747,10 @@
         const snapshot = await get(child(dbRef, `user_stories`));
         if (snapshot.exists()) {
            const stories = snapshot.val();
-           const validKeys = window.SOP_CONFIG ? new Set(window.SOP_CONFIG.userStories.map(u => u.key)) : null;
+           const validKeys = window.SOP_CONFIG ? new Set(window.SOP_CONFIG.userStories.map(u => u.key.toUpperCase())) : null;
            let fetchedCount = 0;
            for (const [key, data] of Object.entries(stories)) {
-             if (validKeys && !validKeys.has(key)) continue;
+             if (validKeys && !validKeys.has(key.toUpperCase())) continue;
              
             const testerData = data.testers ? data.testers[username] : null;
             if (data.assignee === username || data.assignedToName === username || 

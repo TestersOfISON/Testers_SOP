@@ -1316,7 +1316,8 @@ try {
         icon.title = '';
       });
       
-      const tKey = document.getElementById('current-user-story-key').innerText.trim();
+      const storyKeyEl = document.getElementById('current-user-story-key');
+      const tKey = storyKeyEl ? storyKeyEl.innerText.trim() : getActiveUserStoryKey();
       const notesKey = getNotesKey(moduleId, tKey);
       
       try {

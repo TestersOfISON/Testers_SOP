@@ -281,16 +281,20 @@
           
           <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; width: 100%;">
             <!-- Left: Dropdowns -->
-            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-              <span style="font-weight: 600; font-size: 0.95rem; white-space: nowrap; color: var(--primary);">Epic:</span>
-              <select id="epic-input" class="form-input" style="max-width: 200px; padding: 8px 12px; margin: 0;" onchange="handleEpicKeyChange()">
-                <option value="">-- Select Epic --</option>
-              </select>
+            <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 10px; white-space: nowrap;">
+                <span style="font-weight: 600; font-size: 0.95rem; color: var(--primary);">Epic:</span>
+                <select id="epic-input" class="form-input" style="max-width: 200px; width: 200px; padding: 8px 12px; margin: 0;" onchange="handleEpicKeyChange()">
+                  <option value="">-- Select Epic --</option>
+                </select>
+              </div>
               
-              <span style="font-weight: 600; font-size: 0.95rem; white-space: nowrap; margin-left: 10px;">User Story:</span>
-              <select id="user-story-input" class="form-input" style="max-width: 250px; padding: 8px 12px; margin: 0;" onchange="handleUserStoryKeyChange()">
-                <option value="">-- Select User Story --</option>
-              </select>
+              <div style="display: flex; align-items: center; gap: 10px; white-space: nowrap;">
+                <span style="font-weight: 600; font-size: 0.95rem;">User Story:</span>
+                <select id="user-story-input" class="form-input" style="max-width: 250px; width: 250px; padding: 8px 12px; margin: 0;" onchange="handleUserStoryKeyChange()">
+                  <option value="">-- Select User Story --</option>
+                </select>
+              </div>
             </div>
             
             <!-- Right: Filter & Assignee -->
