@@ -107,6 +107,7 @@
               <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">User Story</th>
               <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">Epic</th>
               <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">Assignee</th>
+              <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">Progress</th>
               <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">Last Updated</th>
               <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: center;">Actions</th>
             </tr>
@@ -403,7 +404,7 @@
         let epicKey = '';
         let assignee = testerName;
         try {
-          const metaStr = localStorage.getItem('sop_user_story_meta_' + userStoryKey);
+          const metaStr = localStorage.getItem('sop_user_story_meta_' + testerName + '_' + userStoryKey);
           if (metaStr) {
             const meta = JSON.parse(metaStr);
             if (meta.epicKey) epicKey = meta.epicKey;
@@ -425,6 +426,8 @@
         
         if (epicKey) updates['user_stories/' + userStoryKey + '/epicKey'] = epicKey;
         if (assignee) {
+          updates['user_stories/' + userStoryKey + '/assignee'] = assignee;
+          updates['user_stories/' + userStoryKey + '/assignedToName'] = assignee;
           updates['user_stories/' + userStoryKey + '/testers/' + testerName + '/assignee'] = assignee;
           updates['user_stories/' + userStoryKey + '/testers/' + testerName + '/assignedToName'] = assignee;
         }
@@ -661,6 +664,19 @@
             const row = data[key];
             const epic = row.epicKey || '';
             const assignee = row.assignee || row.assignedToName || 'Unassigned';
+            
+            let progress = '0';
+            if (row.testers) {
+               if (row.testers[assignee] && row.testers[assignee].overallProgress) {
+                  progress = row.testers[assignee].overallProgress;
+               } else {
+                  const firstTester = Object.values(row.testers)[0];
+                  if (firstTester && firstTester.overallProgress) {
+                     progress = firstTester.overallProgress;
+                  }
+               }
+            }
+            
             const lastUpdated = row.lastUpdated ? new Date(row.lastUpdated).toLocaleString() : 'N/A';
             
             const tr = document.createElement('tr');
@@ -668,6 +684,12 @@
               <td style="padding: 12px; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--primary);">${key}</td>
               <td style="padding: 12px; border-bottom: 1px solid var(--border);">${epic}</td>
               <td style="padding: 12px; border-bottom: 1px solid var(--border);">${assignee}</td>
+              <td style="padding: 12px; border-bottom: 1px solid var(--border); vertical-align: middle;">
+                <div style="background: rgba(0,0,0,0.1); border-radius: 10px; height: 10px; width: 100%; overflow: hidden;">
+                  <div style="background: hsl(${Math.round((parseInt(progress)/100)*120)}, 80%, 45%); width: ${progress}%; height: 100%;"></div>
+                </div>
+                <div style="font-size: 0.75rem; text-align: right; margin-top: 3px; color: #777;">${progress}%</div>
+              </td>
               <td style="padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.85rem; color: #777;">${lastUpdated}</td>
               <td style="padding: 12px; border-bottom: 1px solid var(--border); text-align: center;">
                 <button class="btn btn-primary" style="margin: 0; padding: 4px 8px; font-size: 0.8rem; background: #d97706;" onclick="window.editAdminUserStory('${key}', '${epic}', '${assignee}')">Edit</button>
