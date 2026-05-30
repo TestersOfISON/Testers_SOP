@@ -1527,6 +1527,14 @@ try {
       }
     });
 
+    window.loadTheme = function() {
+      const savedTheme = localStorage.getItem('theme') || localStorage.getItem('theme_preference') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      document.body.setAttribute('data-theme', savedTheme);
+      const btn = document.getElementById('theme-toggle');
+      if (btn) btn.innerText = savedTheme === 'dark' ? '☀️' : '🌙';
+    };
+
     // INITIALIZATION
     document.addEventListener('DOMContentLoaded', () => {
       // Set tester profile name in UI

@@ -105,7 +105,7 @@ def run_e2e_tests():
         options = us_select.find_elements(By.TAG_NAME, "option")
         found = False
         for opt in options:
-            if "WF-7849" in opt.text:
+            if "WF-7849" in opt.get_attribute("textContent"):
                 val = opt.get_attribute("value")
                 driver.execute_script("arguments[0].value = arguments[1];", us_select, val)
                 driver.execute_script("arguments[0].dispatchEvent(new Event('change'));", us_select)
