@@ -97,7 +97,9 @@ def run_e2e_tests():
         my_stories = driver.find_element(By.ID, "top-my-stories-filter")
         if my_stories.is_selected():
             driver.execute_script("arguments[0].click();", my_stories)
-            time.sleep(2)
+            WebDriverWait(driver, 15).until(
+                lambda d: len(d.find_element(By.ID, "user-story-input").find_elements(By.TAG_NAME, "option")) > 1
+            )
             
         us_select = driver.find_element(By.ID, "user-story-input")
         options = us_select.find_elements(By.TAG_NAME, "option")
