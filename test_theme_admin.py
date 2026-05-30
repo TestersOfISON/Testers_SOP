@@ -468,6 +468,44 @@ def run_non_admin_tests():
         except Exception as e:
             record("N5", "Theme toggle works for normal users", "FAIL", str(e))
 
+        # Navigate to Standard Operating Procedure (Checklist) tab for SOP layout/filter checks
+        try:
+            tabs = driver.find_elements(By.CLASS_NAME, "tab-btn")
+            for tab in tabs:
+                if "Standard Operating Procedure" in tab.text:
+                    driver.execute_script("arguments[0].click();", tab)
+                    break
+            time.sleep(2)
+        except Exception as e:
+            print("Failed to navigate to SOP checklist tab:", e)
+
+        # N6: My Stories checkbox checked keeps dropdown layout inline (no wrap)
+        try:
+            my_stories = driver.find_element(By.ID, "top-my-stories-filter")
+            if not my_stories.is_selected():
+                driver.execute_script("arguments[0].click();", my_stories)
+                time.sleep(1.5)
+                
+            loc_epic = driver.find_element(By.ID, "epic-input").location
+            loc_us = driver.find_element(By.ID, "user-story-input").location
+            is_inline = abs(loc_epic['y'] - loc_us['y']) < 15
+            record("N6", "My Stories checkbox checked keeps dropdown layout inline (no wrap)",
+                   "PASS" if is_inline else "FAIL",
+                   f"Epic Y: {loc_epic['y']}, US Y: {loc_us['y']}, diff: {abs(loc_epic['y'] - loc_us['y'])}")
+        except Exception as e:
+            record("N6", "My Stories checkbox checked keeps dropdown layout inline (no wrap)", "FAIL", str(e))
+
+        # N7: My Stories dropdown is not empty for Test user
+        try:
+            us_select = driver.find_element(By.ID, "user-story-input")
+            options = us_select.find_elements(By.TAG_NAME, "option")
+            has_assigned = len(options) > 1
+            record("N7", "My Stories checkbox checked populates assigned user stories (not empty)",
+                   "PASS" if has_assigned else "FAIL",
+                   f"Options count: {len(options)}")
+        except Exception as e:
+            record("N7", "My Stories checkbox checked populates assigned user stories (not empty)", "FAIL", str(e))
+
         driver.save_screenshot("test_non_admin_result.png")
         print("  📸 Screenshot saved: test_non_admin_result.png")
 
