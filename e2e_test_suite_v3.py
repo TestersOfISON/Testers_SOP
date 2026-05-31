@@ -97,6 +97,11 @@ def run_e2e_tests():
         # =========================================================
         print("\n--- Phase 3: SOP Workflow & Checklists ---")
         
+        # Load a module that actually has checklists (AI Scenario Generation)
+        ai_module_btn = driver.find_element(By.XPATH, "//button[contains(text(), 'AI Scenario Generation')]")
+        driver.execute_script("arguments[0].click();", ai_module_btn)
+        time.sleep(1)
+        
         tabs = driver.find_elements(By.CLASS_NAME, "tab-btn")
         for tab in tabs:
             if "Standard Operating Procedure" in tab.text:
