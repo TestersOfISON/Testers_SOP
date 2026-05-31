@@ -160,9 +160,9 @@ def run_e2e_tests():
         print("[*] Clicking checkboxes in module 1...")
         checkboxes = driver.find_elements(By.CSS_SELECTOR, "#checklist-container input[type='checkbox']")
         if len(checkboxes) >= 2:
-            driver.execute_script("arguments[0].click(); arguments[0].dispatchEvent(new Event('change', {bubbles: true}));", checkboxes[0])
-            time.sleep(0.5)
-            driver.execute_script("arguments[0].click(); arguments[0].dispatchEvent(new Event('change', {bubbles: true}));", checkboxes[1])
+            driver.execute_script("arguments[0].checked = true; arguments[0].dispatchEvent(new Event('change', {bubbles: true}));", checkboxes[0])
+            time.sleep(1)
+            driver.execute_script("arguments[0].checked = true; arguments[0].dispatchEvent(new Event('change', {bubbles: true}));", checkboxes[1])
             time.sleep(3)
             
             progress_text = driver.find_element(By.ID, "progress-text-label").text
