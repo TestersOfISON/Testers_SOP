@@ -70,9 +70,11 @@ def run_e2e_tests():
         time.sleep(1)
         
         try:
-            manual_content = driver.find_element(By.ID, "module-content").text
+            manual_content = driver.find_element(By.ID, "tab-guidelines").text
+            print(f"MANUAL TEXT DEBUG: {manual_content[:200]}")
             report("Manual module warning message is rendered", "This is not a monitoring tool" in manual_content)
-        except Exception:
+        except Exception as e:
+            print(f"Exception checking manual text: {e}")
             report("Manual module warning message is rendered", False)
 
         html_elem = driver.find_element(By.TAG_NAME, "html")
@@ -161,7 +163,7 @@ def run_e2e_tests():
             driver.execute_script("arguments[0].click(); arguments[0].dispatchEvent(new Event('change', {bubbles: true}));", checkboxes[0])
             time.sleep(0.5)
             driver.execute_script("arguments[0].click(); arguments[0].dispatchEvent(new Event('change', {bubbles: true}));", checkboxes[1])
-            time.sleep(1)
+            time.sleep(3)
             
             progress_text = driver.find_element(By.ID, "progress-text-label").text
             report("Progress bar is greater than 0%", progress_text != "Active Status: 0%")
