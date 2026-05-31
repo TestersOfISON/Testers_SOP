@@ -895,6 +895,19 @@ try {
     window.handleUserStorySelect = function(storyKey) {
       const input = document.getElementById('user-story-input');
       if (input) {
+        let exists = false;
+        for (let i = 0; i < input.options.length; i++) {
+          if (input.options[i].value === storyKey) {
+            exists = true;
+            break;
+          }
+        }
+        if (!exists) {
+          const opt = document.createElement('option');
+          opt.value = storyKey;
+          opt.textContent = storyKey;
+          input.appendChild(opt);
+        }
         input.value = storyKey;
         input.dispatchEvent(new Event('change'));
       }
