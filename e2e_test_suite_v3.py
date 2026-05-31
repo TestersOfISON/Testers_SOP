@@ -21,9 +21,11 @@ def run_e2e_tests():
 
     passes = 0
     failures = 0
+    total_tests = 0
     
     def report(name, condition):
-        nonlocal passes, failures
+        nonlocal passes, failures, total_tests
+        total_tests += 1
         if condition:
             print(f"[PASS ✅] {name}")
             passes += 1
@@ -62,6 +64,17 @@ def run_e2e_tests():
         
         report("Application Title is correct", "SOP" in driver.title)
         
+        # Verify Manual Module text
+        manual_btn = driver.find_element(By.XPATH, "//button[contains(text(), 'User Manual')]")
+        driver.execute_script("arguments[0].click();", manual_btn)
+        time.sleep(1)
+        
+        try:
+            manual_content = driver.find_element(By.ID, "module-content").text
+            report("Manual module warning message is rendered", "This is not a monitoring tool" in manual_content)
+        except Exception:
+            report("Manual module warning message is rendered", False)
+
         html_elem = driver.find_element(By.TAG_NAME, "html")
         theme = html_elem.get_attribute("data-theme") or "light"
         report("Default theme is light", theme == "light")
@@ -140,15 +153,22 @@ def run_e2e_tests():
         print("[*] Clicking checkboxes in module 1...")
         checkboxes = driver.find_elements(By.CSS_SELECTOR, "#checklist-container input[type='checkbox']")
         if len(checkboxes) >= 2:
-            driver.execute_script("arguments[0].click();", checkboxes[0])
+            driver.execute_script("arguments[0].click(); arguments[0].dispatchEvent(new Event('change', {bubbles: true}));", checkboxes[0])
             time.sleep(0.5)
-            driver.execute_script("arguments[0].click();", checkboxes[1])
+            driver.execute_script("arguments[0].click(); arguments[0].dispatchEvent(new Event('change', {bubbles: true}));", checkboxes[1])
             time.sleep(1)
             
             progress_text = driver.find_element(By.ID, "progress-text-label").text
             report("Progress bar is greater than 0%", progress_text != "Active Status: 0%")
         else:
             report("Checkboxes available to interact", False)
+            
+        # Additional UI/UX checks
+        search_input = driver.find_element(By.ID, "global-search")
+        report("Global Search bar is rendered", search_input.is_displayed())
+        
+        export_btn = driver.find_element(By.XPATH, "//button[contains(text(), 'Export Workbook')]")
+        report("Export Workbook button is visible", export_btn.is_displayed())
 
         # =========================================================
         # PHASE 4: ADMIN PANEL & SYNC
@@ -204,10 +224,12 @@ def run_e2e_tests():
         
     finally:
         driver.quit()
+        print("============================================================")
+        print(f"  🏁 TEST SUITE COMPLETED: {passes} PASSED | {failures} FAILED")
+        print("============================================================")
         
-    print("\n============================================================")
-    print(f"  🏁 TEST SUITE COMPLETED: {passes} PASSED | {failures} FAILED")
-    print("============================================================")
+        if failures > 0:
+            exit(1)
 
 if __name__ == "__main__":
     run_e2e_tests()
