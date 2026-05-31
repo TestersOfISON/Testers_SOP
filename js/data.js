@@ -1,7 +1,11 @@
 const qaModules = {
       "manual": {
         title: "User Manual & Guidelines",
-        guidelines: `<h3>1. Application Layout & Navigation</h3>
+        guidelines: `<h3>About This Tool</h3>
+          <p style="font-size: 1.1rem; border-left: 4px solid var(--primary); padding-left: 15px; margin: 20px 0; background: rgba(37,99,235,0.05); padding: 15px;">
+            <strong>Note:</strong> This is not a monitoring tool. It's a self evaluation tool which helps fellow testers to follow the prescribed standard operating procedure of the client, Libra Bank. Happy testing!
+          </p>
+          <h3>1. Application Layout & Navigation</h3>
           <p>The application consists of a persistent left-hand sidebar for navigation and a main content area for viewing guidelines, flowcharts, checklists, and documentation.</p>
           <ul class="guideline-list">
             <li><strong>Test Design & Management</strong>: Workflows for AI scenario generation and test validation.</li>
