@@ -885,6 +885,15 @@
         <label for="ai-api-key-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Gemini API Key</label>
         <input type="password" id="ai-api-key-input" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;" placeholder="AIzaSy...">
       </div>
+
+      <div style="margin-bottom: 20px;">
+        <label for="ai-model-select" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Gemini Model</label>
+        <select id="ai-model-select" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box; background: var(--input-bg); color: var(--text-color);">
+          <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast & Free)</option>
+          <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+          <option value="gemini-pro">Gemini 1.0 Pro (Legacy)</option>
+        </select>
+      </div>
       
       <div style="display: flex; gap: 10px; justify-content: flex-end;">
         <button class="btn btn-danger" onclick="document.getElementById('ai-settings-modal').style.display='none'" style="margin: 0; background: transparent; color: #777; border: 1px solid #ddd;">Cancel</button>

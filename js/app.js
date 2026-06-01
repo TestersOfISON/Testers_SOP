@@ -1679,14 +1679,18 @@ window.toggleAIChat = function() {
 window.openAISettings = function() {
   const modal = document.getElementById('ai-settings-modal');
   const input = document.getElementById('ai-api-key-input');
+  const select = document.getElementById('ai-model-select');
   input.value = localStorage.getItem('gemini_api_key') || '';
+  select.value = localStorage.getItem('gemini_ai_model') || 'gemini-1.5-flash';
   modal.style.display = 'flex';
 };
 
 window.saveAISettings = function() {
   const input = document.getElementById('ai-api-key-input').value.trim();
+  const select = document.getElementById('ai-model-select').value;
   if (input) {
     localStorage.setItem('gemini_api_key', input);
+    localStorage.setItem('gemini_ai_model', select);
   } else {
     localStorage.removeItem('gemini_api_key');
   }
@@ -1706,6 +1710,8 @@ window.sendAIChatMessage = function() {
   if (!text) return;
   
   const apiKey = localStorage.getItem('gemini_api_key');
+  const model = localStorage.getItem('gemini_ai_model') || 'gemini-1.5-flash';
+  
   if (!apiKey) {
     appendUserMessage(text);
     inputEl.value = '';
@@ -1720,7 +1726,7 @@ window.sendAIChatMessage = function() {
   const typingId = appendTypingIndicator();
   
   // Call AI
-  callAIAssistant(text, apiKey).then(response => {
+  callAIAssistant(text, apiKey, model).then(response => {
     removeElement(typingId);
     appendAIMessage(formatMarkdown(response));
   }).catch(error => {
@@ -1768,7 +1774,7 @@ function scrollToBottom(container) {
   container.scrollTop = container.scrollHeight;
 }
 
-async function callAIAssistant(userMessage, apiKey) {
+async function callAIAssistant(userMessage, apiKey, modelName) {
   // Build Context from current module
   let contextStr = "You are Atlas, an AI Co-Pilot for Libra Bank QA testers. Be concise, helpful, and direct.\n";
   if (currentModuleId && qaModules[currentModuleId]) {
@@ -1781,7 +1787,7 @@ async function callAIAssistant(userMessage, apiKey) {
   }
   contextStr += "\nUser Question: " + userMessage;
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
   
   const payload = {
     contents: [{
