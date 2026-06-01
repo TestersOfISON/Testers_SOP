@@ -5,6 +5,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from healer import smart_find
 
 def wait_for_element(driver, by, value, timeout=10):
     return WebDriverWait(driver, timeout).until(EC.presence_of_element_located((by, value)))
@@ -90,7 +91,8 @@ def run_e2e_tests():
         report("Default theme is light", theme == "light")
         
         # We must click using ActionChains or JS since it's headless and the modal might have a transition delay
-        theme_btn = driver.find_element(By.ID, "theme-toggle")
+        # SELF HEALING TEST
+        theme_btn = smart_find(driver, By.ID, "btn-theme-switch", "Dark mode toggle theme button")
         driver.execute_script("arguments[0].click();", theme_btn)
         time.sleep(1)
         theme = html_elem.get_attribute("data-theme")
