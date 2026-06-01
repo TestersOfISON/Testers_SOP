@@ -1654,3 +1654,170 @@ window.dismissJiraAlarm = function() {
   const todayStr = new Date().toISOString().split('T')[0];
   localStorage.setItem('jiraAlarmDismissed', todayStr);
 };
+
+// ==========================================
+// AI CO-PILOT CHATBOT LOGIC
+// ==========================================
+
+window.toggleAIChat = function() {
+  const windowEl = document.getElementById('ai-chat-window');
+  if (windowEl.classList.contains('open')) {
+    windowEl.classList.remove('open');
+  } else {
+    windowEl.classList.add('open');
+    document.getElementById('ai-chat-input').focus();
+    
+    // Check if API key is set
+    if (!localStorage.getItem('gemini_api_key')) {
+      if (document.querySelectorAll('.ai-message').length <= 1) {
+        appendAIMessage("Hi! I notice you haven't set up your Gemini API Key yet. Please click the ⚙️ Settings icon in the top right to configure it so I can assist you!");
+      }
+    }
+  }
+};
+
+window.openAISettings = function() {
+  const modal = document.getElementById('ai-settings-modal');
+  const input = document.getElementById('ai-api-key-input');
+  input.value = localStorage.getItem('gemini_api_key') || '';
+  modal.style.display = 'flex';
+};
+
+window.saveAISettings = function() {
+  const input = document.getElementById('ai-api-key-input').value.trim();
+  if (input) {
+    localStorage.setItem('gemini_api_key', input);
+  } else {
+    localStorage.removeItem('gemini_api_key');
+  }
+  document.getElementById('ai-settings-modal').style.display = 'none';
+  appendAIMessage("Settings saved! I am now ready to assist you.");
+};
+
+window.handleAIChatKeyPress = function(event) {
+  if (event.key === 'Enter') {
+    sendAIChatMessage();
+  }
+};
+
+window.sendAIChatMessage = function() {
+  const inputEl = document.getElementById('ai-chat-input');
+  const text = inputEl.value.trim();
+  if (!text) return;
+  
+  const apiKey = localStorage.getItem('gemini_api_key');
+  if (!apiKey) {
+    appendUserMessage(text);
+    inputEl.value = '';
+    appendAIMessage("Please set your Gemini API key in the settings first.");
+    return;
+  }
+  
+  appendUserMessage(text);
+  inputEl.value = '';
+  
+  // Show typing indicator
+  const typingId = appendTypingIndicator();
+  
+  // Call AI
+  callAIAssistant(text, apiKey).then(response => {
+    removeElement(typingId);
+    appendAIMessage(formatMarkdown(response));
+  }).catch(error => {
+    removeElement(typingId);
+    appendAIMessage("Sorry, I encountered an error: " + error.message);
+  });
+};
+
+function appendUserMessage(text) {
+  const container = document.getElementById('ai-chat-messages');
+  const msg = document.createElement('div');
+  msg.className = 'ai-message user';
+  msg.textContent = text;
+  container.appendChild(msg);
+  scrollToBottom(container);
+}
+
+function appendAIMessage(htmlContent) {
+  const container = document.getElementById('ai-chat-messages');
+  const msg = document.createElement('div');
+  msg.className = 'ai-message ai';
+  msg.innerHTML = htmlContent;
+  container.appendChild(msg);
+  scrollToBottom(container);
+}
+
+function appendTypingIndicator() {
+  const container = document.getElementById('ai-chat-messages');
+  const id = 'typing-' + Date.now();
+  const msg = document.createElement('div');
+  msg.id = id;
+  msg.className = 'ai-message ai';
+  msg.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+  container.appendChild(msg);
+  scrollToBottom(container);
+  return id;
+}
+
+function removeElement(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function scrollToBottom(container) {
+  container.scrollTop = container.scrollHeight;
+}
+
+async function callAIAssistant(userMessage, apiKey) {
+  // Build Context from current module
+  let contextStr = "You are Atlas, an AI Co-Pilot for Libra Bank QA testers. Be concise, helpful, and direct.\n";
+  if (currentModuleId && qaModules[currentModuleId]) {
+    const mod = qaModules[currentModuleId];
+    contextStr += `The user is currently viewing the module: "${mod.title}".\n`;
+    contextStr += `Guidelines: ${mod.guidelines.replace(/<[^>]+>/g, ' ')}\n`;
+    if (mod.checklist) {
+      contextStr += `Checklist: ${JSON.stringify(mod.checklist)}\n`;
+    }
+  }
+  contextStr += "\nUser Question: " + userMessage;
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  
+  const payload = {
+    contents: [{
+      parts: [{ text: contextStr }]
+    }],
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: 1024,
+    }
+  };
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error?.message || 'API request failed');
+  }
+
+  const data = await response.json();
+  if (data.candidates && data.candidates.length > 0 && data.candidates[0].content) {
+    return data.candidates[0].content.parts[0].text;
+  }
+  throw new Error('No valid response from AI');
+}
+
+function formatMarkdown(text) {
+  // Very basic markdown formatting for bold, code blocks, and line breaks
+  let formatted = text
+    .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br>');
+  return formatted;
+}

@@ -842,5 +842,56 @@
     <p style="margin: 0; font-size: 0.95rem; line-height: 1.5; opacity: 0.9;">Please ensure you have logged all your testing hours on the respective Jira sub-tasks. The automated weekly export runs today at <strong>10:00 EET</strong>.</p>
     <button onclick="dismissJiraAlarm()" style="margin-top: 15px; width: 100%; padding: 8px; background: white; color: #3b82f6; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">I've logged my time</button>
   </div>
+
+  <!-- AI CO-PILOT CHAT WIDGET -->
+  <button id="ai-chat-fab" onclick="toggleAIChat()" title="Atlas Co-Pilot">
+    <span class="icon">✨</span>
+  </button>
+
+  <div id="ai-chat-window">
+    <div class="ai-chat-header">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 1.4rem;">✨</span>
+        <div>
+          <h4 style="margin: 0; color: white;">Atlas Co-Pilot</h4>
+          <span style="font-size: 0.75rem; opacity: 0.8;">SOP Assistant</span>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button onclick="openAISettings()" class="ai-header-btn" title="Settings">⚙️</button>
+        <button onclick="toggleAIChat()" class="ai-header-btn" title="Close">&times;</button>
+      </div>
+    </div>
+    
+    <div id="ai-chat-messages" class="ai-chat-messages">
+      <div class="ai-message ai">
+        Hello! I'm Atlas, your Libra SOP Co-Pilot. I can answer questions about the current module, help you generate test data, or explain testing procedures. How can I help you today?
+      </div>
+    </div>
+    
+    <div class="ai-chat-input-area">
+      <input type="text" id="ai-chat-input" placeholder="Ask Atlas..." onkeypress="handleAIChatKeyPress(event)">
+      <button onclick="sendAIChatMessage()">Send</button>
+    </div>
+  </div>
+
+  <!-- AI SETTINGS MODAL -->
+  <div id="ai-settings-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <h3 style="margin-top: 0; color: var(--primary);">✨ Atlas Co-Pilot Settings</h3>
+      <p style="font-size: 0.9rem; color: #777; margin-bottom: 15px;">Enter your Gemini API key to enable the AI Co-Pilot feature. Your key is stored securely in your browser's local storage.</p>
+      
+      <div style="margin-bottom: 20px;">
+        <label for="ai-api-key-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Gemini API Key</label>
+        <input type="password" id="ai-api-key-input" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;" placeholder="AIzaSy...">
+      </div>
+      
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="btn btn-danger" onclick="document.getElementById('ai-settings-modal').style.display='none'" style="margin: 0; background: transparent; color: #777; border: 1px solid #ddd;">Cancel</button>
+        <button class="btn btn-primary" onclick="saveAISettings()" style="margin: 0;">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
