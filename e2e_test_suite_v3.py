@@ -44,14 +44,22 @@ def run_e2e_tests():
         driver.find_element(By.ID, "tester-name-input").send_keys("E2E-Automated-Tester-V3")
         driver.find_element(By.ID, "tester-pin-input").send_keys("9999")
         driver.find_element(By.XPATH, "//button[contains(text(), 'Unlock')]").click()
-        time.sleep(2)
+        WebDriverWait(driver, 5).until(EC.alert_is_present())
+        alert = driver.switch_to.alert
+        alert_text = alert.text
+        alert.accept()
+        time.sleep(1)
+        
+        # Handle potential secondary sync alerts
         try:
-            alert = driver.switch_to.alert
-            msg = alert.text
-            alert.accept()
-            report("Login workflow triggers alert", len(msg) > 0)
+            while True:
+                WebDriverWait(driver, 1).until(EC.alert_is_present())
+                driver.switch_to.alert.accept()
+                time.sleep(0.5)
         except:
-            report("Login workflow", False)
+            pass
+            
+        report("Login workflow triggers alert", "Login successful" in alert_text or "Synced" in alert_text)
         
         time.sleep(2)
         profile_name = driver.find_element(By.ID, "display-profile-name").text
@@ -190,6 +198,25 @@ def run_e2e_tests():
         chat_window = driver.find_element(By.ID, "ai-chat-window")
         is_chat_open = "open" in chat_window.get_attribute("class").split()
         report("AI Chat Window opens on click", is_chat_open)
+
+        settings_btn = driver.find_element(By.XPATH, "//button[@title='Settings']")
+        driver.execute_script("arguments[0].click();", settings_btn)
+        time.sleep(1)
+        
+        settings_modal = driver.find_element(By.ID, "ai-settings-modal")
+        report("AI Settings Modal opens", settings_modal.is_displayed())
+        
+        model_select = driver.find_element(By.ID, "ai-model-select")
+        report("AI Model Dropdown is rendered", model_select.is_displayed())
+
+        # Close the modal and the chat window so they don't intercept clicks
+        close_modal_btn = driver.find_element(By.XPATH, "//button[@onclick=\"document.getElementById('ai-settings-modal').style.display='none'\"]")
+        driver.execute_script("arguments[0].click();", close_modal_btn)
+        time.sleep(1)
+        
+        close_chat_btn = driver.find_element(By.XPATH, "//div[@id='ai-chat-window']//button[@title='Close']")
+        driver.execute_script("arguments[0].click();", close_chat_btn)
+        time.sleep(1)
 
         # =========================================================
         # PHASE 4: ADMIN PANEL & SYNC
