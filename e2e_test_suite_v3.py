@@ -186,18 +186,18 @@ def run_e2e_tests():
         report("Export Workbook button is visible", export_btn.is_displayed())
 
         # =========================================================
-        # PHASE 3.5: AI CO-PILOT CHATBOT
+        # PHASE 3.5: GHIDUL CHATBOT
         # =========================================================
-        print("\n--- Phase 3.5: AI Co-Pilot Chatbot ---")
+        print("\n--- Phase 3.5: Ghidul Chatbot ---")
         ai_fab = driver.find_element(By.ID, "ai-chat-fab")
-        report("AI Co-Pilot FAB is rendered", ai_fab.is_displayed())
+        report("Ghidul FAB is rendered", ai_fab.is_displayed())
         
         driver.execute_script("arguments[0].click();", ai_fab)
         time.sleep(1)
         
         chat_window = driver.find_element(By.ID, "ai-chat-window")
         is_chat_open = "open" in chat_window.get_attribute("class").split()
-        report("AI Chat Window opens on click", is_chat_open)
+        report("Ghidul Chat Window opens on click", is_chat_open)
 
         settings_btn = driver.find_element(By.XPATH, "//button[@title='Settings']")
         driver.execute_script("arguments[0].click();", settings_btn)
