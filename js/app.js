@@ -1776,7 +1776,7 @@ function scrollToBottom(container) {
 
 async function callAIAssistant(userMessage, apiKey, modelName) {
   // Build Context from current module
-  let contextStr = "You are Atlas, an AI Co-Pilot for Libra Bank QA testers. Be concise, helpful, and direct.\n";
+  let contextStr = "You are Ghidul, an AI Co-Pilot for Libra Bank QA testers. Be concise, helpful, and direct.\n";
   if (currentModuleId && qaModules[currentModuleId]) {
     const mod = qaModules[currentModuleId];
     contextStr += `The user is currently viewing the module: "${mod.title}".\n`;

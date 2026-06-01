@@ -844,7 +844,7 @@
   </div>
 
   <!-- AI CO-PILOT CHAT WIDGET -->
-  <button id="ai-chat-fab" onclick="toggleAIChat()" title="Atlas Co-Pilot">
+  <button id="ai-chat-fab" onclick="toggleAIChat()" title="Ghidul">
     <span class="icon">✨</span>
   </button>
 
@@ -853,7 +853,7 @@
       <div style="display: flex; align-items: center; gap: 10px;">
         <span style="font-size: 1.4rem;">✨</span>
         <div>
-          <h4 style="margin: 0; color: white;">Atlas Co-Pilot</h4>
+          <h4 style="margin: 0; color: white;">Ghidul</h4>
           <span style="font-size: 0.75rem; opacity: 0.8;">SOP Assistant</span>
         </div>
       </div>
@@ -865,12 +865,12 @@
     
     <div id="ai-chat-messages" class="ai-chat-messages">
       <div class="ai-message ai">
-        Hello! I'm Atlas, your Libra SOP Co-Pilot. I can answer questions about the current module, help you generate test data, or explain testing procedures. How can I help you today?
+        Hello! I'm Ghidul, your Libra SOP Co-Pilot. I can answer questions about the current module or explain testing procedures. How can I help you today?
       </div>
     </div>
     
     <div class="ai-chat-input-area">
-      <input type="text" id="ai-chat-input" placeholder="Ask Atlas..." onkeypress="handleAIChatKeyPress(event)">
+      <input type="text" id="ai-chat-input" placeholder="Ask Ghidul..." onkeypress="handleAIChatKeyPress(event)">
       <button onclick="sendAIChatMessage()">Send</button>
     </div>
   </div>
@@ -878,8 +878,8 @@
   <!-- AI SETTINGS MODAL -->
   <div id="ai-settings-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
     <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
-      <h3 style="margin-top: 0; color: var(--primary);">✨ Atlas Co-Pilot Settings</h3>
-      <p style="font-size: 0.9rem; color: #777; margin-bottom: 15px;">Enter your Gemini API key to enable the AI Co-Pilot feature. Your key is stored securely in your browser's local storage.</p>
+      <h3 style="margin-top: 0; color: var(--primary);">✨ Ghidul Settings</h3>
+      <p style="font-size: 0.9rem; color: #777; margin-bottom: 15px;">Enter your Gemini API key to enable Ghidul. Your key is stored securely in your browser's local storage.</p>
       
       <div style="margin-bottom: 20px;">
         <label for="ai-api-key-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Gemini API Key</label>
