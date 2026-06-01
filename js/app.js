@@ -1681,7 +1681,7 @@ window.openAISettings = function() {
   const input = document.getElementById('ai-api-key-input');
   const select = document.getElementById('ai-model-select');
   input.value = localStorage.getItem('gemini_api_key') || '';
-  select.value = localStorage.getItem('gemini_ai_model') || 'gemini-1.5-flash';
+  select.value = localStorage.getItem('gemini_ai_model') || 'gemini-pro';
   modal.style.display = 'flex';
 };
 
@@ -1710,7 +1710,7 @@ window.sendAIChatMessage = function() {
   if (!text) return;
   
   const apiKey = localStorage.getItem('gemini_api_key');
-  const model = localStorage.getItem('gemini_ai_model') || 'gemini-1.5-flash';
+  const model = localStorage.getItem('gemini_ai_model') || 'gemini-pro';
   
   if (!apiKey) {
     appendUserMessage(text);
