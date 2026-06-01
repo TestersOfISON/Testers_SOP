@@ -250,6 +250,7 @@ def run_e2e_tests():
         rows = tbody.find_elements(By.TAG_NAME, "tr")
         found = False
         progress_val = ""
+        html_content = tbody.get_attribute("innerHTML")
         for row in rows:
             cols = row.find_elements(By.TAG_NAME, "td")
             if len(cols) >= 5:
@@ -259,6 +260,14 @@ def run_e2e_tests():
                     progress_val = cols[3].text
                     report("Admin panel synced Assignee", "E2E-Automated-Tester-V3" in assignee)
                     break
+                    
+        if not found:
+            print("--- ADMIN DASHBOARD HTML ---")
+            try:
+                print(html_content.encode('ascii', 'replace').decode('ascii'))
+            except:
+                pass
+            print("----------------------------")
         
         report("Test User Story populated in Admin Dashboard", found)
         report("Admin Panel Progress is aggregated correctly", found and progress_val != "0%" and progress_val != "")

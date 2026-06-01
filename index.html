@@ -103,6 +103,15 @@
         </div>
       </div>
       
+      <!-- AI Skill Gap Analysis & Mentorship -->
+      <div id="admin-skill-matrix-container" style="background: rgba(16, 185, 129, 0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid rgba(16, 185, 129, 0.2);">
+        <h4 style="margin-top: 0; margin-bottom: 10px; color: #10b981;">🧠 AI Skill Gap & Mentorship Analysis</h4>
+        <div id="admin-skill-matrix-content" style="font-size: 0.9rem; color: var(--text-color);">
+          <!-- Populated via JS -->
+          <span style="color: #666; font-style: italic;">Analyzing tester performance data...</span>
+        </div>
+      </div>
+      
       <div style="overflow-y: auto; flex-grow: 1;">
         <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
           <thead style="background: var(--bg-color); position: sticky; top: 0; z-index: 1;">
@@ -663,6 +672,7 @@
       try {
         const snapshot = await get(child(dbRef, 'user_stories'));
         tbody.innerHTML = '';
+        let skillData = {};
         if (snapshot.exists()) {
           const data = snapshot.val();
           const validKeys = window.SOP_CONFIG ? new Set(window.SOP_CONFIG.userStories.map(u => u.key.toUpperCase())) : null;
@@ -677,6 +687,32 @@
             let progress = '0';
             let hasAnomaly = false;
             let needsMentorship = false;
+            let anomalyDetails = [];
+            
+            // Check Timeline Anomalies
+            if (row.timeline) {
+                const tl = row.timeline;
+                if (tl.storyStartedAt && tl.designFinishedAt) {
+                    const diffMins = (new Date(tl.designFinishedAt) - new Date(tl.storyStartedAt)) / 60000;
+                    if (diffMins < 2 && diffMins > 0) {
+                        hasAnomaly = true;
+                        anomalyDetails.push(`Design Phase Rushed (${diffMins.toFixed(1)}m)`);
+                    } else if (diffMins > 120) {
+                        needsMentorship = true;
+                        anomalyDetails.push(`Design Phase Blocked (${(diffMins/60).toFixed(1)}h)`);
+                    }
+                }
+                if (tl.executionStartedAt && tl.executionFinishedAt) {
+                    const diffMins = (new Date(tl.executionFinishedAt) - new Date(tl.executionStartedAt)) / 60000;
+                    if (diffMins < 2 && diffMins > 0) {
+                        hasAnomaly = true;
+                        anomalyDetails.push(`Execution Phase Rushed (${diffMins.toFixed(1)}m)`);
+                    } else if (diffMins > 120) {
+                        needsMentorship = true;
+                        anomalyDetails.push(`Execution Phase Blocked (${(diffMins/60).toFixed(1)}h)`);
+                    }
+                }
+            }
             
             if (row.testers) {
                let testerData = row.testers[assignee] || Object.values(row.testers)[0];
@@ -691,6 +727,13 @@
                   }
                }
             }
+            
+            // Aggregate skill data
+            if (!skillData[assignee]) {
+                skillData[assignee] = { anomalies: [], mentorship: [] };
+            }
+            if (hasAnomaly && anomalyDetails.length > 0) skillData[assignee].anomalies.push(...anomalyDetails);
+            if (needsMentorship && anomalyDetails.length > 0) skillData[assignee].mentorship.push(...anomalyDetails);
             
             const lastUpdated = row.lastUpdated ? new Date(row.lastUpdated).toLocaleString() : 'N/A';
             
@@ -717,6 +760,31 @@
           }
         } else {
           tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No user stories found.</td></tr>';
+        }
+        
+        // Populate Skill Matrix
+        const skillContainer = document.getElementById('admin-skill-matrix-container');
+        const skillContent = document.getElementById('admin-skill-matrix-content');
+        if (skillContainer && skillContent) {
+            skillContainer.style.display = 'block';
+            if (Object.keys(skillData).length > 0) {
+                let html = '<ul style="margin: 0; padding-left: 20px;">';
+                for (const [tester, data] of Object.entries(skillData)) {
+                    html += `<li style="margin-bottom: 8px;"><strong>${tester}</strong>: `;
+                    if (data.mentorship.length > 0) {
+                        html += `<span style="color: #ef4444; font-weight: bold;">Mentorship Recommended</span> (${data.mentorship.join(', ')})`;
+                    } else if (data.anomalies.length > 0) {
+                        html += `<span style="color: #f59e0b; font-weight: bold;">Anomalies Detected</span> (${data.anomalies.join(', ')})`;
+                    } else {
+                        html += `<span style="color: #10b981; font-weight: bold;">Performing well! Potential Mentor.</span>`;
+                    }
+                    html += `</li>`;
+                }
+                html += '</ul>';
+                skillContent.innerHTML = html;
+            } else {
+                skillContent.innerHTML = '<span style="color: #666; font-style: italic;">No anomaly data found for current stories.</span>';
+            }
         }
       } catch(e) {
         tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: red;">Error: ${e.message}</td></tr>`;
