@@ -1,3 +1,5 @@
+window.moduleStartTimes = {};
+window.aiQueryCounts = {};
 
 document.addEventListener('DOMContentLoaded', () => {
   // Theme Initialization
@@ -766,12 +768,107 @@ try {
       
       const checkboxes = document.querySelectorAll('#checklist-container input[type="checkbox"]');
       const states = {};
+      let total = 0;
+      let checked = 0;
       checkboxes.forEach(cb => {
         states[cb.id] = cb.checked;
+        total++;
+        if (cb.checked) checked++;
       });
-            localStorage.setItem(`checklist_state_${getTesterPrefix()}_${moduleId}_${tKey}`, JSON.stringify(states));
+      
+      // Calculate AI QA Lead Over-seer Metrics
+      let existingStates = {};
+      try {
+          const stored = localStorage.getItem(`checklist_state_${getTesterPrefix()}_${moduleId}_${tKey}`);
+          if (stored) existingStates = JSON.parse(stored);
+      } catch(e) {}
+      
+      if (isSOPModule) {
+          const aiCount = (window.aiQueryCounts[tKey] && window.aiQueryCounts[tKey][moduleId]) ? window.aiQueryCounts[tKey][moduleId] : (existingStates['_aiQueryCount'] || 0);
+          states['_aiQueryCount'] = aiCount;
+          
+          if (aiCount >= 3 || existingStates['_mentorshipNeeded']) {
+              states['_mentorshipNeeded'] = true;
+          }
+          
+          if (existingStates['_anomaly']) {
+              states['_anomaly'] = existingStates['_anomaly'];
+          }
+          
+          if (total > 0 && checked === total) {
+              if (window.moduleStartTimes[tKey] && window.moduleStartTimes[tKey][moduleId]) {
+                  const timeSpent = Date.now() - window.moduleStartTimes[tKey][moduleId];
+                  // If module is completed in under 15 seconds (15000ms), flag it as suspicious
+                  if (timeSpent < 15000) {
+                      states['_anomaly'] = "Suspiciously fast completion";
+                  }
+              }
+          }
+          // --- TIMELINE TRACKING LOGIC ---
+          const myName = getTesterPrefix();
+          let timeline = {};
+          try {
+              const t = localStorage.getItem(`timeline_${myName}_${tKey}`);
+              if (t) timeline = JSON.parse(t);
+          } catch(e) {}
+          
+          let timelineUpdated = false;
+          const isDesign = ['ai_generation', 'test_design', 'scenario_validation'].includes(moduleId);
+          const isExec = ['uat', 'smoke', 'prl', 'regression'].includes(moduleId);
+          
+          if (isDesign && total > 0 && checked === total) {
+              if (!timeline.designFinishedAt) {
+                  timeline.designFinishedAt = new Date().toISOString();
+                  timelineUpdated = true;
+              }
+          }
+          if (isExec) {
+              if (!timeline.executionStartedAt) {
+                  timeline.executionStartedAt = new Date().toISOString();
+                  timelineUpdated = true;
+              }
+              const overallProgress = getUserStoryOverallProgress(tKey);
+              // Calculate new progress dynamically since it hasn't been saved yet
+              // Wait, getUserStoryOverallProgress reads from localStorage, which we haven't updated yet for the current module.
+              // So let's approximate: if this is an exec module and we just checked the last box, 
+              // AND we'll assume they're generally done with execution if they finish an exec module.
+              // A safer way is to check the progress after we save.
+          }
+          
+          if (timelineUpdated) {
+              localStorage.setItem(`timeline_${myName}_${tKey}`, JSON.stringify(timeline));
+              if (window.syncStateToCloud) {
+                  window.syncStateToCloud(tKey, 'timeline', timeline, 0);
+              }
+          }
+          // -------------------------------
+      }
+      localStorage.setItem(`checklist_state_${getTesterPrefix()}_${moduleId}_${tKey}`, JSON.stringify(states));
+      
+      const newProgress = getUserStoryOverallProgress(tKey);
+      
+      if (isSOPModule) {
+          const isExec = ['uat', 'smoke', 'prl', 'regression'].includes(moduleId);
+          if (isExec && newProgress === 100) {
+              const myName = getTesterPrefix();
+              let timeline = {};
+              try {
+                  const t = localStorage.getItem(`timeline_${myName}_${tKey}`);
+                  if (t) timeline = JSON.parse(t);
+              } catch(e) {}
+              
+              if (!timeline.executionFinishedAt) {
+                  timeline.executionFinishedAt = new Date().toISOString();
+                  localStorage.setItem(`timeline_${myName}_${tKey}`, JSON.stringify(timeline));
+                  if (window.syncStateToCloud) {
+                      window.syncStateToCloud(tKey, 'timeline', timeline, 0);
+                  }
+              }
+          }
+      }
+      
       if (window.syncStateToCloud && isSOPModule) {
-        window.syncStateToCloud(tKey, moduleId, states, getUserStoryOverallProgress(tKey));
+        window.syncStateToCloud(tKey, moduleId, states, newProgress);
       }
 
       if (isSOPModule) {
@@ -789,6 +886,13 @@ try {
       const isSOPModule = activeChecklistModules.includes(moduleId);
       const storyKey = isSOPModule ? getActiveUserStoryKey() : '';
       const tKey = storyKey ? storyKey : 'default';
+      
+      if (tKey && tKey !== 'default' && tKey !== '_') {
+          if (!window.moduleStartTimes[tKey]) window.moduleStartTimes[tKey] = {};
+          if (!window.moduleStartTimes[tKey][moduleId]) {
+              window.moduleStartTimes[tKey][moduleId] = Date.now();
+          }
+      }
       
       const checkboxes = document.querySelectorAll('#checklist-container input[type="checkbox"]');
       checkboxes.forEach(cb => cb.checked = false);
@@ -926,6 +1030,24 @@ try {
         return;
       }
       saveUserStoryMetadata(storyKey, currentModuleId, undefined, myName);
+      
+      // Initialize Timeline Tracking
+      let timeline = {};
+      try {
+          const t = localStorage.getItem(`timeline_${myName}_${storyKey}`);
+          if (t) timeline = JSON.parse(t);
+      } catch(e) {}
+      
+      if (!timeline.storyStartedAt) {
+          timeline.storyStartedAt = new Date().toISOString();
+          localStorage.setItem(`timeline_${myName}_${storyKey}`, JSON.stringify(timeline));
+          
+          // Force a sync to cloud to save the timeline early if possible
+          if (window.syncStateToCloud) {
+              window.syncStateToCloud(storyKey, 'timeline', timeline, 0);
+          }
+      }
+      
       if (currentModuleId) saveChecklistState(currentModuleId);
       
       // Fix 3: Update local cache so the UI filters know you own it instantly
@@ -1181,6 +1303,14 @@ try {
       const data = qaModules[moduleId];
       if (!data) return;
       currentModuleId = moduleId;
+      
+      const tKey = document.getElementById('epic-input').value.trim() + '_' + document.getElementById('user-story-input').value.trim();
+      if (tKey && tKey !== '_') {
+          if (!window.moduleStartTimes[tKey]) window.moduleStartTimes[tKey] = {};
+          if (!window.moduleStartTimes[tKey][moduleId]) {
+              window.moduleStartTimes[tKey][moduleId] = Date.now();
+          }
+      }
 
       // Close sidebar if on mobile
       closeSidebarOnMobile();
@@ -1709,6 +1839,18 @@ window.sendAIChatMessage = function() {
   const text = inputEl.value.trim();
   if (!text) return;
   
+  // Track AI usage for Skill Gap Analysis
+  if (currentModuleId) {
+      const tKey = document.getElementById('epic-input').value.trim() + '_' + document.getElementById('user-story-input').value.trim();
+      if (tKey && tKey !== '_') {
+          if (!window.aiQueryCounts[tKey]) window.aiQueryCounts[tKey] = {};
+          if (!window.aiQueryCounts[tKey][currentModuleId]) {
+              window.aiQueryCounts[tKey][currentModuleId] = 0;
+          }
+          window.aiQueryCounts[tKey][currentModuleId]++;
+      }
+  }
+  
   const apiKey = localStorage.getItem('gemini_api_key');
   const model = localStorage.getItem('gemini_ai_model') || 'gemini-2.5-flash';
   
@@ -1816,6 +1958,190 @@ async function callAIAssistant(userMessage, apiKey, modelName) {
   }
   throw new Error('No valid response from AI');
 }
+
+window.generateExecutiveReport = async function() {
+  const apiKey = localStorage.getItem('gemini_api_key');
+  if (!apiKey) {
+    alert("Please configure the Ghidul (Gemini) API Key in settings first.");
+    return;
+  }
+  
+  const modal = document.getElementById('executive-report-modal');
+  const content = document.getElementById('executive-report-content');
+  if (!modal || !content) return;
+  
+  modal.style.display = 'flex';
+  content.innerHTML = "Gathering data and consulting Ghidul... Please wait.";
+  
+  // Scrape dashboard rows
+  const tbody = document.getElementById('admin-dashboard-tbody');
+  if (!tbody) {
+      content.innerHTML = "Error: Admin dashboard data not found.";
+      return;
+  }
+  
+  let rawData = "";
+  const rows = tbody.querySelectorAll('tr');
+  rows.forEach(row => {
+      const cols = row.querySelectorAll('td');
+      if (cols.length >= 5) {
+          const usKey = cols[0].innerText.trim();
+          const epic = cols[1].innerText.trim();
+          const assignee = cols[2].innerText.trim();
+          const progress = cols[3].innerText.trim();
+          
+          let flags = [];
+          if (usKey.includes('⚠️')) flags.push("Suspiciously fast completion (Anomaly)");
+          if (usKey.includes('🎓')) flags.push("High AI usage (Needs Mentorship)");
+          
+          rawData += `User Story: ${usKey}, Epic: ${epic}, Assignee: ${assignee}, Progress: ${progress}, Flags: ${flags.length ? flags.join(', ') : 'None'}\n`;
+      }
+  });
+  
+  if (!rawData || rawData.includes("No user stories found") || rawData.includes("Loading...")) {
+      content.innerHTML = "Not enough data to generate a report.";
+      return;
+  }
+
+  const systemPrompt = `You are an AI QA Manager named Ghidul. Analyze this raw weekly testing data and write a professional, concise executive summary in markdown.
+Focus on:
+1. Overall completion and progress.
+2. Flagged anomalies (e.g., rushed testing).
+3. Skill gaps (testers needing mentorship).
+4. A short conclusion.
+
+Raw Data:
+${rawData}`;
+
+  const model = localStorage.getItem('gemini_ai_model') || 'gemini-2.5-flash';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: systemPrompt }] }]
+      })
+    });
+
+    const data = await response.json();
+    if (data.error) {
+      content.innerHTML = `<span style="color:red;">API Error: ${data.error.message}</span>`;
+      return;
+    }
+    
+    let answer = data.candidates[0].content.parts[0].text;
+    
+    // Simple markdown to HTML conversion for bold and lists
+    answer = answer.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    answer = answer.replace(/\n\* (.*?)/g, '<br>• $1');
+    answer = answer.replace(/\n- (.*?)/g, '<br>• $1');
+    answer = answer.replace(/\n/g, '<br>');
+    
+    content.innerHTML = answer;
+  } catch (error) {
+    content.innerHTML = `<span style="color:red;">Error connecting to API.</span>`;
+  }
+};
+
+window.openTimelineModal = async function(storyKey, epicKey, assignee) {
+  const modal = document.getElementById('timeline-modal');
+  const content = document.getElementById('timeline-content');
+  if (!modal || !content) return;
+  
+  modal.style.display = 'flex';
+  content.innerHTML = "Loading timeline...";
+  
+  // Try to load timeline from Firebase
+  let timelineData = null;
+  if (window.db) {
+      try {
+          const { ref, get, child } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js");
+          const dbRef = ref(window.db);
+          const snapshot = await get(child(dbRef, `user_stories/${storyKey}/timeline`));
+          if (snapshot.exists()) {
+              timelineData = snapshot.val();
+          }
+      } catch(e) {}
+  }
+  
+  // Fallback to local storage if not found (or if testing locally without firebase)
+  if (!timelineData) {
+      try {
+          const t = localStorage.getItem(`timeline_${assignee}_${storyKey}`);
+          if (t) timelineData = JSON.parse(t);
+      } catch(e) {}
+  }
+  
+  if (!timelineData || Object.keys(timelineData).length === 0) {
+      content.innerHTML = `<div style="text-align: center; padding: 20px; color: #777;">No timeline data available for this user story yet.</div>`;
+      return;
+  }
+  
+  const formatDate = (isoString) => {
+      if (!isoString) return 'Pending...';
+      const d = new Date(isoString);
+      return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+  
+  const calcDuration = (start, end) => {
+      if (!start || !end) return '';
+      const diffMs = new Date(end) - new Date(start);
+      const diffMins = Math.floor(diffMs / 60000);
+      if (diffMins < 60) return `(${diffMins} minutes)`;
+      const diffHrs = (diffMins / 60).toFixed(1);
+      return `(${diffHrs} hours)`;
+  };
+  
+  const steps = [
+      { 
+          label: "Story Assigned & Started", 
+          time: timelineData.storyStartedAt,
+          color: timelineData.storyStartedAt ? "#2563eb" : "#ccc"
+      },
+      { 
+          label: "Test Design Phase Finished", 
+          desc: "AI Scenario Gen, Test Design, Validation",
+          time: timelineData.designFinishedAt,
+          duration: calcDuration(timelineData.storyStartedAt, timelineData.designFinishedAt),
+          color: timelineData.designFinishedAt ? "#d97706" : "#ccc"
+      },
+      { 
+          label: "Test Execution Started", 
+          time: timelineData.executionStartedAt,
+          color: timelineData.executionStartedAt ? "#16a34a" : "#ccc"
+      },
+      { 
+          label: "Test Execution Finished", 
+          desc: "100% Overall Completion",
+          time: timelineData.executionFinishedAt,
+          duration: calcDuration(timelineData.executionStartedAt, timelineData.executionFinishedAt),
+          color: timelineData.executionFinishedAt ? "#9333ea" : "#ccc"
+      }
+  ];
+  
+  let html = `<div style="padding: 10px 20px;">
+      <h4 style="margin-top: 0; color: #555;">${storyKey}</h4>
+      <p style="font-size: 0.9rem; color: #777;">Assignee: <strong>${assignee}</strong></p>
+      <div style="position: relative; margin-top: 30px; border-left: 2px solid #e5e7eb; padding-left: 20px; display: flex; flex-direction: column; gap: 25px;">`;
+      
+  steps.forEach((step, idx) => {
+      html += `
+          <div style="position: relative;">
+              <div style="position: absolute; left: -26px; top: 0px; width: 10px; height: 10px; border-radius: 50%; background: ${step.color}; border: 2px solid ${step.time ? step.color : '#fff'}; box-shadow: 0 0 0 2px ${step.time ? '#fff' : '#ccc'};"></div>
+              <div style="font-weight: 600; color: ${step.time ? 'var(--text-color)' : '#9ca3af'};">${step.label}</div>
+              ${step.desc ? `<div style="font-size: 0.8rem; color: #6b7280; margin-top: 2px;">${step.desc}</div>` : ''}
+              <div style="font-size: 0.85rem; color: ${step.time ? '#4b5563' : '#9ca3af'}; margin-top: 4px;">
+                  ${formatDate(step.time)} ${step.duration ? `<span style="color: ${step.color}; font-weight: bold; margin-left: 5px;">${step.duration}</span>` : ''}
+              </div>
+          </div>
+      `;
+  });
+  
+  html += `</div></div>`;
+  content.innerHTML = html;
+};
 
 function formatMarkdown(text) {
   // Very basic markdown formatting for bold, code blocks, and line breaks

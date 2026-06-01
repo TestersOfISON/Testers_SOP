@@ -28,6 +28,7 @@
       <h2 style="margin-top: 0; color: var(--primary);">Welcome to Tester's SOP</h2>
       <p style="font-size: 0.9rem; color: #777; margin-bottom: 25px;">Please log in with your Username and PIN to access your workspaces.</p>
       
+      <form onsubmit="saveNameModal(); return false;">
       <div style="text-align: left; margin-bottom: 15px;">
         <label for="tester-name-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Username</label>
         <input type="text" id="tester-name-input" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;" placeholder="e.g. Tester01">
@@ -39,8 +40,9 @@
       </div>
 
       <div style="display: flex; gap: 10px; justify-content: center;">
-        <button class="btn btn-primary" onclick="saveNameModal()" style="margin: 0; flex-grow: 1;">Unlock</button>
+        <button type="submit" class="btn btn-primary" style="margin: 0; flex-grow: 1;">Unlock</button>
       </div>
+      </form>
     </div>
   </div>
 
@@ -75,7 +77,10 @@
     <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 900px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px;">
         <h3 style="margin: 0; color: #d97706; cursor: default; user-select: none;" ondblclick="openGlobalAnalytics()">👑 Lead Admin Panel</h3>
-        <button class="btn btn-danger" onclick="document.getElementById('admin-dashboard-modal').style.display='none'" style="margin: 0;">Close</button>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-primary" onclick="generateExecutiveReport()" style="margin: 0; background-color: #2563eb;">Generate Report ✨</button>
+          <button class="btn btn-danger" onclick="document.getElementById('admin-dashboard-modal').style.display='none'" style="margin: 0;">Close</button>
+        </div>
       </div>
       
       <!-- Create New Epic / User Story Form -->
@@ -105,6 +110,7 @@
               <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">User Story</th>
               <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">Epic</th>
               <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">Assignee</th>
+              <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">Progress</th>
               <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">Last Updated</th>
               <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: center;">Actions</th>
             </tr>
@@ -274,7 +280,7 @@
       </div>
       
       <div id="tab-checklist" class="tab-content">
-        <div id="user-story-bar-container" class="user-story-bar-container" style="background: var(--bg-color); padding: 15px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 15px;">
+        <div id="user-story-bar-container" class="user-story-bar-container" style="background: var(--bg-color); padding: 15px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 15px; position: relative;">
           
           <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; width: 100%;">
             <!-- Left: Dropdowns -->
@@ -407,7 +413,7 @@
         let epicKey = '';
         let assignee = testerName;
         try {
-          const metaStr = localStorage.getItem('sop_user_story_meta_' + userStoryKey);
+          const metaStr = localStorage.getItem('sop_user_story_meta_' + testerName + '_' + userStoryKey);
           if (metaStr) {
             const meta = JSON.parse(metaStr);
             if (meta.epicKey) epicKey = meta.epicKey;
@@ -429,6 +435,8 @@
         
         if (epicKey) updates['user_stories/' + userStoryKey + '/epicKey'] = epicKey;
         if (assignee) {
+          updates['user_stories/' + userStoryKey + '/assignee'] = assignee;
+          updates['user_stories/' + userStoryKey + '/assignedToName'] = assignee;
           updates['user_stories/' + userStoryKey + '/testers/' + testerName + '/assignee'] = assignee;
           updates['user_stories/' + userStoryKey + '/testers/' + testerName + '/assignedToName'] = assignee;
         }
@@ -665,16 +673,44 @@
             const row = data[key];
             const epic = row.epicKey || '';
             const assignee = row.assignee || row.assignedToName || 'Unassigned';
+            
+            let progress = '0';
+            let hasAnomaly = false;
+            let needsMentorship = false;
+            
+            if (row.testers) {
+               let testerData = row.testers[assignee] || Object.values(row.testers)[0];
+               if (testerData) {
+                  progress = testerData.overallProgress || '0';
+                  // Check for AI flags
+                  for (const [modId, modData] of Object.entries(testerData)) {
+                      if (typeof modData === 'object' && modData !== null) {
+                          if (modData._anomaly) hasAnomaly = true;
+                          if (modData._mentorshipNeeded) needsMentorship = true;
+                      }
+                  }
+               }
+            }
+            
             const lastUpdated = row.lastUpdated ? new Date(row.lastUpdated).toLocaleString() : 'N/A';
+            
+            const flagIcons = `${hasAnomaly ? '<span title="Suspiciously fast completion" style="cursor:help;">⚠️</span> ' : ''}${needsMentorship ? '<span title="High AI usage (Mentorship needed)" style="cursor:help;">🎓</span>' : ''}`;
             
             const tr = document.createElement('tr');
             tr.innerHTML = `
-              <td style="padding: 12px; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--primary);">${key}</td>
+              <td style="padding: 12px; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--primary);">${key} ${flagIcons}</td>
               <td style="padding: 12px; border-bottom: 1px solid var(--border);">${epic}</td>
               <td style="padding: 12px; border-bottom: 1px solid var(--border);">${assignee}</td>
+              <td style="padding: 12px; border-bottom: 1px solid var(--border); vertical-align: middle;">
+                <div style="background: rgba(0,0,0,0.1); border-radius: 10px; height: 10px; width: 100%; overflow: hidden;">
+                  <div style="background: hsl(${Math.round((parseInt(progress)/100)*120)}, 80%, 45%); width: ${progress}%; height: 100%;"></div>
+                </div>
+                <div style="font-size: 0.75rem; text-align: right; margin-top: 3px; color: #777;">${progress}%</div>
+              </td>
               <td style="padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.85rem; color: #777;">${lastUpdated}</td>
-              <td style="padding: 12px; border-bottom: 1px solid var(--border); text-align: center;">
+              <td style="padding: 12px; border-bottom: 1px solid var(--border); text-align: center; display: flex; gap: 5px; justify-content: center;">
                 <button class="btn btn-primary" style="margin: 0; padding: 4px 8px; font-size: 0.8rem; background: #d97706;" onclick="window.editAdminUserStory('${key}', '${epic}', '${assignee}')">Edit</button>
+                <button class="btn btn-primary" style="margin: 0; padding: 4px 8px; font-size: 0.8rem; background: #2563eb;" onclick="window.openTimelineModal('${key}', '${epic}', '${assignee}')">Timeline ⏱️</button>
               </td>
             `;
             tbody.appendChild(tr);
@@ -746,13 +782,13 @@
       try {
         const snapshot = await get(child(dbRef, `user_stories`));
         if (snapshot.exists()) {
-           const stories = snapshot.val();
-           const validKeys = window.SOP_CONFIG ? new Set(window.SOP_CONFIG.userStories.map(u => u.key.toUpperCase())) : null;
-           let fetchedCount = 0;
-           let reg = [];
-           for (const [key, data] of Object.entries(stories)) {
-             if (validKeys && !validKeys.has(key.toUpperCase())) continue;
-             
+          const stories = snapshot.val();
+          const validKeys = window.SOP_CONFIG ? new Set(window.SOP_CONFIG.userStories.map(u => u.key.toUpperCase())) : null;
+          let fetchedCount = 0;
+          let reg = [];
+          for (const [key, data] of Object.entries(stories)) {
+            if (validKeys && !validKeys.has(key.toUpperCase())) continue;
+            
             const testerData = data.testers ? data.testers[username] : null;
             if (data.assignee === username || data.assignedToName === username || 
                (testerData && (testerData.assignee === username || testerData.assignedToName === username))) {
@@ -807,6 +843,103 @@
   </script>
   <script src="js/config.js"></script>
   <script src="js/app.js"></script>
+
+  <div id="jira-alarm-toast" style="display: none; position: fixed; bottom: 30px; right: 30px; background: #3b82f6; color: white; padding: 20px 25px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 9999; max-width: 350px; font-family: 'Outfit', sans-serif; animation: fadeIn 0.5s ease-out;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+      <h3 style="margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 1.3rem;">⏰</span> Jira Work Log Reminder
+      </h3>
+      <button onclick="dismissJiraAlarm()" style="background: none; border: none; color: white; cursor: pointer; font-size: 1.2rem; line-height: 1; padding: 0; margin-top: -2px;">&times;</button>
+    </div>
+    <p style="margin: 0; font-size: 0.95rem; line-height: 1.5; opacity: 0.9;">Please ensure you have logged all your testing hours on the respective Jira sub-tasks. The automated weekly export runs today at <strong>10:00 EET</strong>.</p>
+    <button onclick="dismissJiraAlarm()" style="margin-top: 15px; width: 100%; padding: 8px; background: white; color: #3b82f6; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">I've logged my time</button>
+  </div>
+
+  <!-- AI CO-PILOT CHAT WIDGET -->
+  <button id="ai-chat-fab" onclick="toggleAIChat()" title="Ghidul">
+    <span class="icon">✨</span>
+  </button>
+
+  <div id="ai-chat-window">
+    <div class="ai-chat-header">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 1.4rem;">✨</span>
+        <div>
+          <h4 style="margin: 0; color: white;">Ghidul</h4>
+          <span style="font-size: 0.75rem; opacity: 0.8;">SOP Assistant</span>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button onclick="openAISettings()" class="ai-header-btn" title="Settings">⚙️</button>
+        <button onclick="toggleAIChat()" class="ai-header-btn" title="Close">&times;</button>
+      </div>
+    </div>
+    
+    <div id="ai-chat-messages" class="ai-chat-messages">
+      <div class="ai-message ai">
+        Hello! I'm Ghidul, your Libra SOP Co-Pilot. I can answer questions about the current module or explain testing procedures. How can I help you today?
+      </div>
+    </div>
+    
+    <div class="ai-chat-input-area">
+      <input type="text" id="ai-chat-input" placeholder="Ask Ghidul..." onkeypress="handleAIChatKeyPress(event)">
+      <button onclick="sendAIChatMessage()">Send</button>
+    </div>
+  </div>
+
+  <!-- AI SETTINGS MODAL -->
+  <div id="ai-settings-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <h3 style="margin-top: 0; color: var(--primary);">✨ Ghidul Settings</h3>
+      <p style="font-size: 0.9rem; color: #777; margin-bottom: 15px;">Enter your Gemini API key to enable Ghidul. Your key is stored securely in your browser's local storage.</p>
+      
+      <div style="margin-bottom: 20px;">
+        <label for="ai-api-key-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Gemini API Key</label>
+        <input type="password" id="ai-api-key-input" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;" placeholder="AIzaSy...">
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <label for="ai-model-select" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Gemini Model</label>
+        <select id="ai-model-select" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box; background: var(--input-bg); color: var(--text-color);">
+          <option value="gemini-2.5-flash">Gemini 2.5 Flash (Newest)</option>
+          <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+          <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash</option>
+          <option value="gemini-pro">Gemini 1.0 Pro (Legacy)</option>
+        </select>
+      </div>
+      
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="btn btn-danger" onclick="document.getElementById('ai-settings-modal').style.display='none'" style="margin: 0; background: transparent; color: #777; border: 1px solid #ddd;">Cancel</button>
+        <button class="btn btn-primary" onclick="saveAISettings()" style="margin: 0;">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXECUTIVE REPORT MODAL -->
+  <div id="executive-report-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10001; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 800px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px;">
+        <h3 style="margin: 0; color: var(--primary);">✨ AI Executive QA Report</h3>
+        <button class="btn btn-danger" onclick="document.getElementById('executive-report-modal').style.display='none'" style="margin: 0;">Close</button>
+      </div>
+      <div id="executive-report-content" style="overflow-y: auto; flex-grow: 1; font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; padding-right: 10px;">
+        Loading report...
+      </div>
+    </div>
+  </div>
+
+  <!-- TIMELINE MODAL -->
+  <div id="timeline-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10002; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 600px; width: 90%; max-height: 90vh; display: flex; flex-direction: column; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px;">
+        <h3 style="margin: 0; color: var(--primary);">⏱️ Predictive Timeline</h3>
+        <button class="btn btn-danger" onclick="document.getElementById('timeline-modal').style.display='none'" style="margin: 0;">Close</button>
+      </div>
+      <div id="timeline-content" style="overflow-y: auto; flex-grow: 1;">
+        Loading timeline...
+      </div>
+    </div>
+  </div>
 
 </body>
 </html>

@@ -261,13 +261,70 @@ def run_e2e_tests():
         report("Test User Story populated in Admin Dashboard", found)
         report("Admin Panel Progress is aggregated correctly", found and progress_val != "0%" and progress_val != "")
 
+        print("\n--- Phase 4.5: QA Lead AI Automations ---")
+        
+        # Inject dummy API key so report generation doesn't alert and block the test
+        driver.execute_script("localStorage.setItem('gemini_api_key', 'test_dummy_key');")
+        
+        has_anomaly_flag = False
+        if found:
+            # Re-fetch the row to check for the anomaly flag (⚠️)
+            rows = tbody.find_elements(By.TAG_NAME, "tr")
+            for row in rows:
+                cols = row.find_elements(By.TAG_NAME, "td")
+                if len(cols) >= 5 and "WF-7849" in cols[0].text:
+                    if "⚠️" in cols[0].text:
+                        has_anomaly_flag = True
+                    break
+                    
+        report("AI Anomaly Detection Flagged (Rushed Testing)", has_anomaly_flag)
+        
+        report_btn = driver.find_element(By.XPATH, "//button[contains(text(), 'Generate Report')]")
+        report("AI Executive Report Button is visible", report_btn.is_displayed())
+        
+        # Click report button to ensure modal opens
+        driver.execute_script("arguments[0].click();", report_btn)
+        time.sleep(2)
+        report_modal = driver.find_element(By.ID, "executive-report-modal")
+        report("AI Executive Report Modal opens", report_modal.is_displayed())
+        
+        # Close report modal
+        driver.execute_script("document.getElementById('executive-report-modal').style.display='none';")
+        time.sleep(1)
+        
+        print("\n--- Phase 4.6: Timeline Dashboard Verification ---")
+        timeline_btn = None
+        try:
+            # The button has text "Timeline ⏱️"
+            timeline_btn = driver.find_element(By.XPATH, "//button[contains(text(), 'Timeline')]")
+        except:
+            pass
+        
+        report("Timeline button is rendered in Admin Panel", timeline_btn is not None and timeline_btn.is_displayed())
+        
+        if timeline_btn:
+            driver.execute_script("arguments[0].click();", timeline_btn)
+            time.sleep(2)
+            
+            timeline_modal = driver.find_element(By.ID, "timeline-modal")
+            report("Timeline Modal opens on click", timeline_modal.is_displayed())
+            
+            # Close the modal
+            close_timeline_btn = driver.find_element(By.XPATH, "//div[@id='timeline-modal']//button[contains(text(), 'Close')]")
+            driver.execute_script("arguments[0].click();", close_timeline_btn)
+            time.sleep(1)
+        else:
+            report("Timeline Modal opens on click", False)
+
         print("\n--- Phase 5: Teardown & Cleanup ---")
         driver.execute_script(f"if(window.deleteStateFromCloud) window.deleteStateFromCloud('{validUsKey}');")
         time.sleep(2)
         report("Teardown script executed", True)
         
     except Exception as e:
+        import traceback
         print(f"\n[CRITICAL ERROR] Test suite encountered an unexpected failure: {e}")
+        traceback.print_exc()
         failures += 1
         
     finally:

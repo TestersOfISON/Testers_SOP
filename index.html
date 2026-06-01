@@ -77,7 +77,10 @@
     <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 900px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px;">
         <h3 style="margin: 0; color: #d97706; cursor: default; user-select: none;" ondblclick="openGlobalAnalytics()">👑 Lead Admin Panel</h3>
-        <button class="btn btn-danger" onclick="document.getElementById('admin-dashboard-modal').style.display='none'" style="margin: 0;">Close</button>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-primary" onclick="generateExecutiveReport()" style="margin: 0; background-color: #2563eb;">Generate Report ✨</button>
+          <button class="btn btn-danger" onclick="document.getElementById('admin-dashboard-modal').style.display='none'" style="margin: 0;">Close</button>
+        </div>
       </div>
       
       <!-- Create New Epic / User Story Form -->
@@ -672,22 +675,30 @@
             const assignee = row.assignee || row.assignedToName || 'Unassigned';
             
             let progress = '0';
+            let hasAnomaly = false;
+            let needsMentorship = false;
+            
             if (row.testers) {
-               if (row.testers[assignee] && row.testers[assignee].overallProgress) {
-                  progress = row.testers[assignee].overallProgress;
-               } else {
-                  const firstTester = Object.values(row.testers)[0];
-                  if (firstTester && firstTester.overallProgress) {
-                     progress = firstTester.overallProgress;
+               let testerData = row.testers[assignee] || Object.values(row.testers)[0];
+               if (testerData) {
+                  progress = testerData.overallProgress || '0';
+                  // Check for AI flags
+                  for (const [modId, modData] of Object.entries(testerData)) {
+                      if (typeof modData === 'object' && modData !== null) {
+                          if (modData._anomaly) hasAnomaly = true;
+                          if (modData._mentorshipNeeded) needsMentorship = true;
+                      }
                   }
                }
             }
             
             const lastUpdated = row.lastUpdated ? new Date(row.lastUpdated).toLocaleString() : 'N/A';
             
+            const flagIcons = `${hasAnomaly ? '<span title="Suspiciously fast completion" style="cursor:help;">⚠️</span> ' : ''}${needsMentorship ? '<span title="High AI usage (Mentorship needed)" style="cursor:help;">🎓</span>' : ''}`;
+            
             const tr = document.createElement('tr');
             tr.innerHTML = `
-              <td style="padding: 12px; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--primary);">${key}</td>
+              <td style="padding: 12px; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--primary);">${key} ${flagIcons}</td>
               <td style="padding: 12px; border-bottom: 1px solid var(--border);">${epic}</td>
               <td style="padding: 12px; border-bottom: 1px solid var(--border);">${assignee}</td>
               <td style="padding: 12px; border-bottom: 1px solid var(--border); vertical-align: middle;">
@@ -697,8 +708,9 @@
                 <div style="font-size: 0.75rem; text-align: right; margin-top: 3px; color: #777;">${progress}%</div>
               </td>
               <td style="padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.85rem; color: #777;">${lastUpdated}</td>
-              <td style="padding: 12px; border-bottom: 1px solid var(--border); text-align: center;">
+              <td style="padding: 12px; border-bottom: 1px solid var(--border); text-align: center; display: flex; gap: 5px; justify-content: center;">
                 <button class="btn btn-primary" style="margin: 0; padding: 4px 8px; font-size: 0.8rem; background: #d97706;" onclick="window.editAdminUserStory('${key}', '${epic}', '${assignee}')">Edit</button>
+                <button class="btn btn-primary" style="margin: 0; padding: 4px 8px; font-size: 0.8rem; background: #2563eb;" onclick="window.openTimelineModal('${key}', '${epic}', '${assignee}')">Timeline ⏱️</button>
               </td>
             `;
             tbody.appendChild(tr);
@@ -899,6 +911,32 @@
       <div style="display: flex; gap: 10px; justify-content: flex-end;">
         <button class="btn btn-danger" onclick="document.getElementById('ai-settings-modal').style.display='none'" style="margin: 0; background: transparent; color: #777; border: 1px solid #ddd;">Cancel</button>
         <button class="btn btn-primary" onclick="saveAISettings()" style="margin: 0;">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXECUTIVE REPORT MODAL -->
+  <div id="executive-report-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10001; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 800px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px;">
+        <h3 style="margin: 0; color: var(--primary);">✨ AI Executive QA Report</h3>
+        <button class="btn btn-danger" onclick="document.getElementById('executive-report-modal').style.display='none'" style="margin: 0;">Close</button>
+      </div>
+      <div id="executive-report-content" style="overflow-y: auto; flex-grow: 1; font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; padding-right: 10px;">
+        Loading report...
+      </div>
+    </div>
+  </div>
+
+  <!-- TIMELINE MODAL -->
+  <div id="timeline-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10002; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 600px; width: 90%; max-height: 90vh; display: flex; flex-direction: column; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px;">
+        <h3 style="margin: 0; color: var(--primary);">⏱️ Predictive Timeline</h3>
+        <button class="btn btn-danger" onclick="document.getElementById('timeline-modal').style.display='none'" style="margin: 0;">Close</button>
+      </div>
+      <div id="timeline-content" style="overflow-y: auto; flex-grow: 1;">
+        Loading timeline...
       </div>
     </div>
   </div>
