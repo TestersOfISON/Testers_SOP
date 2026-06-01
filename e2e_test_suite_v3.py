@@ -178,6 +178,20 @@ def run_e2e_tests():
         report("Export Workbook button is visible", export_btn.is_displayed())
 
         # =========================================================
+        # PHASE 3.5: AI CO-PILOT CHATBOT
+        # =========================================================
+        print("\n--- Phase 3.5: AI Co-Pilot Chatbot ---")
+        ai_fab = driver.find_element(By.ID, "ai-chat-fab")
+        report("AI Co-Pilot FAB is rendered", ai_fab.is_displayed())
+        
+        driver.execute_script("arguments[0].click();", ai_fab)
+        time.sleep(1)
+        
+        chat_window = driver.find_element(By.ID, "ai-chat-window")
+        is_chat_open = "open" in chat_window.get_attribute("class").split()
+        report("AI Chat Window opens on click", is_chat_open)
+
+        # =========================================================
         # PHASE 4: ADMIN PANEL & SYNC
         # =========================================================
         print("\n--- Phase 4: Admin Panel & Firebase Sync ---")
