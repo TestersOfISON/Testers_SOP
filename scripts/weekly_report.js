@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 const nodemailer = require('nodemailer');
 
-const FIREBASE_URL = "https://qa-lead-dashboard-default-rtdb.firebaseio.com/userStories.json";
+const FIREBASE_URL = "https://qa-lead-dashboard-default-rtdb.firebaseio.com/user_stories.json";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const EMAIL_USER = process.env.EMAIL_USER;
 const EMAIL_PASS = process.env.EMAIL_PASS;
