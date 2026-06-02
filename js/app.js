@@ -179,7 +179,7 @@ try {
     window.lockApplication = function() {
       // Clear admin status to fully lock it
       localStorage.removeItem('isAdmin');
-      const adminBtn = document.getElementById('admin-dashboard-btn');
+      const adminBtn = document.getElementById('sidebar-admin-btn');
       if (adminBtn) adminBtn.style.display = 'none';
 
       const current = localStorage.getItem('testerName') || '';
@@ -218,8 +218,8 @@ try {
         localStorage.setItem('isAdmin', 'true');
         localStorage.setItem('testerName', 'Lead Admin');
         
-        const adminBtn = document.getElementById('admin-dashboard-btn');
-        if (adminBtn) adminBtn.style.display = 'inline-block';
+        const adminBtn = document.getElementById('sidebar-admin-btn');
+        if (adminBtn) adminBtn.style.display = 'block';
         
         const displaySpan = document.getElementById('display-profile-name');
         if (displaySpan) displaySpan.innerText = 'Lead Admin';
@@ -1326,6 +1326,9 @@ try {
       if (progressBar) progressBar.style.display = isSOPModule ? 'block' : 'none';
       if (dashboardContainer) dashboardContainer.style.display = isSOPModule ? 'block' : 'none';
       if (resetAllBtn) resetAllBtn.style.display = isSOPModule ? 'inline-block' : 'none';
+      
+      const adminContainer = document.getElementById('admin-module-container');
+      if (adminContainer) adminContainer.style.display = 'none';
 
       // Update Active State in Sidebar
       document.querySelectorAll('.panel-btn').forEach(btn => btn.classList.remove('active-module'));
@@ -1732,8 +1735,9 @@ try {
       
       // Check Admin State
       if (localStorage.getItem('isAdmin') === 'true') {
-        const adminBtn = document.getElementById('admin-dashboard-btn');
-        if (adminBtn) adminBtn.style.display = 'inline-block';
+        const adminBtn = document.getElementById('sidebar-admin-btn');
+        if (adminBtn) adminBtn.style.display = 'block';
+        if (displaySpan) displaySpan.innerText = 'Lead Admin';
       }
       
       // Fetch data for datalists

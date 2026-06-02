@@ -73,65 +73,6 @@
     </div>
   </div>
 
-  <div id="admin-dashboard-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
-    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 900px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px;">
-        <h3 style="margin: 0; color: #d97706; cursor: default; user-select: none;" ondblclick="openGlobalAnalytics()">👑 Lead Admin Panel</h3>
-        <div style="display: flex; gap: 10px;">
-          <button class="btn btn-primary" onclick="generateExecutiveReport()" style="margin: 0; background-color: #2563eb;">Generate Report ✨</button>
-          <button class="btn btn-danger" onclick="document.getElementById('admin-dashboard-modal').style.display='none'" style="margin: 0;">Close</button>
-        </div>
-      </div>
-      
-      <!-- Create New Epic / User Story Form -->
-      <div style="background: rgba(0,0,0,0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border);">
-        <h4 style="margin-top: 0; margin-bottom: 10px; color: var(--text-color);">➕ Create New Epic / User Story</h4>
-        <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
-          <div style="flex: 1; min-width: 150px;">
-            <label style="font-size: 0.8rem; font-weight: bold; display: block; margin-bottom: 5px;">Epic Key (Required)</label>
-            <input type="text" id="admin-new-epic-input" class="form-input" style="width: 100%; margin: 0; padding: 6px 10px;" placeholder="e.g. EPIC-100">
-          </div>
-          <div style="flex: 1; min-width: 150px;">
-            <label style="font-size: 0.8rem; font-weight: bold; display: block; margin-bottom: 5px;">User Story Key (Required)</label>
-            <input type="text" id="admin-new-us-input" class="form-input" style="width: 100%; margin: 0; padding: 6px 10px;" placeholder="e.g. US-200: DESCRIPTION">
-          </div>
-          <div style="flex: 1; min-width: 150px;">
-            <label style="font-size: 0.8rem; font-weight: bold; display: block; margin-bottom: 5px;">Assignee (Optional)</label>
-            <input type="text" id="admin-new-assignee-input" class="form-input" style="width: 100%; margin: 0; padding: 6px 10px;" placeholder="e.g. Vignesh E">
-          </div>
-          <button class="btn btn-primary" style="margin: 0; padding: 6px 15px; height: 35px;" onclick="createNewUserStory()">Create</button>
-        </div>
-      </div>
-      
-      <!-- AI Skill Gap Analysis & Mentorship -->
-      <div id="admin-skill-matrix-container" style="background: rgba(16, 185, 129, 0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid rgba(16, 185, 129, 0.2);">
-        <h4 style="margin-top: 0; margin-bottom: 10px; color: #10b981;">🧠 AI Skill Gap & Mentorship Analysis</h4>
-        <div id="admin-skill-matrix-content" style="font-size: 0.9rem; color: var(--text-color);">
-          <!-- Populated via JS -->
-          <span style="color: #666; font-style: italic;">Analyzing tester performance data...</span>
-        </div>
-      </div>
-      
-      <div style="overflow-y: auto; flex-grow: 1;">
-        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
-          <thead style="background: var(--bg-color); position: sticky; top: 0; z-index: 1;">
-            <tr>
-              <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">User Story</th>
-              <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">Epic</th>
-              <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">Assignee</th>
-              <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">Progress</th>
-              <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">Last Updated</th>
-              <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: center;">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="admin-dashboard-tbody">
-            <!-- Populated via JS -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
   <!-- HIDDEN GLOBAL ANALYTICS MODAL -->
   <div id="global-analytics-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(8px);">
     <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 1000px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
@@ -251,6 +192,8 @@
       <button class="panel-btn" onclick="loadModule('timelogging')">Logging Time & Teams</button>
       <button class="panel-btn" onclick="loadModule('waterfall')">Waterfall Workflow</button>
     </div>
+    
+    <button id="sidebar-admin-btn" class="panel-btn" style="display: none; color: #d97706; font-weight: bold; background: rgba(217, 119, 6, 0.1); margin-top: 15px;" onclick="window.openAdminModule()">👑 Lead Admin Panel</button>
   </aside>
 
   <main class="main-content">
@@ -264,7 +207,6 @@
         <div id="search-results"></div>
       </div>
       <div style="display: flex; gap: 10px; align-items: center;">
-        <button id="admin-dashboard-btn" class="btn btn-primary" style="margin: 0; padding: 4px 10px; font-size: 0.85rem; display: none;" onclick="openAdminDashboard()">Admin Panel</button>
         <div style="display: flex; align-items: center; background: rgba(37,99,235,0.05); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; gap: 8px;">
           <span id="offline-indicator" style="display: none; color: #ef4444; font-size: 1.1rem; margin-right: 5px;" title="Working Offline - Changes saved locally">☁️🚫</span>
           <span style="font-size: 0.9rem; color: var(--text-color);">👤 <span id="display-profile-name" style="font-weight: 600; color: var(--primary);">Offline</span></span>
@@ -386,6 +328,63 @@
   </div>
 
   <div id="tab-templates" class="tab-content"></div>
+      <div id="admin-module-container" class="module-content" style="display: none; padding: 20px; flex-direction: column; height: 100%;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px;">
+        <h3 style="margin: 0; color: #d97706; cursor: default; user-select: none;" ondblclick="openGlobalAnalytics()">👑 Lead Admin Panel</h3>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-primary" onclick="generateExecutiveReport()" style="margin: 0; background-color: #2563eb;">Generate Report ✨</button>
+          
+        </div>
+      </div>
+      
+      <!-- Create New Epic / User Story Form -->
+      <div style="background: rgba(0,0,0,0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border);">
+        <h4 style="margin-top: 0; margin-bottom: 10px; color: var(--text-color);">➕ Create New Epic / User Story</h4>
+        <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+          <div style="flex: 1; min-width: 150px;">
+            <label style="font-size: 0.8rem; font-weight: bold; display: block; margin-bottom: 5px;">Epic Key (Required)</label>
+            <input type="text" id="admin-new-epic-input" class="form-input" style="width: 100%; margin: 0; padding: 6px 10px;" placeholder="e.g. EPIC-100">
+          </div>
+          <div style="flex: 1; min-width: 150px;">
+            <label style="font-size: 0.8rem; font-weight: bold; display: block; margin-bottom: 5px;">User Story Key (Required)</label>
+            <input type="text" id="admin-new-us-input" class="form-input" style="width: 100%; margin: 0; padding: 6px 10px;" placeholder="e.g. US-200: DESCRIPTION">
+          </div>
+          <div style="flex: 1; min-width: 150px;">
+            <label style="font-size: 0.8rem; font-weight: bold; display: block; margin-bottom: 5px;">Assignee (Optional)</label>
+            <input type="text" id="admin-new-assignee-input" class="form-input" style="width: 100%; margin: 0; padding: 6px 10px;" placeholder="e.g. Vignesh E">
+          </div>
+          <button class="btn btn-primary" style="margin: 0; padding: 6px 15px; height: 35px;" onclick="createNewUserStory()">Create</button>
+        </div>
+      </div>
+      
+      <!-- AI Skill Gap Analysis & Mentorship -->
+      <div id="admin-skill-matrix-container" style="background: rgba(16, 185, 129, 0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid rgba(16, 185, 129, 0.2);">
+        <h4 style="margin-top: 0; margin-bottom: 10px; color: #10b981;">🧠 AI Skill Gap & Mentorship Analysis</h4>
+        <div id="admin-skill-matrix-content" style="font-size: 0.9rem; color: var(--text-color);">
+          <!-- Populated via JS -->
+          <span style="color: #666; font-style: italic;">Analyzing tester performance data...</span>
+        </div>
+      </div>
+      
+      <div style="overflow-y: auto; flex-grow: 1;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+          <thead style="background: var(--bg-color); position: sticky; top: 0; z-index: 1;">
+            <tr>
+              <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">User Story</th>
+              <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">Epic</th>
+              <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">Assignee</th>
+              <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">Progress</th>
+              <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">Last Updated</th>
+              <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: center;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="admin-dashboard-tbody">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+      </div>
+      </div>
+
       
       
         <div id="logs-container"></div>
@@ -611,7 +610,7 @@
         document.getElementById('admin-new-us-input').value = '';
         document.getElementById('admin-new-assignee-input').value = '';
         
-        if (window.openAdminDashboard) window.openAdminDashboard();
+        if (window.openAdminModule) window.openAdminModule();
         if (window.fetchGlobalDataForDatalists) window.fetchGlobalDataForDatalists();
       } catch(e) {
         alert("Error creating user story: " + e.message);
@@ -661,12 +660,31 @@
       }
     };
 
-    window.openAdminDashboard = async function() {
+    window.openAdminModule = async function() {
       const tbody = document.getElementById('admin-dashboard-tbody');
       if (!tbody) return;
       
       tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Loading...</td></tr>';
-      document.getElementById('admin-dashboard-modal').style.display = 'flex';
+      
+      document.getElementById('current-module-title').innerText = 'Lead Admin Panel';
+      document.querySelectorAll('.panel-btn').forEach(b => b.classList.remove('active-module'));
+      const adminBtn = document.getElementById('sidebar-admin-btn');
+      if (adminBtn) adminBtn.classList.add('active-module');
+      
+      document.getElementById('tabs-container').style.display = 'none';
+      document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+      
+      const ticketBar = document.getElementById('user-story-bar-container');
+      const progressBar = document.getElementById('progress-bar-container');
+      const dashboardContainer = document.getElementById('user-story-dashboard-container');
+      if (ticketBar) ticketBar.style.display = 'none';
+      if (progressBar) progressBar.style.display = 'none';
+      if (dashboardContainer) dashboardContainer.style.display = 'none';
+
+      document.getElementById('admin-module-container').style.display = 'flex';
+      
+      if (typeof closeSidebarOnMobile === 'function') closeSidebarOnMobile();
+
       
       const dbRef = ref(db);
       try {
@@ -837,7 +855,7 @@
         
         alert("User Story successfully updated!");
         document.getElementById('admin-edit-modal').style.display = 'none';
-        window.openAdminDashboard(); 
+        window.openAdminModule(); 
         window.fetchGlobalDataForDatalists(); 
         
       } catch(e) {

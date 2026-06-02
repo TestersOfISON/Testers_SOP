@@ -240,7 +240,7 @@ def run_e2e_tests():
             pass
         time.sleep(2)
         
-        admin_btn = driver.find_element(By.ID, "admin-dashboard-btn")
+        admin_btn = driver.find_element(By.ID, "sidebar-admin-btn")
         report("Admin Panel button visible", admin_btn.is_displayed())
         
         driver.execute_script("arguments[0].click();", admin_btn)
