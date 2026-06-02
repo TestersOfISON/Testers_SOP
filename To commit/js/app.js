@@ -707,6 +707,10 @@ try {
       return typeof itemText === 'string' && itemText.includes('(If applicable)');
     }
 
+    function isOptional(itemText) {
+      return typeof itemText === 'string' && itemText.includes('(If applicable)');
+    }
+
     function evaluateChecklistLogic(moduleId) {
       if (!moduleId) return;
       const data = qaModules[moduleId];

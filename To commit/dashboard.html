@@ -107,6 +107,17 @@
         }
       }
     };
+    
+    window.deleteStoryFromCloud = async function(storyKey) {
+      if (confirm(`Are you sure you want to completely erase ${storyKey} from the cloud database?`)) {
+        try {
+          await update(ref(db), { ['user_stories/' + storyKey]: null });
+          console.log(`Deleted ${storyKey} from cloud.`);
+        } catch(e) {
+          alert("Error deleting from cloud.");
+        }
+      }
+    };
 
     // Listen to real-time updates from Realtime Database
     onValue(storiesRef, (snapshot) => {

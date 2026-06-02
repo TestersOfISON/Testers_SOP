@@ -1,0 +1,16 @@
+{
+  "name": "libra-qa-lead-dashboard",
+  "version": "1.0.0",
+  "description": "QA Lead Dashboard Automation Scripts",
+  "main": "scripts/weekly_report.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "node-fetch": "^2.7.0",
+    "nodemailer": "^6.9.13"
+  }
+}
