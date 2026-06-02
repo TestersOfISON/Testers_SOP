@@ -715,9 +715,6 @@
                     if (diffMins < 2 && diffMins > 0) {
                         hasAnomaly = true;
                         anomalyDetails.push(`Design Phase Rushed (${diffMins.toFixed(1)}m)`);
-                    } else if (diffMins > 120) {
-                        needsMentorship = true;
-                        anomalyDetails.push(`Design Phase Blocked (${(diffMins/60).toFixed(1)}h)`);
                     }
                 }
                 if (tl.executionStartedAt && tl.executionFinishedAt) {
@@ -725,9 +722,6 @@
                     if (diffMins < 2 && diffMins > 0) {
                         hasAnomaly = true;
                         anomalyDetails.push(`Execution Phase Rushed (${diffMins.toFixed(1)}m)`);
-                    } else if (diffMins > 120) {
-                        needsMentorship = true;
-                        anomalyDetails.push(`Execution Phase Blocked (${(diffMins/60).toFixed(1)}h)`);
                     }
                 }
             }
