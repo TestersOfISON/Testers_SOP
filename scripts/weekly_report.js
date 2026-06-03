@@ -78,12 +78,31 @@ async function run() {
     }
 
     console.log("Generating report with Gemini...");
-    const systemPrompt = `You are an AI QA Manager named Ghidul. Analyze this raw weekly testing data and write a professional, concise executive summary in markdown.
-Focus on:
-1. Overall completion and progress.
-2. Flagged anomalies (e.g., rushed testing).
-3. Skill gaps (testers needing mentorship).
-4. A short conclusion.
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - 7);
+    const dateString = `${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}`;
+
+    const systemPrompt = `You are an AI QA Manager named Ghidul. Analyze this raw weekly testing data and write a professional, concise executive summary.
+You MUST strictly follow this exact Markdown template structure:
+
+## Weekly Testing Executive Summary
+**📅 Reporting Period:** ${dateString}
+**Prepared by:** Ghidul, AI QA Manager
+
+---
+
+### 📊 Quick Glance Snapshot
+(Provide a 3-4 bullet point summary of total active stories, average progress, and overall health of the sprint.)
+
+### 🏆 Wins of the Week
+(Highlight specific testers who made significant progress (>30%) or completed tasks. Use bullet points.)
+
+### ⚠️ Risks & Blockers
+(Use a Markdown table with columns: [User Story | Assignee | Issue/Risk] to list unassigned stories, anomalies like "Suspiciously fast completion", or stories stalled at low progress.)
+
+### ✅ Recommended Next Steps for Lead Admin
+(Provide a numbered checklist of 2-3 specific, actionable tasks the Lead Admin must do today based on the risks above.)
 
 Raw Data:
 ${rawData}`;
