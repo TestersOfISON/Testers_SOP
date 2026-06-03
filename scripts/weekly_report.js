@@ -1,5 +1,6 @@
 const fetch = require('node-fetch');
 const nodemailer = require('nodemailer');
+const { marked } = require('marked');
 
 const FIREBASE_URL = "https://qa-lead-dashboard-default-rtdb.firebaseio.com/user_stories.json";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -132,13 +133,16 @@ ${rawData}`;
 
     console.log("Sending email...");
     
-    // Convert markdown to basic HTML for the email
-    let htmlReport = markdownReport
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\n\* (.*?)/g, '<br>• $1')
-        .replace(/\n- (.*?)/g, '<br>• $1')
-        .replace(/\n/g, '<br>');
-
+    // Parse markdown to HTML and inject basic table CSS
+    let rawHtmlReport = marked.parse(markdownReport);
+    let htmlReport = `
+        <style>
+            table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+        </style>
+        ${rawHtmlReport}
+    `;
     let transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {

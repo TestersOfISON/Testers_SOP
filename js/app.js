@@ -2056,13 +2056,14 @@ ${rawData}`;
     
     let answer = data.candidates[0].content.parts[0].text;
     
-    // Simple markdown to HTML conversion for bold and lists
-    answer = answer.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    answer = answer.replace(/\n\* (.*?)/g, '<br>• $1');
-    answer = answer.replace(/\n- (.*?)/g, '<br>• $1');
-    answer = answer.replace(/\n/g, '<br>');
-    
-    content.innerHTML = answer;
+    // Parse markdown to HTML
+    if (typeof marked !== 'undefined') {
+        content.innerHTML = marked.parse(answer);
+    } else {
+        // Fallback if CDN fails
+        answer = answer.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+        content.innerHTML = answer;
+    }
   } catch (error) {
     content.innerHTML = `<span style="color:red;">Error connecting to API.</span>`;
   }
