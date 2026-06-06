@@ -1395,10 +1395,44 @@ try {
         return text;
       }
 
-      if (Array.isArray(data.checklist)) {
-        data.checklist.forEach((item, index) => {
-          const id = `check-${moduleId}-${index}`;
-          checklistContainer.innerHTML += `
+      function renderItemHTML(item, idPrefix, index) {
+        const id = `${idPrefix}-${moduleId}-${index}`;
+        if (typeof item === 'object' && item.children) {
+          let html = `
+            <div class="checklist-item" style="padding: 10px; border-bottom: 1px solid var(--border);">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div style="display: flex; gap: 10px; flex-grow: 1;">
+                  <input type="checkbox" id="${id}" class="parent-checkbox" style="margin-top: 4px;" disabled title="Complete all sub-tasks to check this item">
+                  <label for="${id}" style="flex-grow: 1; font-weight: bold;">${formatLabel(item.text)}</label>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+                  <span id="note-icon-${moduleId}-${id}" style="display: none; color: #ef4444; font-size: 1.1rem; cursor: pointer;" title="View Note" onclick="openNoteModal('${moduleId}', '${id}')">🚩</span>
+                  <button onclick="openNoteModal('${moduleId}', '${id}')" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0 5px; color: #94a3b8; line-height: 1;" title="Add Note/Flag">⋮</button>
+                </div>
+              </div>
+              <div style="margin-left: 25px; margin-top: 8px; border-left: 2px solid var(--border); padding-left: 10px;">
+          `;
+          item.children.forEach((childItem, childIndex) => {
+            const childId = `${id}-child-${childIndex}`;
+            html += `
+                <div style="display: flex; gap: 10px; margin-bottom: 6px;">
+                  <input type="checkbox" id="${childId}" data-parent-id="${id}" class="child-checkbox" style="margin-top: 2px;" onchange="
+                    const parent = document.getElementById('${id}');
+                    const siblings = document.querySelectorAll('[data-parent-id=\\'${id}\\']');
+                    let allChecked = true;
+                    siblings.forEach(s => { if(!s.checked) allChecked = false; });
+                    if(parent.checked !== allChecked) {
+                        parent.checked = allChecked;
+                    }
+                  ">
+                  <label for="${childId}" style="flex-grow: 1; font-size: 0.95em;">${formatLabel(childItem)}</label>
+                </div>
+            `;
+          });
+          html += `</div></div>`;
+          return html;
+        } else {
+          return `
             <div class="checklist-item" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 10px; border-bottom: 1px solid var(--border);">
               <div style="display: flex; gap: 10px; flex-grow: 1;">
                 <input type="checkbox" id="${id}" style="margin-top: 4px;">
@@ -1409,40 +1443,24 @@ try {
                 <button onclick="openNoteModal('${moduleId}', '${id}')" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0 5px; color: #94a3b8; line-height: 1;" title="Add Note/Flag">⋮</button>
               </div>
             </div>`;
+        }
+      }
+
+      if (Array.isArray(data.checklist)) {
+        data.checklist.forEach((item, index) => {
+          checklistContainer.innerHTML += renderItemHTML(item, 'check', index);
         });
       } else if (data.checklist) {
         if (data.checklist.entry_criteria && data.checklist.entry_criteria.length > 0) {
           checklistContainer.innerHTML += `<div style="padding: 10px 15px; font-weight: bold; background: rgba(37, 99, 235, 0.08); border-bottom: 1px solid var(--border);">Entry Criteria</div>`;
           data.checklist.entry_criteria.forEach((item, index) => {
-            const id = `check-entry-${moduleId}-${index}`;
-            checklistContainer.innerHTML += `
-              <div class="checklist-item" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 10px; border-bottom: 1px solid var(--border);">
-                <div style="display: flex; gap: 10px; flex-grow: 1;">
-                  <input type="checkbox" id="${id}" style="margin-top: 4px;">
-                  <label for="${id}" style="flex-grow: 1;">${formatLabel(item)}</label>
-                </div>
-                <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
-                  <span id="note-icon-${moduleId}-${id}" style="display: none; color: #ef4444; font-size: 1.1rem; cursor: pointer;" title="View Note" onclick="openNoteModal('${moduleId}', '${id}')">🚩</span>
-                  <button onclick="openNoteModal('${moduleId}', '${id}')" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0 5px; color: #94a3b8; line-height: 1;" title="Add Note/Flag">⋮</button>
-                </div>
-              </div>`;
+            checklistContainer.innerHTML += renderItemHTML(item, 'check-entry', index);
           });
         }
         if (data.checklist.exit_criteria && data.checklist.exit_criteria.length > 0) {
           checklistContainer.innerHTML += `<div style="padding: 10px 15px; font-weight: bold; background: rgba(16, 185, 129, 0.08); border-bottom: 1px solid var(--border); border-top: 1px solid var(--border);">Exit Criteria</div>`;
           data.checklist.exit_criteria.forEach((item, index) => {
-            const id = `check-exit-${moduleId}-${index}`;
-            checklistContainer.innerHTML += `
-              <div class="checklist-item" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 10px; border-bottom: 1px solid var(--border);">
-                <div style="display: flex; gap: 10px; flex-grow: 1;">
-                  <input type="checkbox" id="${id}" style="margin-top: 4px;">
-                  <label for="${id}" style="flex-grow: 1;">${formatLabel(item)}</label>
-                </div>
-                <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
-                  <span id="note-icon-${moduleId}-${id}" style="display: none; color: #ef4444; font-size: 1.1rem; cursor: pointer;" title="View Note" onclick="openNoteModal('${moduleId}', '${id}')">🚩</span>
-                  <button onclick="openNoteModal('${moduleId}', '${id}')" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0 5px; color: #94a3b8; line-height: 1;" title="Add Note/Flag">⋮</button>
-                </div>
-              </div>`;
+            checklistContainer.innerHTML += renderItemHTML(item, 'check-exit', index);
           });
         }
       }

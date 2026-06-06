@@ -105,6 +105,14 @@ const qaModules = {
             H --> I["Test creation complete"]`,
         checklist: {
           entry_criteria: [
+            {
+              text: "Complete a 'User Story Comprehension Walkthrough' (As Is vs To Be) with BA or PO.",
+              children: [
+                "Drafted acceptance criteria",
+                "Defined test coverage matrix",
+                "Received confirmation for tester defined acceptance criteria and test coverage matrix"
+              ]
+            },
             "Verify functional requirements & specifications are clear.",
             "Confirm Xray folder structure is set up for the Scrum team."
           ],
@@ -301,6 +309,7 @@ Mandatory Labels:
             J -- No --> L["Status: Re-open"] --> G`,
         checklist: {
           entry_criteria: [
+            "Complete Pre-Bug Checklist (Verify test data validity, cross-check against AC, search for duplicates).",
             "Attempt to reproduce the bug.",
             "Select Correct Category and Reproducibility (Always/Sometimes).",
             "Select Severity (Trivial, Minor, Medium, Major, Blocker)."
