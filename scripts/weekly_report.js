@@ -108,7 +108,7 @@ You MUST strictly follow this exact Markdown template structure:
 Raw Data:
 ${rawData}`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
     
     let markdownReport = "";
     try {
