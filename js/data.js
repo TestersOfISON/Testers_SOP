@@ -105,14 +105,7 @@ const qaModules = {
             H --> I["Test creation complete"]`,
         checklist: {
           entry_criteria: [
-            {
-              text: "Complete a 'User Story Comprehension Walkthrough' (As Is vs To Be) with BA or PO.",
-              children: [
-                "Drafted acceptance criteria",
-                "Defined test coverage matrix",
-                "Received confirmation for tester defined acceptance criteria and test coverage matrix"
-              ]
-            },
+            "Complete a 'User Story Comprehension Walkthrough' (As Is vs To Be) with the QA Lead.",
             "Verify functional requirements & specifications are clear.",
             "Confirm Xray folder structure is set up for the Scrum team."
           ],
