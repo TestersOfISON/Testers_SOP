@@ -186,7 +186,7 @@ def run_e2e_tests():
         time.sleep(2)
         
         # Check a regular checkbox to get >0% progress
-        regular_checkboxes = driver.find_elements(By.CSS_SELECTOR, "#checklist-container > div > label > input[type='checkbox']:not([disabled])")
+        regular_checkboxes = driver.find_elements(By.CSS_SELECTOR, "#checklist-container input[type='checkbox']:not([disabled])")
         report("Regular checkboxes are rendered", len(regular_checkboxes) > 0)
         
         if len(regular_checkboxes) > 0:
