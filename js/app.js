@@ -1828,6 +1828,38 @@ window.toggleAIChat = function() {
   }
 };
 
+window.oracleKnowledgeBaseText = "";
+
+window.toggleOracleMode = async function(checkbox) {
+  const statusBar = document.getElementById('oracle-status-bar');
+  if (checkbox.checked) {
+    statusBar.style.display = 'block';
+    statusBar.innerText = 'Loading Oracle knowledge base...';
+    try {
+      // In production, you might have multiple files to fetch or a single compiled JSON
+      const res = await fetch('knowledge_base/t24_mapping.md');
+      if (res.ok) {
+        window.oracleKnowledgeBaseText = await res.text();
+        statusBar.innerText = '✅ T24 Oracle Knowledge Base loaded (' + window.oracleKnowledgeBaseText.length + ' chars)';
+        
+        if (document.querySelectorAll('.ai-message').length <= 1) {
+            appendAIMessage("🔮 **T24 Migration Oracle Online.** I have ingested the proprietary mapping documentation. Ask me any complex migration questions!");
+        }
+      } else {
+        statusBar.innerText = '❌ Failed to load knowledge base (HTTP ' + res.status + ')';
+        checkbox.checked = false;
+      }
+    } catch (e) {
+      statusBar.innerText = '❌ Error loading knowledge base: ' + e.message;
+      checkbox.checked = false;
+    }
+  } else {
+    statusBar.style.display = 'none';
+    window.oracleKnowledgeBaseText = "";
+    appendAIMessage("Oracle Mode disabled. Returning to standard Ghidul SOP guidance.");
+  }
+};
+
 window.openAISettings = function() {
   const modal = document.getElementById('ai-settings-modal');
   const input = document.getElementById('ai-api-key-input');
@@ -1941,6 +1973,10 @@ function scrollToBottom(container) {
 async function callAIAssistant(userMessage, apiKey, modelName) {
   // Build Context from current module
   let contextStr = "You are Ghidul, an AI Co-Pilot for Libra Bank QA testers. Be concise, helpful, and direct.\n";
+  
+  if (window.oracleKnowledgeBaseText) {
+      contextStr = `You are the T24 Migration Oracle. Answer strictly using the following proprietary documentation. If the answer is not in the documentation, say 'I cannot find this in the Oracle Knowledge Base.' \n\n <KNOWLEDGE_BASE>\n${window.oracleKnowledgeBaseText}\n</KNOWLEDGE_BASE>\n\n`;
+  }
   if (currentModuleId && qaModules[currentModuleId]) {
     const mod = qaModules[currentModuleId];
     contextStr += `The user is currently viewing the module: "${mod.title}".\n`;

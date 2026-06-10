@@ -956,6 +956,20 @@
       </div>
     </div>
     
+    <div style="background: rgba(147, 51, 234, 0.1); border-bottom: 1px solid rgba(147, 51, 234, 0.2); padding: 8px 15px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span>🔮</span>
+        <strong style="color: #9333ea;">T24 Migration Oracle</strong>
+      </div>
+      <label class="switch" style="transform: scale(0.7); margin: 0;">
+        <input type="checkbox" id="oracle-mode-toggle" onchange="toggleOracleMode(this)">
+        <span class="slider round"></span>
+      </label>
+    </div>
+    <div id="oracle-status-bar" style="display: none; background: #f3f4f6; color: #4b5563; font-size: 0.75rem; text-align: center; padding: 4px; border-bottom: 1px solid #e5e7eb;">
+      Loading knowledge base...
+    </div>
+    
     <div id="ai-chat-messages" class="ai-chat-messages">
       <div class="ai-message ai">
         Hello! I'm Ghidul, your Libra SOP Co-Pilot. I can answer questions about the current module or explain testing procedures. How can I help you today?
