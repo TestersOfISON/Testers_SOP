@@ -322,7 +322,13 @@ Mandatory Labels:
               <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column;">
                 <h4 style="margin-top: 0; margin-bottom: 10px; color: var(--text-color);">1. Raw Notes</h4>
                 <p style="font-size: 0.85rem; color: #777; margin-top: 0;">Fill in the details. PII is scrubbed locally before hitting the AI.</p>
-                <textarea id="bug-raw-notes" class="form-input" style="flex-grow: 1; min-height: 250px; resize: vertical; padding: 10px; font-family: monospace;" placeholder="Describe your bug here... (You can also Paste images!)"></textarea>
+                <label style="font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">User Story ID</label>
+                <input type="text" id="bug-story-id" class="form-input" style="margin-bottom: 10px; padding: 8px;" placeholder="e.g. WF-1234">
+                
+                <label style="font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">Issue Detail (SubModule)</label>
+                <input type="text" id="bug-issue-detail" class="form-input" style="margin-bottom: 15px; padding: 8px;" placeholder="e.g. Interest Accrual">
+                
+                <textarea id="bug-raw-notes" class="form-input" style="flex-grow: 1; min-height: 180px; resize: vertical; padding: 10px; font-family: monospace;" placeholder="Describe your bug here... (You can also Paste images!)"></textarea>
                 <div id="bug-image-preview-container" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;"></div>
                 <button class="btn btn-primary" style="margin-top: 15px; width: 100%; background: #d97706;" onclick="formatBugReport()">Scrub & Beautify ✨</button>
               </div>
@@ -340,7 +346,10 @@ Mandatory Labels:
                 <textarea id="bug-out-desc" class="form-input" style="min-height: 80px; resize: vertical; padding: 8px; margin-bottom: 15px; font-family: monospace;" placeholder="Expected success, actual 500 error"></textarea>
                 
                 <label style="font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">Steps to Reproduce</label>
-                <textarea id="bug-out-steps" class="form-input" style="min-height: 100px; resize: vertical; padding: 8px; font-family: monospace;" placeholder="Navigate to link, click transfer..."></textarea>
+                <textarea id="bug-out-steps" class="form-input" style="min-height: 80px; resize: vertical; padding: 8px; margin-bottom: 15px; font-family: monospace;" placeholder="Navigate to link, click transfer..."></textarea>
+                
+                <label style="font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">Severity</label>
+                <input type="text" id="bug-out-severity" class="form-input" style="padding: 8px;" placeholder="e.g. Major">
                 
                 <button class="btn btn-success" style="margin-top: 15px; width: 100%;" onclick="copyBugReport()">Copy to Clipboard 📋</button>
               </div>

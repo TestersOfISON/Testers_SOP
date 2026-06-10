@@ -67,24 +67,33 @@ function sanitizeText(text) {
 }
 
 async function formatBugReport() {
+    const storyIdInput = document.getElementById('bug-story-id');
+    const issueDetailInput = document.getElementById('bug-issue-detail');
     const inputArea = document.getElementById('bug-raw-notes');
     const titleOut = document.getElementById('bug-out-title');
     const descOut = document.getElementById('bug-out-desc');
     const stepsOut = document.getElementById('bug-out-steps');
+    const severityOut = document.getElementById('bug-out-severity');
     const qaMessage = document.getElementById('bug-qa-message');
     
-    const rawText = inputArea ? inputArea.value.trim() : '';
+    let rawText = inputArea ? inputArea.value.trim() : '';
+    const storyId = storyIdInput ? storyIdInput.value.trim() : '';
+    const issueDetail = issueDetailInput ? issueDetailInput.value.trim() : '';
 
     if (!rawText && attachedImagesBase64.length === 0) {
         alert("Please enter some notes or paste an image first.");
         return;
     }
 
+    if (storyId) rawText = `User Story ID: ${storyId}\n` + rawText;
+    if (issueDetail) rawText = `Issue Detail/SubModule: ${issueDetail}\n` + rawText;
+
     qaMessage.style.display = 'block';
     qaMessage.innerText = "Scrubbing PII and consulting AI... Please wait...";
     titleOut.value = "";
     descOut.value = "";
     stepsOut.value = "";
+    if (severityOut) severityOut.value = "";
 
     const scrubbedText = sanitizeText(rawText);
 
@@ -105,6 +114,12 @@ IMPORTANT QA RULES:
 1. The title MUST strictly follow this format: "[User story ID] - [SubModule] - Issue Summary".
 2. If the user provides incomplete information (missing 'Actual Result', missing 'Expected Result', vague 'Steps', OR missing the 'User story ID'), DO NOT guess.
 3. Instead, set "status" to "qa_needed" and populate "qa_message" asking them specifically for the missing details. (e.g., "QA Request: Please provide the User story ID and specify what the actual result was.")
+4. You must determine the Severity of the bug based on the following rules:
+   - Trivial: Cosmetic, minor display errors, incorrect texts. No impact on performance.
+   - Minor: Low impact, does not prevent normal use of the application.
+   - Medium: Moderate impact, affects certain functionalities or creates inconveniences. Not critical.
+   - Major: Significantly affects functionality, but does not completely block users. Workarounds exist.
+   - Blocker: Completely blocks use of a function/application, or leads to data loss. Immediate resolution needed.
 
 If all necessary information is present (or mostly inferable from text and screenshots), set "status" to "success", clear the "qa_message", and format the bug into the following fields:
 
@@ -114,8 +129,9 @@ You must output valid JSON ONLY, using this EXACT schema:
   "qa_message": "...",
   "title": "[User story ID] - [SubModule] - Issue Summary",
   "description": "Expected Result: [What should happen]\\n\\nActual Result: [What actually happens]",
-  "steps": "1. \\n2. \\n3. "
-}
+  "steps": "1. \\n2. \\n3. ",
+  "severity": "Trivial" | "Minor" | "Medium" | "Major" | "Blocker"
+}`;
 
 Output ONLY the raw JSON object. Do not include markdown \`\`\`json wrappers.`;
 
@@ -127,7 +143,7 @@ Output ONLY the raw JSON object. Do not include markdown \`\`\`json wrappers.`;
         attachedImagesBase64.forEach(img => {
             apiContents.push({
                 inlineData: {
-                    mimeType: img.mimeType,
+                    mime_type: img.mimeType,
                     data: img.data
                 }
             });
@@ -174,6 +190,7 @@ Output ONLY the raw JSON object. Do not include markdown \`\`\`json wrappers.`;
             titleOut.value = resultObj.title || "";
             descOut.value = resultObj.description || "";
             stepsOut.value = resultObj.steps || "";
+            if (severityOut) severityOut.value = resultObj.severity || "";
             
         } catch (e) {
             qaMessage.style.display = 'block';
@@ -190,10 +207,18 @@ function copyBugReport() {
     const titleOut = document.getElementById('bug-out-title');
     const descOut = document.getElementById('bug-out-desc');
     const stepsOut = document.getElementById('bug-out-steps');
+    const severityOut = document.getElementById('bug-out-severity');
     
     if (!titleOut || !descOut || !stepsOut) return;
     
-    const combined = `**Title:** ${titleOut.value}\n\n**Steps to Reproduce:**\n${stepsOut.value}\n\n**Description:**\n${descOut.value}`;
+    let combined = `**Title:** ${titleOut.value}\n`;
+    if (severityOut && severityOut.value) {
+        combined += `**Severity:** ${severityOut.value}\n\n`;
+    } else {
+        combined += `\n`;
+    }
+    
+    combined += `**Steps to Reproduce:**\n${stepsOut.value}\n\n**Description:**\n${descOut.value}`;
     
     navigator.clipboard.writeText(combined).then(() => {
         alert("Bug report copied to clipboard!");
