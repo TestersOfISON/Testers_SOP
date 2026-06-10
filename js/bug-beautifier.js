@@ -133,7 +133,7 @@ You must output valid JSON ONLY, using this EXACT schema:
   "severity": "Trivial" | "Minor" | "Medium" | "Major" | "Blocker"
 }
 
-Output ONLY the raw JSON object. Do not include markdown \`\`\`json wrappers.\`;
+Output ONLY the raw JSON object. Do not include markdown \`\`\`json wrappers.`;
 
     try {
         let apiContents = [];
