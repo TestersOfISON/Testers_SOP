@@ -1021,6 +1021,38 @@
       </div>
     </div>
   </div>
+  <!-- BUG BEAUTIFIER FAB -->
+  <button id="bug-beautifier-fab" onclick="toggleBugBeautifier()" title="AI Bug Beautifier" style="position: fixed; bottom: 85px; right: 20px; width: 50px; height: 50px; border-radius: 50%; background: #d97706; color: white; border: none; font-size: 1.5rem; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 9999; display: flex; align-items: center; justify-content: center; transition: transform 0.2s;">
+    <span class="icon">🐛</span>
+  </button>
 
+  <!-- BUG BEAUTIFIER MODAL -->
+  <div id="bug-beautifier-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10005; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 800px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px;">
+        <h3 style="margin: 0; color: #d97706;">🐛 AI Bug Report Beautifier</h3>
+        <button class="btn btn-danger" onclick="toggleBugBeautifier()" style="margin: 0;">Close</button>
+      </div>
+      <div style="overflow-y: auto; flex-grow: 1; display: flex; gap: 20px; flex-wrap: wrap;">
+        
+        <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column;">
+          <h4 style="margin-top: 0; margin-bottom: 10px; color: var(--text-color);">1. Paste Raw Notes</h4>
+          <p style="font-size: 0.85rem; color: #777; margin-top: 0;">Type your messy thoughts. All PII (Account numbers, emails, amounts) will be scrubbed locally before sending to AI.</p>
+          <textarea id="bug-raw-notes" class="form-input" style="flex-grow: 1; min-height: 200px; resize: none; padding: 10px; font-family: monospace;" placeholder="e.g. tested the MM module, user 10098472 tried to click transfer 500 dollars but it crashed..."></textarea>
+          <button class="btn btn-primary" style="margin-top: 15px; width: 100%; background: #d97706;" onclick="formatBugReport()">Scrub & Beautify ✨</button>
+        </div>
+
+        <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column;">
+          <h4 style="margin-top: 0; margin-bottom: 10px; color: var(--text-color);">2. Formatted Bug Report</h4>
+          <p style="font-size: 0.85rem; color: #777; margin-top: 0;">Confluence template format with T24 steps to reproduce.</p>
+          <textarea id="bug-formatted-output" class="form-input" style="flex-grow: 1; min-height: 200px; resize: none; padding: 10px; font-family: monospace; background: rgba(0,0,0,0.02);" readonly placeholder="Result will appear here..."></textarea>
+          <button class="btn btn-success" style="margin-top: 15px; width: 100%;" onclick="copyBugReport()">Copy to Clipboard 📋</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="js/bug-beautifier.js"></script>
 </body>
 </html>
