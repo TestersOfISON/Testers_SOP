@@ -24,65 +24,56 @@ function sanitizeText(text) {
 }
 
 async function formatBugReport() {
-    const titleArea = document.getElementById('bug-title-input');
-    const descArea = document.getElementById('bug-desc-input');
-    const stepsArea = document.getElementById('bug-steps-input');
-    const outputArea = document.getElementById('bug-formatted-output');
+    const inputArea = document.getElementById('bug-raw-notes');
+    const titleOut = document.getElementById('bug-out-title');
+    const descOut = document.getElementById('bug-out-desc');
+    const stepsOut = document.getElementById('bug-out-steps');
+    const qaMessage = document.getElementById('bug-qa-message');
     
-    const titleText = titleArea ? titleArea.value.trim() : '';
-    const descText = descArea ? descArea.value.trim() : '';
-    const stepsText = stepsArea ? stepsArea.value.trim() : '';
+    const rawText = inputArea ? inputArea.value.trim() : '';
 
-    if (!titleText && !descText && !stepsText) {
-        alert("Please enter some bug details first.");
+    if (!rawText) {
+        alert("Please enter your notes first.");
         return;
     }
 
-    outputArea.value = "Scrubbing PII and consulting AI... Please wait...";
+    qaMessage.style.display = 'block';
+    qaMessage.innerText = "Scrubbing PII and consulting AI... Please wait...";
+    titleOut.value = "";
+    descOut.value = "";
+    stepsOut.value = "";
 
-    const scrubbedTitle = sanitizeText(titleText);
-    const scrubbedDesc = sanitizeText(descText);
-    const scrubbedSteps = sanitizeText(stepsText);
-    
-    const combinedNotes = `Title: ${scrubbedTitle}\nDescription & Results: ${scrubbedDesc}\nSteps to Reproduce: ${scrubbedSteps}`;
+    const scrubbedText = sanitizeText(rawText);
 
     // Call Gemini API
     const apiKey = localStorage.getItem('gemini_api_key');
     if (!apiKey) {
-        outputArea.value = "Error: Please set your Gemini API Key in the AI Settings (✨) first.";
+        qaMessage.innerText = "Error: Please set your Gemini API Key in the AI Settings (✨) first.";
         return;
     }
 
-    // Fixed default model name
     const model = localStorage.getItem('gemini_model') || 'gemini-1.5-flash-latest';
     
     const systemInstruction = `You are an expert QA Lead at Libra Bank, specializing in Temenos T24 migrations (MM to AA). 
-Your task is to review the provided bug details and format them into a highly professional bug report.
+Your task is to review the provided unstructured bug notes and format them into a highly professional bug report.
 The text has already been scrubbed of PII. DO NOT invent any PII.
 
 IMPORTANT QA RULE:
-If the user provides incomplete information (for example, missing 'Actual Result', missing 'Expected Result', or vague 'Steps to Reproduce'), DO NOT just guess or format it blindly. 
-Instead, output a helpful "QA Request" asking them specifically for the missing details.
-Example: "QA Request: Please specify what the actual result was when you clicked the transfer button."
+If the user provides incomplete information (for example, missing 'Actual Result', missing 'Expected Result', or vague 'Steps to Reproduce'), DO NOT just guess.
+Instead, set "status" to "qa_needed" and populate "qa_message" asking them specifically for the missing details. (e.g., "QA Request: Please specify what the actual result was when you clicked the transfer button.")
 
-If all necessary information is present, output ONLY the perfectly formatted report following this EXACT format:
+If all necessary information is present (or mostly inferable), set "status" to "success", clear the "qa_message", and format the bug into the following fields:
 
-**Title:** [T24 Module] - [SubModule] - Issue Summary
+You must output valid JSON ONLY, using this EXACT schema:
+{
+  "status": "success" | "qa_needed",
+  "qa_message": "...",
+  "title": "[T24 Module] - [SubModule] - Issue Summary",
+  "description": "Expected Result: [What should happen]\\n\\nActual Result: [What actually happens]",
+  "steps": "1. \\n2. \\n3. "
+}
 
-**Description:**
-A clear, professional summary of the issue.
-
-**Steps to Reproduce:**
-(Provide an ordered list specifically tailored for a T24 environment, e.g., inputting commands, navigating menus).
-1. 
-2. 
-3. 
-
-**Expected Result:**
-[What should happen]
-
-**Actual Result:**
-[What actually happens]`;
+Output ONLY the raw JSON object. Do not include markdown \`\`\`json wrappers.`;
 
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
@@ -95,29 +86,61 @@ A clear, professional summary of the issue.
                     parts: [{ text: systemInstruction }]
                 },
                 contents: [{
-                    parts: [{ text: combinedNotes }]
+                    parts: [{ text: scrubbedText }]
                 }]
             })
         });
 
         const data = await response.json();
         if (data.error) {
-            outputArea.value = "API Error: " + data.error.message;
+            qaMessage.innerText = "API Error: " + data.error.message;
             return;
         }
 
-        const formattedText = data.candidates[0].content.parts[0].text;
-        outputArea.value = formattedText;
+        let formattedText = data.candidates[0].content.parts[0].text;
+        formattedText = formattedText.trim();
+        if (formattedText.startsWith('\`\`\`json')) {
+            formattedText = formattedText.replace(/^\`\`\`json/, '').replace(/\`\`\`$/, '').trim();
+        }
+
+        try {
+            const resultObj = JSON.parse(formattedText);
+            
+            if (resultObj.status === "qa_needed") {
+                qaMessage.style.display = 'block';
+                qaMessage.innerText = "⚠️ " + resultObj.qa_message;
+            } else {
+                qaMessage.style.display = 'none';
+                qaMessage.innerText = "";
+            }
+            
+            titleOut.value = resultObj.title || "";
+            descOut.value = resultObj.description || "";
+            stepsOut.value = resultObj.steps || "";
+            
+        } catch (e) {
+            qaMessage.style.display = 'block';
+            qaMessage.innerText = "Error parsing AI response as JSON. Raw Output: " + formattedText;
+        }
 
     } catch (error) {
-        outputArea.value = "Connection Error: " + error.message;
+        qaMessage.style.display = 'block';
+        qaMessage.innerText = "Connection Error: " + error.message;
     }
 }
 
 function copyBugReport() {
-    const outputArea = document.getElementById('bug-formatted-output');
-    if (!outputArea.value) return;
-    outputArea.select();
-    document.execCommand('copy');
-    alert("Bug report copied to clipboard!");
+    const titleOut = document.getElementById('bug-out-title');
+    const descOut = document.getElementById('bug-out-desc');
+    const stepsOut = document.getElementById('bug-out-steps');
+    
+    if (!titleOut || !descOut || !stepsOut) return;
+    
+    const combined = `**Title:** ${titleOut.value}\n\n**Steps to Reproduce:**\n${stepsOut.value}\n\n**Description:**\n${descOut.value}`;
+    
+    navigator.clipboard.writeText(combined).then(() => {
+        alert("Bug report copied to clipboard!");
+    }).catch(err => {
+        alert("Failed to copy: " + err);
+    });
 }

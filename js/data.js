@@ -322,23 +322,25 @@ Mandatory Labels:
               <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column;">
                 <h4 style="margin-top: 0; margin-bottom: 10px; color: var(--text-color);">1. Raw Notes</h4>
                 <p style="font-size: 0.85rem; color: #777; margin-top: 0;">Fill in the details. PII is scrubbed locally before hitting the AI.</p>
-                
-                <label style="font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">Title</label>
-                <input type="text" id="bug-title-input" class="form-input" style="margin-bottom: 15px; padding: 8px;" placeholder="e.g. Transfer crash on MM">
-                
-                <label style="font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">Description (Expected / Actual Result)</label>
-                <textarea id="bug-desc-input" class="form-input" style="min-height: 80px; resize: vertical; padding: 8px; margin-bottom: 15px; font-family: monospace;" placeholder="Expected success, actual 500 error"></textarea>
-                
-                <label style="font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">Steps to Reproduce</label>
-                <textarea id="bug-steps-input" class="form-input" style="min-height: 100px; resize: vertical; padding: 8px; font-family: monospace;" placeholder="Navigate to link, click transfer..."></textarea>
-                
+                <textarea id="bug-raw-notes" class="form-input" style="flex-grow: 1; min-height: 250px; resize: vertical; padding: 10px; font-family: monospace;" placeholder="Describe your bug here..."></textarea>
                 <button class="btn btn-primary" style="margin-top: 15px; width: 100%; background: #d97706;" onclick="formatBugReport()">Scrub & Beautify ✨</button>
               </div>
 
               <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column;">
                 <h4 style="margin-top: 0; margin-bottom: 10px; color: var(--text-color);">2. Formatted Bug Report / AI QA</h4>
                 <p style="font-size: 0.85rem; color: #777; margin-top: 0;">Confluence format or AI follow-up questions.</p>
-                <textarea id="bug-formatted-output" class="form-input" style="flex-grow: 1; min-height: 250px; resize: none; padding: 10px; font-family: monospace; background: rgba(0,0,0,0.02);" readonly placeholder="Result will appear here..."></textarea>
+                
+                <div id="bug-qa-message" style="display: none; background: rgba(217, 119, 6, 0.1); border-left: 4px solid #d97706; padding: 10px; margin-bottom: 15px; font-size: 0.9rem; color: #d97706; font-weight: 600;"></div>
+                
+                <label style="font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">Title</label>
+                <input type="text" id="bug-out-title" class="form-input" style="margin-bottom: 15px; padding: 8px;" placeholder="e.g. Transfer crash on MM">
+                
+                <label style="font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">Description (Expected / Actual Result)</label>
+                <textarea id="bug-out-desc" class="form-input" style="min-height: 80px; resize: vertical; padding: 8px; margin-bottom: 15px; font-family: monospace;" placeholder="Expected success, actual 500 error"></textarea>
+                
+                <label style="font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">Steps to Reproduce</label>
+                <textarea id="bug-out-steps" class="form-input" style="min-height: 100px; resize: vertical; padding: 8px; font-family: monospace;" placeholder="Navigate to link, click transfer..."></textarea>
+                
                 <button class="btn btn-success" style="margin-top: 15px; width: 100%;" onclick="copyBugReport()">Copy to Clipboard 📋</button>
               </div>
 
