@@ -115,9 +115,9 @@ You must output valid JSON ONLY, using this EXACT schema:
   "title": "[User story ID] - [SubModule] - Issue Summary",
   "description": "Expected Result: [What should happen]\\n\\nActual Result: [What actually happens]",
   "steps": "1. \\n2. \\n3. "
-}`;
+}
 
-Output ONLY the raw JSON object. Do not include markdown \`\`\`json wrappers.`;
+Output ONLY the raw JSON object. Do not include markdown \`\`\`json wrappers.\`;
 
     try {
         let apiContents = [];
