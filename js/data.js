@@ -322,7 +322,8 @@ Mandatory Labels:
               <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column;">
                 <h4 style="margin-top: 0; margin-bottom: 10px; color: var(--text-color);">1. Raw Notes</h4>
                 <p style="font-size: 0.85rem; color: #777; margin-top: 0;">Fill in the details. PII is scrubbed locally before hitting the AI.</p>
-                <textarea id="bug-raw-notes" class="form-input" style="flex-grow: 1; min-height: 250px; resize: vertical; padding: 10px; font-family: monospace;" placeholder="Describe your bug here..."></textarea>
+                <textarea id="bug-raw-notes" class="form-input" style="flex-grow: 1; min-height: 250px; resize: vertical; padding: 10px; font-family: monospace;" placeholder="Describe your bug here... (You can also Paste images!)"></textarea>
+                <div id="bug-image-preview-container" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;"></div>
                 <button class="btn btn-primary" style="margin-top: 15px; width: 100%; background: #d97706;" onclick="formatBugReport()">Scrub & Beautify ✨</button>
               </div>
 

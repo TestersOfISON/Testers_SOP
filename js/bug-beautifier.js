@@ -1,10 +1,53 @@
 function toggleBugBeautifier() {
     const modal = document.getElementById('bug-beautifier-modal');
-    if (modal.style.display === 'none' || modal.style.display === '') {
-        modal.style.display = 'flex';
-    } else {
-        modal.style.display = 'none';
+    if (modal) {
+        modal.style.display = modal.style.display === 'none' || modal.style.display === '' ? 'flex' : 'none';
     }
+}
+
+let attachedImagesBase64 = [];
+
+document.addEventListener('paste', function(e) {
+    if (e.target.id !== 'bug-raw-notes') return;
+    
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    for (let index in items) {
+        const item = items[index];
+        if (item.kind === 'file' && item.type.startsWith('image/')) {
+            const blob = item.getAsFile();
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const base64String = event.target.result;
+                attachedImagesBase64.push({
+                    mimeType: item.type,
+                    data: base64String.split(',')[1]
+                });
+                renderImagePreviews();
+            };
+            reader.readAsDataURL(blob);
+        }
+    }
+});
+
+function renderImagePreviews() {
+    const container = document.getElementById('bug-image-preview-container');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    attachedImagesBase64.forEach((imgObj, idx) => {
+        const img = document.createElement('img');
+        img.src = `data:${imgObj.mimeType};base64,${imgObj.data}`;
+        img.style.height = '60px';
+        img.style.borderRadius = '4px';
+        img.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+        img.style.cursor = 'pointer';
+        img.title = 'Click to remove';
+        img.onclick = () => {
+            attachedImagesBase64.splice(idx, 1);
+            renderImagePreviews();
+        };
+        container.appendChild(img);
+    });
 }
 
 function sanitizeText(text) {
@@ -32,8 +75,8 @@ async function formatBugReport() {
     
     const rawText = inputArea ? inputArea.value.trim() : '';
 
-    if (!rawText) {
-        alert("Please enter your notes first.");
+    if (!rawText && attachedImagesBase64.length === 0) {
+        alert("Please enter some notes or paste an image first.");
         return;
     }
 
@@ -55,27 +98,41 @@ async function formatBugReport() {
     const model = localStorage.getItem('gemini_ai_model') || 'gemini-2.5-flash';
     
     const systemInstruction = `You are an expert QA Lead at Libra Bank, specializing in Temenos T24 migrations (MM to AA). 
-Your task is to review the provided unstructured bug notes and format them into a highly professional bug report.
+Your task is to review the provided unstructured bug notes (and optionally screenshots) and format them into a highly professional bug report.
 The text has already been scrubbed of PII. DO NOT invent any PII.
 
-IMPORTANT QA RULE:
-If the user provides incomplete information (for example, missing 'Actual Result', missing 'Expected Result', or vague 'Steps to Reproduce'), DO NOT just guess.
-Instead, set "status" to "qa_needed" and populate "qa_message" asking them specifically for the missing details. (e.g., "QA Request: Please specify what the actual result was when you clicked the transfer button.")
+IMPORTANT QA RULES:
+1. The title MUST strictly follow this format: "[User story ID] - [SubModule] - Issue Summary".
+2. If the user provides incomplete information (missing 'Actual Result', missing 'Expected Result', vague 'Steps', OR missing the 'User story ID'), DO NOT guess.
+3. Instead, set "status" to "qa_needed" and populate "qa_message" asking them specifically for the missing details. (e.g., "QA Request: Please provide the User story ID and specify what the actual result was.")
 
-If all necessary information is present (or mostly inferable), set "status" to "success", clear the "qa_message", and format the bug into the following fields:
+If all necessary information is present (or mostly inferable from text and screenshots), set "status" to "success", clear the "qa_message", and format the bug into the following fields:
 
 You must output valid JSON ONLY, using this EXACT schema:
 {
   "status": "success" | "qa_needed",
   "qa_message": "...",
-  "title": "[T24 Module] - [SubModule] - Issue Summary",
+  "title": "[User story ID] - [SubModule] - Issue Summary",
   "description": "Expected Result: [What should happen]\\n\\nActual Result: [What actually happens]",
   "steps": "1. \\n2. \\n3. "
-}
+}`;
 
 Output ONLY the raw JSON object. Do not include markdown \`\`\`json wrappers.`;
 
     try {
+        let apiContents = [];
+        if (scrubbedText) {
+            apiContents.push({ text: scrubbedText });
+        }
+        attachedImagesBase64.forEach(img => {
+            apiContents.push({
+                inlineData: {
+                    mimeType: img.mimeType,
+                    data: img.data
+                }
+            });
+        });
+
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: {
@@ -86,7 +143,7 @@ Output ONLY the raw JSON object. Do not include markdown \`\`\`json wrappers.`;
                     parts: [{ text: systemInstruction }]
                 },
                 contents: [{
-                    parts: [{ text: scrubbedText }]
+                    parts: apiContents
                 }]
             })
         });
