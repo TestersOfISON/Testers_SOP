@@ -312,15 +312,39 @@ Mandatory Labels:
             "Attach Screenshot or Video evidence."
           ]
         },
-        templates: `<div class="code-block">Bug Detailing Template:
-Steps to reproduce:
-1. Navigate to [Link]
-2. Login with user [User] / role [Role]
-3. Click on [Button]
-4. Enter [Data]
+        templates: `
+          <div style="background: var(--card-bg); padding: 25px; border-radius: 12px; border: 1px solid var(--border); box-shadow: var(--shadow);">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px;">
+              <h3 style="margin: 0; color: #d97706;">🐛 AI Bug Report Beautifier</h3>
+            </div>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+              
+              <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column;">
+                <h4 style="margin-top: 0; margin-bottom: 10px; color: var(--text-color);">1. Raw Notes</h4>
+                <p style="font-size: 0.85rem; color: #777; margin-top: 0;">Fill in the details. PII is scrubbed locally before hitting the AI.</p>
+                
+                <label style="font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">Title</label>
+                <input type="text" id="bug-title-input" class="form-input" style="margin-bottom: 15px; padding: 8px;" placeholder="e.g. Transfer crash on MM">
+                
+                <label style="font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">Description (Expected / Actual Result)</label>
+                <textarea id="bug-desc-input" class="form-input" style="min-height: 80px; resize: vertical; padding: 8px; margin-bottom: 15px; font-family: monospace;" placeholder="Expected success, actual 500 error"></textarea>
+                
+                <label style="font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">Steps to Reproduce</label>
+                <textarea id="bug-steps-input" class="form-input" style="min-height: 100px; resize: vertical; padding: 8px; font-family: monospace;" placeholder="Navigate to link, click transfer..."></textarea>
+                
+                <button class="btn btn-primary" style="margin-top: 15px; width: 100%; background: #d97706;" onclick="formatBugReport()">Scrub & Beautify ✨</button>
+              </div>
 
-Actual Result: The system throws error 500.
-Expected Result: The system processes the payment and shows success screen.</div>`
+              <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column;">
+                <h4 style="margin-top: 0; margin-bottom: 10px; color: var(--text-color);">2. Formatted Bug Report / AI QA</h4>
+                <p style="font-size: 0.85rem; color: #777; margin-top: 0;">Confluence format or AI follow-up questions.</p>
+                <textarea id="bug-formatted-output" class="form-input" style="flex-grow: 1; min-height: 250px; resize: none; padding: 10px; font-family: monospace; background: rgba(0,0,0,0.02);" readonly placeholder="Result will appear here..."></textarea>
+                <button class="btn btn-success" style="margin-top: 15px; width: 100%;" onclick="copyBugReport()">Copy to Clipboard 📋</button>
+              </div>
+
+            </div>
+          </div>
+        `
       },
       "incidents": {
         title: "Incidents Workflow",

@@ -24,19 +24,28 @@ function sanitizeText(text) {
 }
 
 async function formatBugReport() {
-    const inputArea = document.getElementById('bug-raw-notes');
+    const titleArea = document.getElementById('bug-title-input');
+    const descArea = document.getElementById('bug-desc-input');
+    const stepsArea = document.getElementById('bug-steps-input');
     const outputArea = document.getElementById('bug-formatted-output');
-    const rawText = inputArea.value.trim();
+    
+    const titleText = titleArea ? titleArea.value.trim() : '';
+    const descText = descArea ? descArea.value.trim() : '';
+    const stepsText = stepsArea ? stepsArea.value.trim() : '';
 
-    if (!rawText) {
-        alert("Please enter your notes first.");
+    if (!titleText && !descText && !stepsText) {
+        alert("Please enter some bug details first.");
         return;
     }
 
-    outputArea.value = "Scrubbing PII and formatting bug report... Please wait...";
+    outputArea.value = "Scrubbing PII and consulting AI... Please wait...";
 
-    const scrubbedText = sanitizeText(rawText);
+    const scrubbedTitle = sanitizeText(titleText);
+    const scrubbedDesc = sanitizeText(descText);
+    const scrubbedSteps = sanitizeText(stepsText);
     
+    const combinedNotes = `Title: ${scrubbedTitle}\nDescription & Results: ${scrubbedDesc}\nSteps to Reproduce: ${scrubbedSteps}`;
+
     // Call Gemini API
     const apiKey = localStorage.getItem('gemini_api_key');
     if (!apiKey) {
@@ -44,12 +53,19 @@ async function formatBugReport() {
         return;
     }
 
-    const model = localStorage.getItem('gemini_model') || 'gemini-1.5-flash';
+    // Fixed default model name
+    const model = localStorage.getItem('gemini_model') || 'gemini-1.5-flash-latest';
     
     const systemInstruction = `You are an expert QA Lead at Libra Bank, specializing in Temenos T24 migrations (MM to AA). 
-Your task is to take the provided messy notes and format them into a highly professional bug report.
+Your task is to review the provided bug details and format them into a highly professional bug report.
 The text has already been scrubbed of PII. DO NOT invent any PII.
-Follow this EXACT format:
+
+IMPORTANT QA RULE:
+If the user provides incomplete information (for example, missing 'Actual Result', missing 'Expected Result', or vague 'Steps to Reproduce'), DO NOT just guess or format it blindly. 
+Instead, output a helpful "QA Request" asking them specifically for the missing details.
+Example: "QA Request: Please specify what the actual result was when you clicked the transfer button."
+
+If all necessary information is present, output ONLY the perfectly formatted report following this EXACT format:
 
 **Title:** [T24 Module] - [SubModule] - Issue Summary
 
@@ -79,7 +95,7 @@ A clear, professional summary of the issue.
                     parts: [{ text: systemInstruction }]
                 },
                 contents: [{
-                    parts: [{ text: scrubbedText }]
+                    parts: [{ text: combinedNotes }]
                 }]
             })
         });
