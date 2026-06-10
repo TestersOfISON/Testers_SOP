@@ -117,7 +117,7 @@ You must output valid JSON ONLY, using this EXACT schema:
   "steps": "1. \\n2. \\n3. "
 }
 
-Output ONLY the raw JSON object. Do not include markdown \`\`\`json wrappers.\`;
+Output ONLY the raw JSON object. Do not include markdown \`\`\`json wrappers.`;
 
     try {
         let apiContents = [];
