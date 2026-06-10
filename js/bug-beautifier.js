@@ -52,7 +52,7 @@ async function formatBugReport() {
         return;
     }
 
-    const model = localStorage.getItem('gemini_model') || 'gemini-1.5-flash-latest';
+    const model = localStorage.getItem('gemini_ai_model') || 'gemini-2.5-flash';
     
     const systemInstruction = `You are an expert QA Lead at Libra Bank, specializing in Temenos T24 migrations (MM to AA). 
 Your task is to review the provided unstructured bug notes and format them into a highly professional bug report.
