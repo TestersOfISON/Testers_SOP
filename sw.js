@@ -1,4 +1,4 @@
-const CACHE_NAME = 'qa-portal-cache-v10';
+const CACHE_NAME = 'qa-portal-cache-v11';
 const urlsToCache = [
   './index.html',
   './manifest.json',

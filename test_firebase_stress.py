@@ -1,4 +1,4 @@
-﻿import os
+import os
 import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -10,7 +10,7 @@ def run_stress_test():
     driver = webdriver.Chrome(options=options)
     
     print("============================================================")
-    print("  🔥 FIREBASE PERFORMANCE STRESS TEST")
+    print("  [*] FIREBASE PERFORMANCE STRESS TEST")
     print("============================================================")
 
     try:
@@ -56,6 +56,9 @@ def run_stress_test():
             if (window.deleteStateFromCloud) {
                 await window.deleteStateFromCloud('STRESS-TEST-123');
             }
+            if (window.db && window.db.ref) {
+                await window.db.ref('users/StressTester').remove();
+            }
             
             const sumW = writeTimes.reduce((a, b) => a + b, 0);
             const sumR = readTimes.reduce((a, b) => a + b, 0);
@@ -77,9 +80,9 @@ def run_stress_test():
         results = driver.execute_async_script(js_script)
         
         if 'error' in results:
-            print(f"[FAIL ❌] Test encountered an error: {results['error']}")
+            print(f"[FAIL XX] Test encountered an error: {results['error']}")
         else:
-            print("\n[PASS ✅] Stress test completed successfully!")
+            print("\n[PASS OK] Stress test completed successfully!")
             print("--- Write Performance (50 sequential updates) ---")
             print(f"Average: {results['avgWrite']:.2f} ms")
             print(f"Max latency: {results['maxWrite']:.2f} ms")

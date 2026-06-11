@@ -38,7 +38,7 @@ def run_e2e_tests():
         # =========================================================
         # PHASE 1: AUTHENTICATION
         # =========================================================
-        driver.get("https://testersofison.github.io/Testers_SOP/")
+        driver.get("http://localhost:8000/")
         
         # -------------------------------------------------------------
         # Inject our testing User Story into SOP_CONFIG so Admin panel finds it
@@ -218,6 +218,41 @@ def run_e2e_tests():
         
         model_select = driver.find_element(By.ID, "ai-model-select")
         report("AI Model Dropdown is rendered", model_select.is_displayed())
+        
+        # Test Oracle Mode Toggle
+        oracle_toggle = driver.find_element(By.ID, "oracle-mode-toggle")
+        driver.execute_script("arguments[0].click();", oracle_toggle)
+        time.sleep(2) # wait for fetch
+        
+        status_bar = driver.find_element(By.ID, "oracle-status-bar")
+        report("Oracle Mode status bar becomes visible", status_bar.is_displayed())
+        report("Oracle Knowledge Base loaded successfully", "loaded" in status_bar.text.lower())
+
+        # =========================================================
+        # PHASE 3.6: BUG BEAUTIFIER TEMPLATES
+        # =========================================================
+        print("\n--- Phase 3.6: Bug Beautifier ---")
+        
+        # Open Bugs Workflow Module
+        bugs_module_btn = driver.find_element(By.XPATH, "//button[contains(text(), 'Bugs Workflow')]")
+        driver.execute_script("arguments[0].click();", bugs_module_btn)
+        time.sleep(2)
+
+        tabs = driver.find_elements(By.CLASS_NAME, "tab-btn")
+        for tab in tabs:
+            if "Templates" in tab.text:
+                driver.execute_script("arguments[0].click();", tab)
+                break
+        time.sleep(2)
+        
+        bug_story_id = driver.find_element(By.ID, "bug-story-id")
+        report("Bug Beautifier User Story ID input is rendered", bug_story_id.is_displayed())
+        
+        bug_issue_detail = driver.find_element(By.ID, "bug-issue-detail")
+        report("Bug Beautifier Issue Detail input is rendered", bug_issue_detail.is_displayed())
+        
+        bug_out_severity = driver.find_element(By.ID, "bug-out-severity")
+        report("Bug Beautifier Severity output is rendered", bug_out_severity.is_displayed())
 
         # Close the modal and the chat window so they don't intercept clicks
         close_modal_btn = driver.find_element(By.XPATH, "//button[@onclick=\"document.getElementById('ai-settings-modal').style.display='none'\"]")
