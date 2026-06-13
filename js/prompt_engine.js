@@ -203,37 +203,72 @@ window.PromptEngine = (function() {
   function generateUiPathBDD(acText) {
     if (!acText || !acText.trim()) return '';
 
-    const sections = [];
-    sections.push(`# UiPath Test Manager — Enterprise BDD Scenarios`);
-    sections.push(`## Feature: Core Banking Routine Validation\n`);
-
     const matrixRows = extractMatrix(acText);
+    const numCases = matrixRows.length;
+    
+    // Extract title/ID
+    const titleMatch = acText.match(/##\s*Acceptance Criteria\s*[—\-]\s*([A-Z]+-\d+)\s*\n\*\*(.+?)\*\*/);
+    const id = titleMatch ? titleMatch[1] : 'US-XXXX';
+    const title = titleMatch ? titleMatch[2] : 'Feature Under Test';
+    const fullStoryTitle = `${id} - ${title}`;
+    
+    const isGuarantee = acText.includes('LBK.SOLDARE.GARANTII');
 
+    const sections = [];
+    sections.push(`# **Role:**`);
+    sections.push(`Expert QA Analyst for a Core Banking System (Temenos T24).\n`);
+    
+    sections.push(`# **Objective:**`);
+    sections.push(`Generate EXACTLY ${numCases} explicitly defined MANUAL test cases in English for UiPath Test Manager based on the user story: "${fullStoryTitle}".\n`);
+    
+    sections.push(`# **Context:**`);
+    if (isGuarantee) {
+      sections.push(`The system relies on an automated batch service (\`LBK.SOLDARE.GARANTII\`) to clean up orphaned guarantees. When a collateral deposit is manually liquidated, the attached guarantee is left behind. This service runs during COB (Close of Business) to detect these orphaned guarantees and systemicly close them.`);
+      sections.push(`* **Trigger:** The service runs when no active LD/PD records are attached, or when the attached AA/MM deposit STATUS = LIQ.`);
+      sections.push(`* **Action:** The system automatically zeros out the balances (\`NOMINAL.VALUE = 0\`, \`VAL.EVAL.INT = 0\`) and sets \`EXPIRY.DATE = TODAY\`.`);
+      sections.push(`* **Negative/Exceptions:** It must bypass active deposits and safely skip records that are locked by a user.`);
+      sections.push(`* **Segments:** Testing must be explicitly duplicated across three customer segments: PF (Retail), PJ (Corporate), and PRE (Professional).\n`);
+    } else {
+      sections.push(`This user story defines a core T24 banking process or batch routine update.`);
+      sections.push(`* **Execution:** The process validates specific preconditions and qualifying criteria before applying field updates.`);
+      sections.push(`* **Resilience:** The process must handle edge cases like null fields or concurrent record locks gracefully.\n`);
+    }
+
+    sections.push(`# **Instructions:**\n`);
+    sections.push(`## **Instruction 1: Test Case Generation Rules**`);
+    sections.push(`* **NO DATA-DRIVEN VARIABLES.** You must write out each of the ${numCases} scenarios individually using the exact segments provided in the scope list below.`);
+    sections.push(`* Write steps strictly for a human tester executing the process manually on the T24 UI.`);
+    sections.push(`* Use explicit T24 navigation commands (e.g., navigating to the application, triggering the service/verifying COB completion, checking ENQ records).`);
+    sections.push(`* Maximum 10 steps per scenario.`);
+    sections.push(`* Format all titles strictly as: ${id} - [Scenario Type] - [Segment] - [Description]\n`);
+
+    sections.push(`## **Instruction 2: Required Step-by-Step Flow Adaptation**`);
+    if (isGuarantee) {
+      sections.push(`Adapt the step-by-step flow based on the scenario expected result:`);
+      sections.push(`* **For Happy Path (Orphan Closure):** Set up an orphaned guarantee (liquidated deposit) for the specific segment -> Trigger/Wait for \`LBK.SOLDARE.GARANTII\` service -> Open the COLLATERAL record -> Assert NOMINAL.VALUE=0, VAL.EVAL.INT=0, EXPIRY.DATE=TODAY -> Verify the systemic audit log.`);
+      sections.push(`* **For Negative Flow (Active Bypass):** Set up a guarantee with an ACTIVE deposit for the specific segment -> Trigger/Wait for service -> Open COLLATERAL record -> Assert record was completely bypassed (no fields updated).`);
+      sections.push(`* **For Edge Case (Record Locked):** Set up an orphaned guarantee -> Open the record in 'Input' mode to lock it -> Trigger/Wait for service -> Assert the routine safely skipped the record and logged an exception without crashing.\n`);
+    } else {
+      sections.push(`Adapt the step-by-step flow based on the scenario expected result:`);
+      sections.push(`* **For Happy Path:** Set up the required precondition data in T24 -> Trigger the execution -> Assert the expected field updates have been applied -> Verify systemic audit log.`);
+      sections.push(`* **For Negative Flow:** Set up data that explicitly violates the criteria -> Trigger execution -> Assert the record was bypassed.`);
+      sections.push(`* **For Edge Case:** Set up the edge case condition (e.g. locked record or null fields) -> Trigger execution -> Assert the system handles it gracefully without crashing the batch.\n`);
+    }
+
+    sections.push(`## **Instruction 3: Exact Scope Boundaries (Generate exactly ${numCases} distinct scenarios)**`);
     if (matrixRows.length > 0) {
-      let currentType = '';
       matrixRows.forEach((row, i) => {
-        if (currentType !== row.type) {
-          currentType = row.type;
-          sections.push(`\n### --- ${currentType} Scenarios ---`);
-        }
-        
-        sections.push(`\n#### Scenario: ${row.id} - ${row.type} for ${row.segment}`);
-        sections.push(`**Given** a test customer exists in segment "${row.segment}"`);
-        sections.push(`**And** the record meets condition: "${row.condition}"`);
-        sections.push(`**When** the COB batch routine executes`);
-        
-        // Split aggregated results correctly into ANDs
-        const results = row.result.split(/[:,]/).map(s => s.trim()).filter(s => s.includes('='));
-        if (results.length > 0) {
-          sections.push(`**Then** verify the system processes the record`);
-          results.forEach(res => {
-            sections.push(`**And** assert ${res}`);
-          });
-        } else {
-          sections.push(`**Then** verify ${row.result}`);
-        }
+        const shortType = row.type.includes('Happy') ? 'Happy Path' : row.type.includes('Negative') ? 'Negative' : 'Edge Case';
+        const shortSeg = row.segment.split(' ')[0];
+        let desc = '';
+        if (row.condition.includes('STATUS=LIQ')) desc = ` (STATUS=LIQ)`;
+        sections.push(`* **Scenario ${i+1}: ${shortType} ${shortSeg}${desc}** -> Segment: ${row.segment} | Condition: ${row.condition.substring(0, 60)}... | Expected Result: ${row.result}`);
       });
     }
+
+    sections.push(`\n# **Notes:**`);
+    sections.push(`* Ensure exactly ${numCases} individual test cases are generated with clear Action and Expected Result columns.`);
+    sections.push(`* Do not merge or group any of the scenarios; output each separately so they can be assigned to individual testing team members.`);
 
     return sections.join('\n');
   }

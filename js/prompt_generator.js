@@ -54,7 +54,7 @@ window.generateUiPathPrompt = function() {
     // Brief UI feedback
     btnUp.disabled = true;
     btnUp.innerText = '⚙️ Generating...';
-    outUp.value = 'Crafting UiPath BDD prompt from acceptance criteria...';
+    outUp.value = 'Crafting AI Instructional Prompt Template...';
 
     requestAnimationFrame(function() {
         setTimeout(function() {
