@@ -1,10 +1,10 @@
 /**
- * prompt_engine.js — T24 Domain-Specific Expert System (Prompt Generator V3.0)
+ * prompt_engine.js — T24 Domain-Specific Expert System (Prompt Generator V4.0)
  * 
- * Replaces the basic text parser with a Dynamic T24 Rule Engine.
- * - Extracts dynamic preconditions and field updates.
- * - Applies Cross-Segment Multipliers (PF, PJ, PRE) automatically.
- * - Avoids context bleeding by removing hardcoded guarantees logic.
+ * Local AI + Structural Enforcer Pipeline:
+ * - Accepts intelligent JSON extraction from Qwen 0.5B Worker.
+ * - Dynamically builds ACs based on exact contextual triggers.
+ * - Scales the matrix automatically based on the number of distinct triggers.
  */
 
 window.PromptEngine = (function() {
@@ -17,26 +17,24 @@ window.PromptEngine = (function() {
   }
 
   // ============================================================================
-  // SECTION 1: USER STORY PARSER (DYNAMIC T24 RULE EXTRACTION)
+  // SECTION 1: USER STORY PARSER (AI PIPELINE)
   // ============================================================================
 
-  function parseUserStory(text) {
+  function parseUserStory(text, aiRules = null) {
     const parsed = {
-      id: '', title: '', routines: [], conditions: [], updates: [],
+      id: '', title: '', routines: [], conditions: [], updates: [], aiRules: aiRules,
       routineType: 'GENERIC', // 'LIQUIDATION' | 'SYNCHRONIZATION' | 'GENERIC'
       rawText: text
     };
 
     if (!text || !text.trim()) return parsed;
 
-    // ID and Title
     const idMatch = text.match(/([A-Z]{1,10}-\d{1,10})\s*[-–]\s*(.+?)(?:\n|$)/);
     if (idMatch) {
       parsed.id = idMatch[1].trim();
       parsed.title = idMatch[2].trim();
     }
 
-    // Dynamic Routine Type Classification
     const upperText = text.toUpperCase();
     if (upperText.includes('LBK.SOLDARE.GARANTII') || upperText.includes('LIQUIDATE') || upperText.includes('LIQUIDATION')) {
       parsed.routineType = 'LIQUIDATION';
@@ -44,7 +42,6 @@ window.PromptEngine = (function() {
       parsed.routineType = 'SYNCHRONIZATION';
     }
 
-    // Field vs Routine extraction
     const wordPattern = /\b([A-Z][A-Z0-9]*(?:\.[A-Z][A-Z0-9]*)+)\b/g;
     const routineSet = new Set();
     let wordMatch;
@@ -57,7 +54,12 @@ window.PromptEngine = (function() {
     }
     parsed.routines = Array.from(routineSet);
 
-    // Extract dynamic conditions
+    // If AI rules exist, skip manual regex
+    if (aiRules && Array.isArray(aiRules) && aiRules.length > 0) {
+      return parsed;
+    }
+
+    // Fallback Regex
     const lines = text.split('\n');
     lines.forEach(line => {
       const l = line.trim();
@@ -69,7 +71,6 @@ window.PromptEngine = (function() {
       }
     });
     
-    // Extract dynamic updates (Field=Value)
     const updatePattern = /([A-Z][A-Z0-9]*(?:\.[A-Z][A-Z0-9]*)*)\s*=\s*([^ \n,]+)/g;
     let upMatch;
     const updateSet = new Set();
@@ -80,7 +81,6 @@ window.PromptEngine = (function() {
     }
     parsed.updates = Array.from(updateSet);
     
-    // Fallbacks if extraction fails
     if (parsed.conditions.length === 0) parsed.conditions.push("Target records matching user story criteria");
     if (parsed.updates.length === 0) parsed.updates.push("Fields updated according to business rules");
 
@@ -95,38 +95,46 @@ window.PromptEngine = (function() {
     const sections = [];
     sections.push(`## Acceptance Criteria — ${parsed.id || 'US-XXXX'}`);
     sections.push(`**${parsed.title || 'User Story'}**\n`);
-    sections.push(`> 🧠 **T24 Dynamic Rule Engine Applied:** Cross-segment permutations (PF/PJ/PRE) dynamically generated based on extracted business rules.\n`);
+    sections.push(`> 🧠 **Local AI Structural Pipeline Applied:** Dynamic execution paths intelligently mapped to T24 standard matrices.\n`);
 
     const matrix = buildT24ExpertMatrix(parsed);
     
     sections.push(`### Business Rules & Acceptance Criteria\n`);
     const mainRoutine = parsed.routines[0] || 'batch routine';
     
-    if (parsed.routineType === 'LIQUIDATION') {
-      sections.push(`#### AC-1: Dynamic Liquidation Execution`);
-      sections.push(`- **GIVEN** ${parsed.conditions[0]}`);
-      sections.push(`- **WHEN** the ${mainRoutine} executes during COB (or is manually triggered intra-day)`);
-      sections.push(`- **THEN** the record transitions to liquidated state`);
-      sections.push(`- **AND** the system updates fields: ${parsed.updates.join(', ')}\n`);
-    } else if (parsed.routineType === 'SYNCHRONIZATION') {
-      sections.push(`#### AC-1: Dynamic Synchronization Execution`);
-      sections.push(`- **GIVEN** ${parsed.conditions[0]}`);
-      sections.push(`- **WHEN** the ${mainRoutine} executes during COB (or is manually triggered intra-day)`);
-      sections.push(`- **THEN** the record synchronizes with the active deposit`);
-      sections.push(`- **AND** the system updates fields: ${parsed.updates.join(', ')}\n`);
+    if (parsed.aiRules && Array.isArray(parsed.aiRules) && parsed.aiRules.length > 0) {
+      parsed.aiRules.forEach((rule, idx) => {
+        sections.push(`#### AC-${idx+1}: Dynamic Rule Execution`);
+        sections.push(`- **GIVEN** ${rule.condition}`);
+        sections.push(`- **WHEN** the ${mainRoutine} executes during COB (or is manually triggered intra-day)`);
+        sections.push(`- **THEN** the record is processed`);
+        let upList = Array.isArray(rule.updates) ? rule.updates.join(', ') : rule.updates;
+        sections.push(`- **AND** the system updates fields: ${upList}\n`);
+      });
     } else {
-      sections.push(`#### AC-1: Core execution and field updates`);
-      sections.push(`- **GIVEN** ${parsed.conditions[0]}`);
-      sections.push(`- **WHEN** the ${mainRoutine} executes`);
-      sections.push(`- **THEN** fields are updated: ${parsed.updates.join(', ')}\n`);
+      // Fallback
+      if (parsed.routineType === 'LIQUIDATION') {
+        sections.push(`#### AC-1: Dynamic Liquidation Execution`);
+        sections.push(`- **GIVEN** ${parsed.conditions[0]}`);
+        sections.push(`- **WHEN** the ${mainRoutine} executes during COB`);
+        sections.push(`- **THEN** the record transitions to liquidated state`);
+        sections.push(`- **AND** the system updates fields: ${parsed.updates.join(', ')}\n`);
+      } else {
+        sections.push(`#### AC-1: Core execution and field updates`);
+        sections.push(`- **GIVEN** ${parsed.conditions[0]}`);
+        sections.push(`- **WHEN** the ${mainRoutine} executes`);
+        sections.push(`- **THEN** fields are updated: ${parsed.updates.join(', ')}\n`);
+      }
     }
 
-    sections.push(`#### AC-2: Reject locked or active bypass records (Negative Flow)`);
+    const lastAcNum = parsed.aiRules ? parsed.aiRules.length + 1 : 2;
+    sections.push(`#### AC-${lastAcNum}: Reject locked or active bypass records (Negative Flow)`);
     sections.push(`- **GIVEN** the record explicitly fails the criteria or is manually locked`);
     sections.push(`- **WHEN** the ${mainRoutine} executes`);
     sections.push(`- **THEN** the system bypasses the record and applies no field changes\n`);
 
-    sections.push(`## Enterprise Test Coverage Matrix (12-Execution Standard)`);
+    const totalExecutions = matrix.length;
+    sections.push(`## Enterprise Test Coverage Matrix (${totalExecutions}-Execution Standard)`);
     sections.push(`*Includes Segment Multipliers and Cross-Module Exceptions*\n`);
     sections.push(`| ID | Segment | Scenario Type | Condition | Expected Result |`);
     sections.push(`|---|---|---|---|---|`);
@@ -154,20 +162,24 @@ window.PromptEngine = (function() {
       });
     }
 
-    const dynCondition = parsed.conditions[0];
-    const dynResult = `Fields updated: ${parsed.updates.join(', ')} and verify systemic audit log update`;
-
-    // 1. Primary Happy Path -> 3 tests (PF, PJ, PRE)
-    addScenario('Happy Path', dynCondition, dynResult);
+    if (parsed.aiRules && Array.isArray(parsed.aiRules) && parsed.aiRules.length > 0) {
+      // Intelligent Scaling
+      parsed.aiRules.forEach(rule => {
+        let upList = Array.isArray(rule.updates) ? rule.updates.join(', ') : rule.updates;
+        addScenario('Happy Path', rule.condition, `Fields updated: ${upList} and verify systemic audit log update`);
+      });
+    } else {
+      // Deterministic Fallback
+      const dynCondition = parsed.conditions[0];
+      const dynResult = `Fields updated: ${parsed.updates.join(', ')} and verify systemic audit log update`;
+      addScenario('Happy Path', dynCondition, dynResult);
+      if (parsed.conditions.length > 1) {
+        addScenario('Happy Path', parsed.conditions[1], dynResult);
+      }
+    }
     
-    // 2. Secondary Happy Path (Alternative condition) -> 3 tests
-    const altCondition = parsed.conditions.length > 1 ? parsed.conditions[1] : `${dynCondition} (Alternative Trigger)`;
-    addScenario('Happy Path', altCondition, dynResult);
-    
-    // 3. Negative Flow -> 3 tests
+    // Always add negative and edge cases
     addScenario('Negative', 'Condition explicitly NOT met (e.g., active deposit bypass)', 'Record bypassed, no fields updated');
-    
-    // 4. Locked record exceptions (Edge Case) -> 3 tests
     addScenario('Edge Case', 'Record locked by another user/process during COB execution', 'Routine logs exception, skips record without crashing batch');
 
     return rows;
@@ -189,7 +201,7 @@ window.PromptEngine = (function() {
     const fullStoryTitle = `${id} - ${title}`;
     
     const isLiquidation = acText.includes('Dynamic Liquidation');
-    const isSync = acText.includes('Dynamic Synchronization');
+    const isSync = acText.includes('Dynamic Synchronization') || acText.includes('Dynamic Rule');
     const detectedRoutine = isLiquidation ? 'Liquidation' : isSync ? 'Synchronization' : 'Batch Update';
 
     const sections = [];
@@ -218,7 +230,7 @@ window.PromptEngine = (function() {
     if (isLiquidation) {
       sections.push(`* **For Happy Path (Closure):** Set up the exact conditions for liquidation -> Trigger the execution -> Assert the fields are correctly zeroed/updated -> Verify systemic audit log.`);
     } else if (isSync) {
-      sections.push(`* **For Happy Path (Synchronization):** Set up the exact conditions for the update -> Trigger the execution -> Assert the synced fields are updated correctly -> Verify systemic audit log.`);
+      sections.push(`* **For Happy Path (Intelligent Synchronization):** Set up the exact mapped conditions -> Trigger the execution -> Assert the exact synced fields are updated per the rule -> Verify systemic audit log.`);
     } else {
       sections.push(`* **For Happy Path:** Set up the required precondition data -> Trigger the execution -> Assert the expected field updates are applied -> Verify systemic audit log.`);
     }

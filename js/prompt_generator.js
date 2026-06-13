@@ -5,7 +5,7 @@
  * broken WebLLM Worker. Instant generation, zero hallucination, 100% private.
  */
 
-window.generateACMatrix = function() {
+window.generateACMatrix = async function() {
     const userStory = document.getElementById('in-user-story').value.trim();
     if (!userStory) {
         showPGToast('⚠️ Please paste a user story first.', 'warning');
@@ -18,27 +18,70 @@ window.generateACMatrix = function() {
     // Brief UI feedback
     btnAc.disabled = true;
     btnAc.innerText = '⚙️ Analyzing...';
-    outAc.value = 'Parsing user story and generating acceptance criteria...';
+    outAc.value = 'Waking up Local AI Worker for Contextual JSON Extraction...';
 
-    // Use requestAnimationFrame to let UI update before processing
-    requestAnimationFrame(function() {
-        setTimeout(function() {
-            try {
-                const parsed = window.PromptEngine.parseUserStory(userStory);
-                const result = window.PromptEngine.generateAcceptanceCriteria(parsed);
+    if (!window.aiWorker) {
+        // Fallback to purely deterministic if AI Worker not initialized
+        try {
+            const parsed = window.PromptEngine.parseUserStory(userStory);
+            const result = window.PromptEngine.generateAcceptanceCriteria(parsed);
+            outAc.value = result;
+            btnAc.disabled = false;
+            btnAc.innerText = '✨ Generate AC & Matrix';
+            showPGToast('✅ Generated via Fallback Deterministic Engine!', 'success');
+        } catch (err) {
+            outAc.value = 'Error: ' + err.message;
+            btnAc.disabled = false;
+            btnAc.innerText = '✨ Generate AC & Matrix';
+            showPGToast('❌ Generation failed: ' + err.message, 'error');
+        }
+        return;
+    }
 
-                outAc.value = result;
-                btnAc.disabled = false;
-                btnAc.innerText = '✨ Generate AC & Matrix';
-                showPGToast('✅ Acceptance Criteria & Test Coverage Matrix generated successfully!', 'success');
-            } catch (err) {
-                outAc.value = 'Error: ' + err.message;
-                btnAc.disabled = false;
-                btnAc.innerText = '✨ Generate AC & Matrix';
-                showPGToast('❌ Generation failed: ' + err.message, 'error');
-            }
-        }, 150); // Small delay for UI feedback
+    // Promise wrapper for AI Worker communication
+    const extractJSON = () => new Promise((resolve, reject) => {
+        const onSuccess = (e) => {
+            window.removeEventListener('ai_extract_complete', onSuccess);
+            window.removeEventListener('ai_extract_error', onError);
+            resolve(e.detail);
+        };
+        const onError = (e) => {
+            window.removeEventListener('ai_extract_complete', onSuccess);
+            window.removeEventListener('ai_extract_error', onError);
+            reject(new Error(e.detail));
+        };
+        
+        window.addEventListener('ai_extract_complete', onSuccess);
+        window.addEventListener('ai_extract_error', onError);
+        
+        window.aiWorker.postMessage({ type: 'extract_rules', prompt: userStory });
     });
+
+    try {
+        outAc.value = 'AI Worker analyzing banking logic... this may take a moment...';
+        const aiExtractedRules = await extractJSON();
+        
+        // Pass JSON array into engine
+        const parsed = window.PromptEngine.parseUserStory(userStory, aiExtractedRules);
+        const result = window.PromptEngine.generateAcceptanceCriteria(parsed);
+
+        outAc.value = result;
+        btnAc.disabled = false;
+        btnAc.innerText = '✨ Generate AC & Matrix';
+        showPGToast('✅ Intelligent Matrix generated successfully!', 'success');
+    } catch (err) {
+        outAc.value = 'AI Extraction Error: ' + err.message + '\n\nFalling back to regex deterministic engine...';
+        try {
+            const parsed = window.PromptEngine.parseUserStory(userStory);
+            const result = window.PromptEngine.generateAcceptanceCriteria(parsed);
+            outAc.value += '\n\n' + result;
+        } catch (fallbackErr) {
+            outAc.value += '\nFallback failed: ' + fallbackErr.message;
+        }
+        btnAc.disabled = false;
+        btnAc.innerText = '✨ Generate AC & Matrix';
+        showPGToast('⚠️ Used fallback deterministic engine due to AI error.', 'warning');
+    }
 };
 
 window.generateUiPathPrompt = function() {
