@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tester's SOP</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.mini.min.js"></script>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="theme-color" content="#2563eb">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@9.4.3/dist/mermaid.min.js"></script>  <!-- Markdown Parser for AI Reports -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+
+  <!-- Full Screen Login / Lock Modal -->
+  <div id="name-modal" style="display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 10000; align-items: center; justify-content: center;">
+    <div style="background: var(--card-bg); padding: 40px; border-radius: 12px; max-width: 400px; width: 90%; text-align: center; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <h2 style="margin-top: 0; color: var(--primary);">Welcome to Tester's SOP</h2>
+      <p style="font-size: 0.9rem; color: #777; margin-bottom: 25px;">Please log in with your Username and PIN to access your workspaces.</p>
+      
+      <form onsubmit="saveNameModal(); return false;">
+      <div style="text-align: left; margin-bottom: 15px;">
+        <label for="tester-name-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Username</label>
+        <input type="text" id="tester-name-input" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;" placeholder="e.g. Tester01">
+      </div>
+      
+      <div style="text-align: left; margin-bottom: 25px;">
+        <label for="tester-pin-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Security PIN</label>
+        <input type="password" id="tester-pin-input" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box; letter-spacing: 5px; font-weight: bold; text-align: center;" placeholder="••••">
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button type="submit" class="btn btn-primary" style="margin: 0; flex-grow: 1;">Unlock</button>
+      </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="admin-reset-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; text-align: center; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <h3 style="margin-top: 0; color: #d97706;">⚠️ Admin PIN Reset</h3>
+      <p style="font-size: 0.9rem; color: #777; margin-bottom: 20px;">Use the Lead Admin Password to force-reset a tester's PIN.</p>
+      
+      <div style="text-align: left; margin-bottom: 15px;">
+        <label for="reset-username" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Tester's Username</label>
+        <input type="text" id="reset-username" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;" placeholder="e.g. Tester01">
+      </div>
+      
+      <div style="text-align: left; margin-bottom: 15px;">
+        <label for="reset-new-pin" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">New 4-Digit PIN</label>
+        <input type="password" id="reset-new-pin" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box; letter-spacing: 5px; font-weight: bold; text-align: center;" placeholder="••••" maxlength="4" pattern="[0-9]*" inputmode="numeric">
+      </div>
+
+      <div style="text-align: left; margin-bottom: 25px;">
+        <label for="reset-admin-pass" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Lead Admin Password</label>
+        <input type="password" id="reset-admin-pass" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;" placeholder="Enter Admin Password">
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button class="btn btn-primary" onclick="processAdminReset()" style="margin: 0; flex-grow: 1; background: #d97706;">Force Reset</button>
+        <button class="btn btn-danger" onclick="document.getElementById('admin-reset-modal').style.display='none'" style="margin: 0;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HIDDEN GLOBAL ANALYTICS MODAL -->
+  <div id="global-analytics-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(8px);">
+    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 1000px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px;">
+        <h3 style="margin: 0; color: #10b981;">📊 Global Team Analytics</h3>
+        <button class="btn btn-danger" onclick="document.getElementById('global-analytics-modal').style.display='none'" style="margin: 0;">Close</button>
+      </div>
+      
+      <div style="overflow-y: auto; flex-grow: 1;">
+        <table class="table" style="width: 100%;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--border); color: #777; text-align: left;">
+              <th style="padding: 10px 5px;">TESTER</th>
+              <th style="padding: 10px 5px;">USER STORY</th>
+              <th style="padding: 10px 5px;">EPIC</th>
+              <th style="padding: 10px 5px;">PROGRESS</th>
+              <th style="padding: 10px 5px;">LAST UPDATED</th>
+            </tr>
+          </thead>
+          <tbody id="global-analytics-tbody">
+            <!-- Analytics data populated here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTES MODAL -->
+  <div id="notes-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <h3 style="margin-top: 0; color: var(--primary);">📝 Add Note / Flag</h3>
+      <p style="font-size: 0.9rem; color: #777; margin-bottom: 15px;">Add a note or flag an issue for this checklist item.</p>
+      
+      <input type="hidden" id="note-module-id">
+      <input type="hidden" id="note-item-id">
+      
+      <textarea id="note-text-input" class="form-input" style="width: 100%; height: 100px; padding: 10px; margin-bottom: 20px; resize: vertical;" placeholder="Type your note here..."></textarea>
+      
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="btn btn-danger" onclick="document.getElementById('notes-modal').style.display='none'" style="margin: 0; background: transparent; color: #777; border: 1px solid #ddd;">Cancel</button>
+        <button class="btn btn-primary" onclick="saveNote()" style="margin: 0;">Save Note</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="admin-edit-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 450px; width: 90%; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <h3 style="margin-top: 0; color: var(--primary);">✏️ Edit User Story</h3>
+      <p style="font-size: 0.85rem; color: #d97706; margin-bottom: 20px;"><strong>WARNING:</strong> Renaming the User Story will migrate all existing progress to the new name and delete the old record.</p>
+      
+      <input type="hidden" id="admin-edit-old-us">
+      
+      <div style="margin-bottom: 15px;">
+        <label for="admin-edit-us-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">User Story Name (Key)</label>
+        <input type="text" id="admin-edit-us-input" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;">
+      </div>
+      
+      <div style="margin-bottom: 15px;">
+        <label for="admin-edit-epic-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Epic</label>
+        <input type="text" id="admin-edit-epic-input" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;">
+      </div>
+
+      <div style="margin-bottom: 25px;">
+        <label for="admin-edit-assignee-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Assignee</label>
+        <input type="text" id="admin-edit-assignee-input" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;">
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="btn btn-danger" onclick="document.getElementById('admin-edit-modal').style.display='none'" style="margin: 0;">Cancel</button>
+        <button class="btn btn-primary" onclick="processAdminEditSave()" style="margin: 0;">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+  <aside class="sidebar">
+    <div class="sidebar-header" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+      <span style="font-size: 1.2rem; font-weight: bold;">Tester's SOP</span>
+    </div>
+    
+    <button class="panel-btn" style="margin-bottom: 15px; font-weight: bold; background: rgba(37, 99, 235, 0.1);" onclick="loadModule('manual')"><span class="icon">📖</span> User Manual & Guidelines</button>
+    
+    <button class="accordion active">Test Design & Management</button>
+    <div class="panel" style="max-height: 500px;">
+      <button class="panel-btn active-module" onclick="loadModule('ai_generation')">AI Scenario Generation</button>
+      <button class="panel-btn" onclick="loadModule('test_design')">Test Design & Xray Management</button>
+      <button class="panel-btn" onclick="loadModule('scenario_validation')">Scenario Validation</button>
+    </div>
+
+    <button class="accordion">Test Execution</button>
+    <div class="panel">
+      <button class="panel-btn" onclick="loadModule('uat')">1. UAT Testing</button>
+      <button class="panel-btn" onclick="loadModule('smoke')">2. Smoke Testing (PRL)</button>
+      <button class="panel-btn" onclick="loadModule('prl')">3. PRL Testing</button>
+      <button class="panel-btn" onclick="loadModule('regression')">4. Regression Testing</button>
+    </div>
+
+    <button class="accordion">Defect Management</button>
+    <div class="panel">
+      <button class="panel-btn" onclick="loadModule('bugs')">Bugs Workflow</button>
+      <button class="panel-btn" onclick="loadModule('incidents')">Incidents Workflow</button>
+    </div>
+
+    <button class="accordion">Specialized Testing</button>
+    <div class="panel">
+      <button class="panel-btn" onclick="loadModule('integrated')">Integrated Testing</button>
+      <button class="panel-btn" onclick="loadModule('api_testing')">API Testing Workflow</button>
+      <button class="panel-btn" onclick="loadModule('ui_ux')">UI/UX & Smartwatch Testing</button>
+      <button class="panel-btn" onclick="loadModule('mobile')">Mobile Testing</button>
+    </div>
+
+    <button class="accordion">Agile & Ceremonies</button>
+    <div class="panel">
+      <button class="panel-btn" onclick="loadModule('agile')">Agile/Scrum Workflow</button>
+      <button class="panel-btn" onclick="loadModule('demo')">DEMO Presentation</button>
+      <button class="panel-btn" onclick="loadModule('timelogging')">Logging Time & Teams</button>
+      <button class="panel-btn" onclick="loadModule('waterfall')">Waterfall Workflow</button>
+    </div>
+    <button class="panel-btn" style="margin-top: 15px; font-weight: bold; background: rgba(16, 185, 129, 0.1); color: #10b981;" onclick="loadModule('kpi_predictor'); setTimeout(window.loadKPIData, 100);">🎯 My KPI Predictor</button>
+    
+    <button id="sidebar-admin-btn" class="panel-btn" style="display: none; color: #d97706; font-weight: bold; background: rgba(217, 119, 6, 0.1); margin-top: 15px;" onclick="window.openAdminModule()">👑 Lead Admin Panel</button>
+  </aside>
+
+  <main class="main-content">
+    <nav class="top-nav">
+      <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+        <button class="sidebar-toggle-btn" onclick="toggleSidebar()">☰</button>
+        <div id="current-module-title" style="font-weight: bold; font-size: 1.4rem; color: var(--primary);">Select a Module</div>
+      </div>
+      <div class="search-container">
+        <input type="text" id="global-search" placeholder="Search guidelines, checklists, templates..." oninput="handleSearch(this.value)">
+        <div id="search-results"></div>
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <div style="display: flex; align-items: center; background: rgba(37,99,235,0.05); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; gap: 8px;">
+          <span id="offline-indicator" style="display: none; color: #ef4444; font-size: 1.1rem; margin-right: 5px;" title="Working Offline - Changes saved locally">☁️🚫</span>
+          <span style="font-size: 0.9rem; color: var(--text-color);">👤 <span id="display-profile-name" style="font-weight: 600; color: var(--primary);">Offline</span></span>
+          <button onclick="lockApplication()" style="background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px; display: flex; align-items: center; justify-content: center; opacity: 0.7; font-size: 0.9rem; margin-left: 5px;" title="Lock Application">🔒</button>
+        </div>
+        <button id="btn-theme-switch" class="theme-toggle" style="margin: 0; font-size: 1.2rem; padding: 5px 10px; background: transparent; color: var(--text-color); border: 1px solid var(--border);" onclick="toggleTheme()">🌙</button>
+      </div>
+    </nav>
+
+    <div class="content-area">
+      <div class="tabs" id="tabs-container" style="display: none;">
+        <button class="tab-btn active" onclick="switchTab('guidelines')">Guidelines & Rules</button>
+        <button class="tab-btn" onclick="switchTab('flowchart')">Workflow Chart</button>
+        <button class="tab-btn" onclick="switchTab('checklist')">Standard Operating Procedure</button>
+        <button class="tab-btn" onclick="switchTab('templates')">Templates</button>
+      </div>
+
+      <div id="tab-guidelines" class="tab-content"></div>
+      
+      <div id="tab-flowchart" class="tab-content">
+        <div class="mermaid-wrapper" id="mermaid-container"></div>
+      </div>
+      
+      <div id="tab-checklist" class="tab-content">
+        <div id="user-story-bar-container" class="user-story-bar-container" style="background: var(--bg-color); padding: 15px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 15px; position: relative;">
+          
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; width: 100%;">
+            <!-- Left: Dropdowns -->
+            <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 10px; white-space: nowrap;">
+                <span style="font-weight: 600; font-size: 0.95rem; color: var(--primary);">Epic:</span>
+                <select id="epic-input" class="form-input" style="max-width: 200px; width: 200px; padding: 8px 12px; margin: 0;" onchange="handleEpicKeyChange()">
+                  <option value="">-- Select Epic --</option>
+                </select>
+              </div>
+              
+              <div style="display: flex; align-items: center; gap: 10px; white-space: nowrap;">
+                <span style="font-weight: 600; font-size: 0.95rem;">User Story:</span>
+                <select id="user-story-input" class="form-input" style="max-width: 250px; width: 250px; padding: 8px 12px; margin: 0;" onchange="handleUserStoryKeyChange()">
+                  <option value="">-- Select User Story --</option>
+                </select>
+              </div>
+            </div>
+            
+            <!-- Right: Filter & Assignee -->
+            <div style="display: flex; align-items: center; gap: 15px; background: rgba(37,99,235,0.05); padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border); flex-shrink: 0; margin-left: auto;">
+              <label style="display: flex; align-items: center; gap: 5px; font-size: 0.9rem; cursor: pointer; color: var(--text-color); margin-right: 10px; padding-right: 10px; border-right: 1px solid #ccc; margin-bottom: 0;">
+                <input type="checkbox" id="top-my-stories-filter" onchange="window.fetchGlobalDataForDatalists()" checked>
+                My Stories
+              </label>
+              <span style="font-size: 0.85rem; color: #777;">Assignee:</span>
+              <span id="current-assignee-display" style="font-weight: bold; color: var(--primary); font-size: 0.9rem;">Unassigned</span>
+              <button id="assign-to-me-btn" class="btn" style="padding: 4px 8px; font-size: 0.8rem; margin: 0; background: #fff; color: var(--primary); border: 1px solid var(--primary); display: none;" onclick="assignToMe()">Assign to me</button>
+            </div>
+          </div>
+          
+          <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; border-top: 1px solid var(--border); padding-top: 10px;">
+            <button class="btn btn-success" id="export-excel-btn" style="margin: 0; padding: 8px 15px; font-size: 0.85rem; background: var(--success);" onclick="exportSingleUserStoryToExcel()">Export User Story</button>
+            <button class="btn btn-primary" id="export-all-excel-btn" style="margin: 0; padding: 8px 15px; font-size: 0.85rem; background: var(--primary);" onclick="exportAllUserStoriesToExcel()">Export Workbook</button>
+          </div>
+        </div>
+
+        <div id="progress-bar-container" class="progress-wrapper" style="margin-bottom: 20px; background: var(--bg-color); padding: 15px; border: 1px solid var(--border); border-radius: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.95rem; font-weight: 600;">
+            <span id="progress-text-label">Module Progress: 0%</span>
+            <span id="progress-fraction-label" style="color: #777;">0 of 0 items checked</span>
+          </div>
+          <div class="progress-bar-bg" style="width: 100%; height: 12px; background: rgba(0,0,0,0.05); border-radius: 6px; overflow: hidden; border: 1px solid var(--border); position: relative;">
+            <div id="progress-bar-fill" style="width: 0%; height: 100%; background: var(--primary); transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease; border-radius: 6px;"></div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+          <h3 style="margin: 0;">Standard Operating Procedure Checklist</h3>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-danger" id="reset-checklist-btn" style="margin: 0; padding: 8px 15px; font-size: 0.85rem;" onclick="resetCurrentChecklist()">Reset Module</button>
+            <button class="btn btn-danger" id="reset-all-btn" style="margin: 0; padding: 8px 15px; font-size: 0.85rem; background: #c0392b;" onclick="resetAllData()">Reset All Stories</button>
+          </div>
+        </div>
+        
+        <div id="checklist-container" style="background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; overflow: hidden;"></div>
+
+        <!-- User Story Dashboard -->
+        <div id="user-story-dashboard-container" style="background: var(--card-bg); padding: 25px; border-radius: 12px; margin-top: 30px; box-shadow: var(--shadow); border: 1px solid var(--border);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+            <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-color);">My SOP Task List</h3>
+            <div style="display: flex; gap: 15px; align-items: center;">
+              <select id="dashboard-epic-filter" class="form-input" style="padding: 5px 10px; margin: 0; font-size: 0.9rem;" onchange="updateUserStoryDashboard()">
+                <option value="ALL">All Epics</option>
+              </select>
+              <select id="dashboard-assignee-filter" class="form-input" style="padding: 5px 10px; margin: 0; font-size: 0.9rem;" onchange="updateUserStoryDashboard()">
+                <option value="MINE" selected>My Stories</option>
+                <option value="ALL">All Stories</option>
+              </select>
+            </div>
+          </div>
+          
+          <div style="display: flex; gap: 20px; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap;">
+            <div style="flex: 2; min-width: 300px;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                <thead>
+                  <tr style="border-bottom: 2px solid var(--border); color: #777; text-align: left;">
+                    <th style="padding: 10px 5px;">USER STORY KEY</th>
+                    <th style="padding: 10px 5px;">LAST ACTIVE MODULE</th>
+                    <th style="padding: 10px 5px;">ACTIVE STATUS</th>
+                    <th style="padding: 10px 5px;">COMPLETION STATUS</th>
+                    <th style="padding: 10px 5px; text-align: center; min-width: 250px;">ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody id="user-story-dashboard-tbody">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-templates" class="tab-content"></div>
+      <div id="admin-module-container" class="module-content" style="display: none; padding: 20px; flex-direction: column; height: 100%;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px;">
+        <h3 style="margin: 0; color: #d97706; cursor: default; user-select: none;" ondblclick="openGlobalAnalytics()">👑 Lead Admin Panel</h3>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-primary" onclick="generateExecutiveReport()" style="margin: 0; background-color: #2563eb;">Generate Report ✨</button>
+          
+        </div>
+      </div>
+      
+      <!-- Create New Epic / User Story Form -->
+      <div style="background: rgba(0,0,0,0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border);">
+        <h4 style="margin-top: 0; margin-bottom: 10px; color: var(--text-color);">➕ Create New Epic / User Story</h4>
+        <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+          <div style="flex: 1; min-width: 150px;">
+            <label style="font-size: 0.8rem; font-weight: bold; display: block; margin-bottom: 5px;">Epic Key (Required)</label>
+            <input type="text" id="admin-new-epic-input" class="form-input" style="width: 100%; margin: 0; padding: 6px 10px;" placeholder="e.g. EPIC-100">
+          </div>
+          <div style="flex: 1; min-width: 150px;">
+            <label style="font-size: 0.8rem; font-weight: bold; display: block; margin-bottom: 5px;">User Story Key (Required)</label>
+            <input type="text" id="admin-new-us-input" class="form-input" style="width: 100%; margin: 0; padding: 6px 10px;" placeholder="e.g. US-200: DESCRIPTION">
+          </div>
+          <div style="flex: 1; min-width: 150px;">
+            <label style="font-size: 0.8rem; font-weight: bold; display: block; margin-bottom: 5px;">Assignee (Optional)</label>
+            <input type="text" id="admin-new-assignee-input" class="form-input" style="width: 100%; margin: 0; padding: 6px 10px;" placeholder="e.g. Vignesh E">
+          </div>
+          <button class="btn btn-primary" style="margin: 0; padding: 6px 15px; height: 35px;" onclick="createNewUserStory()">Create</button>
+        </div>
+      </div>
+      
+      <!-- AI Skill Gap Analysis & Mentorship -->
+      <div id="admin-skill-matrix-container" style="background: rgba(16, 185, 129, 0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid rgba(16, 185, 129, 0.2);">
+        <h4 style="margin-top: 0; margin-bottom: 10px; color: #10b981;">🧠 AI Skill Gap & Mentorship Analysis</h4>
+        <div id="admin-skill-matrix-content" style="font-size: 0.9rem; color: var(--text-color);">
+          <!-- Populated via JS -->
+          <span style="color: #666; font-style: italic;">Analyzing tester performance data...</span>
+        </div>
+      </div>
+      
+      <div style="overflow-y: auto; flex-grow: 1;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+          <thead style="background: var(--bg-color); position: sticky; top: 0; z-index: 1;">
+            <tr>
+              <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">User Story</th>
+              <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">Epic</th>
+              <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">Assignee</th>
+              <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">Progress</th>
+              <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: left;">Last Updated</th>
+              <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: center;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="admin-dashboard-tbody">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+      </div>
+      </div>
+
+      
+      
+        <div id="logs-container"></div>
+      </div>
+    </div>
+  </main>
+  <script src="js/data.js"></script>
+  <!-- Inline Firebase Sync to bypass local CORS restrictions -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, update, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBQG6GHxApLRSgBnQvXWrfdgrIf9sEacRA",
+      authDomain: "qa-lead-dashboard.firebaseapp.com",
+      projectId: "qa-lead-dashboard",
+      storageBucket: "qa-lead-dashboard.firebasestorage.app",
+      messagingSenderId: "946430881036",
+      appId: "1:946430881036:web:1c0281b84acc89fd19ed29",
+      measurementId: "G-7Y3YPX7XNS",
+      databaseURL: "https://qa-lead-dashboard-default-rtdb.firebaseio.com"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    window.syncStateToCloud = async function(userStoryKey, moduleId, stateObject, overallProgress) {
+      if (!userStoryKey || userStoryKey === "default") return;
+      
+      try {
+        const updates = {};
+        const testerName = localStorage.getItem('testerName') || "Anonymous Tester";
+        
+        let epicKey = '';
+        let assignee = testerName;
+        try {
+          const metaStr = localStorage.getItem('sop_user_story_meta_' + testerName + '_' + userStoryKey);
+          if (metaStr) {
+            const meta = JSON.parse(metaStr);
+            if (meta.epicKey) epicKey = meta.epicKey;
+            if (meta.assignee) assignee = meta.assignee;
+          }
+        } catch(e){}
+
+        updates['user_stories/' + userStoryKey + '/testers/' + testerName + '/' + moduleId] = stateObject;
+        updates['user_stories/' + userStoryKey + '/testers/' + testerName + '/overallProgress'] = overallProgress;
+        updates['user_stories/' + userStoryKey + '/testers/' + testerName + '/lastUpdated'] = new Date().toISOString();
+        
+        // Also sync notes
+        try {
+          const notesStr = localStorage.getItem(`checklist_notes_${testerName}_${moduleId}_${userStoryKey}`);
+          if (notesStr) {
+            updates['user_stories/' + userStoryKey + '/testers/' + testerName + '/' + moduleId + '_notes'] = JSON.parse(notesStr);
+          }
+        } catch(e) {}
+        
+        if (epicKey) updates['user_stories/' + userStoryKey + '/epicKey'] = epicKey;
+        if (assignee) {
+          updates['user_stories/' + userStoryKey + '/assignee'] = assignee;
+          updates['user_stories/' + userStoryKey + '/assignedToName'] = assignee;
+          updates['user_stories/' + userStoryKey + '/testers/' + testerName + '/assignee'] = assignee;
+          updates['user_stories/' + userStoryKey + '/testers/' + testerName + '/assignedToName'] = assignee;
+        }
+        await update(ref(db), updates);
+        console.log(`Successfully synced ${moduleId} for ${userStoryKey} to Firebase RTDB.`);
+      } catch (e) {
+        console.error("Error syncing to Firebase:", e);
+      }
+    };
+
+    window.syncNameUpdateToCloud = async function(userStoryKey, newName) {
+      if (!userStoryKey || userStoryKey === "default") return;
+      try {
+        const testerName = localStorage.getItem('testerName') || "Anonymous Tester";
+        await update(ref(db), { ['user_stories/' + userStoryKey + '/testers/' + testerName + '/assignedToName']: newName, ['user_stories/' + userStoryKey + '/testers/' + testerName + '/assignee']: newName });
+      } catch (e) {}
+    };
+
+    window.loginOrRegisterUser = async function(username, pin) {
+      const dbRef = ref(db);
+      try {
+        const snapshot = await get(child(dbRef, `users/${username}`));
+        if (snapshot.exists()) {
+          const userData = snapshot.val();
+          if (userData.pin === pin) {
+            return { success: true, message: "Login successful", isNew: false };
+          } else {
+            return { success: false, message: "Incorrect PIN." };
+          }
+        } else {
+          await update(dbRef, { [`users/${username}`]: { pin: pin, createdAt: new Date().toISOString() } });
+          return { success: true, message: "Registered successfully", isNew: true };
+        }
+      } catch (error) {
+        return { success: false, message: "Database error: " + error.message };
+      }
+    };
+
+    window.adminResetUserPin = async function(username, newPin) {
+      const dbRef = ref(db);
+      try {
+        const snapshot = await get(child(dbRef, `users/${username}`));
+        if (snapshot.exists()) {
+          await update(dbRef, { [`users/${username}/pin`]: newPin });
+          return { success: true, message: `PIN for ${username} has been successfully reset!` };
+        } else {
+          return { success: false, message: "User does not exist in the database." };
+        }
+      } catch (error) {
+        return { success: false, message: "Database error" };
+      }
+    };
+
+    window.fetchGlobalDataForDatalists = async function() {
+      const dbRef = ref(db);
+      try {
+        const snapshot = await get(child(dbRef, 'user_stories'));
+        let data = {};
+        if (snapshot.exists()) {
+          data = snapshot.val();
+          window.globalUserStories = data;
+        }
+
+        const usList = document.getElementById('user-story-input');
+        const epicList = document.getElementById('epic-input');
+        
+        if (!usList || !epicList) return;
+        
+        const currentUS = usList.value;
+        const currentEpic = epicList.value;
+        
+        usList.innerHTML = '<option value="">-- Select User Story --</option>';
+        epicList.innerHTML = '<option value="">-- Select Epic --</option>';
+        
+        const epics = new Set();
+        const userStories = new Set();
+        const topFilter = document.getElementById('top-my-stories-filter');
+        const showOnlyMine = topFilter ? topFilter.checked : false;
+        const myName = localStorage.getItem('testerName') || '';
+        
+        if (window.SOP_CONFIG) {
+          if (window.SOP_CONFIG.userStories) {
+            window.SOP_CONFIG.userStories.forEach(us => {
+              if (showOnlyMine && myName) {
+                const fbData = window.globalUserStories ? window.globalUserStories[us.key.toUpperCase()] : null;
+                const assignedInFb = fbData && (fbData.assignee === myName || fbData.assignedToName === myName || (fbData.testers && fbData.testers[myName]));
+                const assignedInConfig = us.assignee === myName;
+                if (!assignedInFb && !assignedInConfig) {
+                  return; // Not assigned to current user
+                }
+              }
+              
+              if (us.epic) epics.add(us.epic);
+              
+              // Filter user story dropdown by selected epic
+              if (currentEpic && us.epic !== currentEpic) {
+                return;
+              }
+              
+              userStories.add(us.key);
+              const opt = document.createElement('option');
+              opt.value = us.key;
+              opt.textContent = us.key;
+              opt.dataset.epic = us.epic || '';
+              usList.appendChild(opt);
+            });
+          }
+        }
+        
+        epics.forEach(e => {
+          const opt = document.createElement('option');
+          opt.value = e;
+          opt.textContent = e;
+          epicList.appendChild(opt);
+        });
+        
+        // Ensure default selections
+        if (currentEpic && epics.has(currentEpic)) {
+          epicList.value = currentEpic;
+        }
+        
+        if (currentUS && userStories.has(currentUS)) {
+          usList.value = currentUS;
+        }
+        
+      } catch(e) {
+        console.error("Error fetching global user stories:", e);
+      }
+    };
+    
+    window.createNewUserStory = async function() {
+      const epic = document.getElementById('admin-new-epic-input').value.trim().toUpperCase();
+      const us = document.getElementById('admin-new-us-input').value.trim().toUpperCase();
+      const assignee = document.getElementById('admin-new-assignee-input').value.trim();
+      
+      if (!epic || !us) {
+        alert("Epic Key and User Story Key are required.");
+        return;
+      }
+      
+      if (window.globalUserStories && window.globalUserStories[us]) {
+        alert("User Story already exists!");
+        return;
+      }
+      
+      const payload = {
+        epicKey: epic,
+        assignee: assignee || "Unassigned",
+        assignedToName: assignee || "Unassigned",
+        status: "Pending",
+        lastUpdated: new Date().toISOString()
+      };
+      
+      const dbRef = ref(db);
+      try {
+        const updates = {};
+        updates[`user_stories/${us}`] = payload;
+        await update(dbRef, updates);
+        
+        alert(`Successfully created User Story: ${us} under Epic: ${epic}`);
+        
+        document.getElementById('admin-new-epic-input').value = '';
+        document.getElementById('admin-new-us-input').value = '';
+        document.getElementById('admin-new-assignee-input').value = '';
+        
+        if (window.openAdminModule) window.openAdminModule();
+        if (window.fetchGlobalDataForDatalists) window.fetchGlobalDataForDatalists();
+      } catch(e) {
+        alert("Error creating user story: " + e.message);
+      }
+    };
+
+    window.openGlobalAnalytics = async function() {
+      const tbody = document.getElementById('global-analytics-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Fetching global data...</td></tr>';
+      document.getElementById('global-analytics-modal').style.display = 'flex';
+      
+      const dbRef = ref(db);
+      try {
+        const snapshot = await get(child(dbRef, 'user_stories'));
+        tbody.innerHTML = '';
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const validKeys = window.SOP_CONFIG ? new Set(window.SOP_CONFIG.userStories.map(u => u.key.toUpperCase())) : null;
+          
+          for (const [storyKey, storyData] of Object.entries(data)) {
+            if (validKeys && !validKeys.has(storyKey.toUpperCase())) {
+              // Optionally delete old story from DB here to clean up completely
+              remove(child(dbRef, 'user_stories/' + storyKey)).catch(e => console.error(e));
+              continue;
+            }
+            if (storyData.testers) {
+              for (const [testerName, testerData] of Object.entries(storyData.testers)) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                  <td style="padding: 10px 5px; font-weight: bold; color: var(--primary);">${testerName}</td>
+                  <td style="padding: 10px 5px;">${storyKey}</td>
+                  <td style="padding: 10px 5px; color: #777;">${storyData.epicKey || 'N/A'}</td>
+                  <td style="padding: 10px 5px; font-weight: bold;">${testerData.overallProgress || '0'}%</td>
+                  <td style="padding: 10px 5px; font-size: 0.9rem; color: #777;">${testerData.lastUpdated ? new Date(testerData.lastUpdated).toLocaleString() : 'N/A'}</td>
+                `;
+                tbody.appendChild(tr);
+              }
+            }
+          }
+        }
+        if (tbody.innerHTML === '') {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No tester data found.</td></tr>';
+        }
+      } catch(e) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: red;">Error: ${e.message}</td></tr>`;
+      }
+    };
+
+    window.openAdminModule = async function() {
+      const tbody = document.getElementById('admin-dashboard-tbody');
+      if (!tbody) return;
+      
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Loading...</td></tr>';
+      
+      document.getElementById('current-module-title').innerText = 'Lead Admin Panel';
+      document.querySelectorAll('.panel-btn').forEach(b => b.classList.remove('active-module'));
+      const adminBtn = document.getElementById('sidebar-admin-btn');
+      if (adminBtn) adminBtn.classList.add('active-module');
+      
+      document.getElementById('tabs-container').style.display = 'none';
+      document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+      
+      const ticketBar = document.getElementById('user-story-bar-container');
+      const progressBar = document.getElementById('progress-bar-container');
+      const dashboardContainer = document.getElementById('user-story-dashboard-container');
+      if (ticketBar) ticketBar.style.display = 'none';
+      if (progressBar) progressBar.style.display = 'none';
+      if (dashboardContainer) dashboardContainer.style.display = 'none';
+
+      document.getElementById('admin-module-container').style.display = 'flex';
+      
+      if (typeof closeSidebarOnMobile === 'function') closeSidebarOnMobile();
+
+      
+      const dbRef = ref(db);
+      try {
+        const snapshot = await get(child(dbRef, 'user_stories'));
+        tbody.innerHTML = '';
+        let skillData = {};
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const validKeys = window.SOP_CONFIG ? new Set(window.SOP_CONFIG.userStories.map(u => u.key.toUpperCase())) : null;
+
+          for (const key in data) {
+            if (validKeys && !validKeys.has(key.toUpperCase())) continue;
+            
+            const row = data[key];
+            const epic = row.epicKey || '';
+            const assignee = row.assignee || row.assignedToName || 'Unassigned';
+            
+            let progress = '0';
+            let hasAnomaly = false;
+            let needsMentorship = false;
+            let anomalyDetails = [];
+            
+            // Check Timeline Anomalies
+            if (row.timeline) {
+                const tl = row.timeline;
+                if (tl.storyStartedAt && tl.designFinishedAt) {
+                    const diffMins = (new Date(tl.designFinishedAt) - new Date(tl.storyStartedAt)) / 60000;
+                    if (diffMins < 2 && diffMins > 0) {
+                        hasAnomaly = true;
+                        anomalyDetails.push(`Design Phase Rushed (${diffMins.toFixed(1)}m)`);
+                    }
+                }
+                if (tl.executionStartedAt && tl.executionFinishedAt) {
+                    const diffMins = (new Date(tl.executionFinishedAt) - new Date(tl.executionStartedAt)) / 60000;
+                    if (diffMins < 2 && diffMins > 0) {
+                        hasAnomaly = true;
+                        anomalyDetails.push(`Execution Phase Rushed (${diffMins.toFixed(1)}m)`);
+                    }
+                }
+            }
+            
+            if (row.testers) {
+               let testerData = row.testers[assignee] || Object.values(row.testers)[0];
+               if (testerData) {
+                  progress = testerData.overallProgress || '0';
+                  // Check for AI flags
+                  for (const [modId, modData] of Object.entries(testerData)) {
+                      if (typeof modData === 'object' && modData !== null) {
+                          if (modData._anomaly) hasAnomaly = true;
+                          if (modData._mentorshipNeeded) needsMentorship = true;
+                      }
+                  }
+               }
+            }
+            
+            // Aggregate skill data
+            if (!skillData[assignee]) {
+                skillData[assignee] = { anomalies: [], mentorship: [] };
+            }
+            if (hasAnomaly && anomalyDetails.length > 0) skillData[assignee].anomalies.push(...anomalyDetails);
+            if (needsMentorship && anomalyDetails.length > 0) skillData[assignee].mentorship.push(...anomalyDetails);
+            
+            const lastUpdated = row.lastUpdated ? new Date(row.lastUpdated).toLocaleString() : 'N/A';
+            
+            const flagIcons = `${hasAnomaly ? '<span title="Suspiciously fast completion" style="cursor:help;">⚠️</span> ' : ''}${needsMentorship ? '<span title="High AI usage (Mentorship needed)" style="cursor:help;">🎓</span>' : ''}`;
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td style="padding: 12px; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--primary);">${key} ${flagIcons}</td>
+              <td style="padding: 12px; border-bottom: 1px solid var(--border);">${epic}</td>
+              <td style="padding: 12px; border-bottom: 1px solid var(--border);">${assignee}</td>
+              <td style="padding: 12px; border-bottom: 1px solid var(--border); vertical-align: middle;">
+                <div style="background: rgba(0,0,0,0.1); border-radius: 10px; height: 10px; width: 100%; overflow: hidden;">
+                  <div style="background: hsl(${Math.round((parseInt(progress)/100)*120)}, 80%, 45%); width: ${progress}%; height: 100%;"></div>
+                </div>
+                <div style="font-size: 0.75rem; text-align: right; margin-top: 3px; color: #777;">${progress}%</div>
+              </td>
+              <td style="padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.85rem; color: #777;">${lastUpdated}</td>
+              <td style="padding: 12px; border-bottom: 1px solid var(--border); text-align: center; display: flex; gap: 5px; justify-content: center;">
+                <button class="btn btn-primary" style="margin: 0; padding: 4px 8px; font-size: 0.8rem; background: #d97706;" onclick="window.editAdminUserStory('${key}', '${epic}', '${assignee}')">Edit</button>
+                <button class="btn btn-primary" style="margin: 0; padding: 4px 8px; font-size: 0.8rem; background: #2563eb;" onclick="window.openTimelineModal('${key}', '${epic}', '${assignee}')">Timeline ⏱️</button>
+              </td>
+            `;
+            tbody.appendChild(tr);
+          }
+        } else {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No user stories found.</td></tr>';
+        }
+        
+        // Populate Skill Matrix
+        const skillContainer = document.getElementById('admin-skill-matrix-container');
+        const skillContent = document.getElementById('admin-skill-matrix-content');
+        if (skillContainer && skillContent) {
+            skillContainer.style.display = 'block';
+            if (Object.keys(skillData).length > 0) {
+                let html = '<ul style="margin: 0; padding-left: 20px;">';
+                for (const [tester, data] of Object.entries(skillData)) {
+                    html += `<li style="margin-bottom: 8px;"><strong>${tester}</strong>: `;
+                    if (data.mentorship.length > 0) {
+                        html += `<span style="color: #ef4444; font-weight: bold;">Mentorship Recommended</span> (${data.mentorship.join(', ')})`;
+                    } else if (data.anomalies.length > 0) {
+                        html += `<span style="color: #f59e0b; font-weight: bold;">Anomalies Detected</span> (${data.anomalies.join(', ')})`;
+                    } else {
+                        html += `<span style="color: #10b981; font-weight: bold;">Performing well! Potential Mentor.</span>`;
+                    }
+                    html += `</li>`;
+                }
+                html += '</ul>';
+                skillContent.innerHTML = html;
+            } else {
+                skillContent.innerHTML = '<span style="color: #666; font-style: italic;">No anomaly data found for current stories.</span>';
+            }
+        }
+      } catch(e) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: red;">Error: ${e.message}</td></tr>`;
+      }
+    };
+
+    window.editAdminUserStory = function(key, epic, assignee) {
+      document.getElementById('admin-edit-old-us').value = key;
+      document.getElementById('admin-edit-us-input').value = key;
+      document.getElementById('admin-edit-epic-input').value = epic;
+      document.getElementById('admin-edit-assignee-input').value = assignee;
+      document.getElementById('admin-edit-modal').style.display = 'flex';
+    };
+
+    window.processAdminEditSave = async function() {
+      const oldKey = document.getElementById('admin-edit-old-us').value;
+      const newKey = document.getElementById('admin-edit-us-input').value.trim().toUpperCase();
+      const newEpic = document.getElementById('admin-edit-epic-input').value.trim().toUpperCase();
+      const newAssignee = document.getElementById('admin-edit-assignee-input').value.trim();
+      
+      if (!newKey) { alert("User Story Name is required."); return; }
+      
+      const dbRef = ref(db);
+      try {
+        const updates = {};
+        
+        const oldSnapshot = await get(child(dbRef, `user_stories/${oldKey}`));
+        let oldData = {};
+        if (oldSnapshot.exists()) {
+          oldData = oldSnapshot.val();
+        }
+        
+        oldData.epicKey = newEpic;
+        oldData.assignee = newAssignee;
+        oldData.assignedToName = newAssignee;
+        
+        if (oldKey !== newKey) {
+          const newSnapshot = await get(child(dbRef, `user_stories/${newKey}`));
+          if (newSnapshot.exists()) {
+            alert(`Cannot rename! The User Story '${newKey}' already exists.`);
+            return;
+          }
+          updates[`user_stories/${newKey}`] = oldData;
+          updates[`user_stories/${oldKey}`] = null;
+        } else {
+          updates[`user_stories/${oldKey}`] = oldData;
+        }
+        
+        await update(dbRef, updates);
+        
+        alert("User Story successfully updated!");
+        document.getElementById('admin-edit-modal').style.display = 'none';
+        window.openAdminModule(); 
+        window.fetchGlobalDataForDatalists(); 
+        
+      } catch(e) {
+        alert("Error saving: " + e.message);
+      }
+    };
+
+    window.fetchAssignedUserStories = async function(username) {
+      const dbRef = ref(db);
+      try {
+        const snapshot = await get(child(dbRef, `user_stories`));
+        if (snapshot.exists()) {
+          const stories = snapshot.val();
+          const validKeys = window.SOP_CONFIG ? new Set(window.SOP_CONFIG.userStories.map(u => u.key.toUpperCase())) : null;
+          let fetchedCount = 0;
+          let reg = [];
+          for (const [key, data] of Object.entries(stories)) {
+            if (validKeys && !validKeys.has(key.toUpperCase())) continue;
+            
+            const testerData = data.testers ? data.testers[username] : null;
+            if (data.assignee === username || data.assignedToName === username || 
+               (testerData && (testerData.assignee === username || testerData.assignedToName === username))) {
+               
+               if (!reg.includes(key)) {
+                 reg.push(key);
+               }
+               
+               if (testerData) {
+                 for (const [moduleId, modData] of Object.entries(testerData)) {
+                   if (typeof modData === 'object' && moduleId !== 'assignee' && moduleId !== 'overallProgress' && moduleId !== 'assignedToName' && moduleId !== 'lastUpdated' && !moduleId.endsWith('_notes')) {
+                     localStorage.setItem(`checklist_state_${username}_${moduleId}_${key}`, JSON.stringify(modData));
+                   }
+                   if (moduleId.endsWith('_notes')) {
+                     const actualModuleId = moduleId.replace('_notes', '');
+                     localStorage.setItem(`checklist_notes_${username}_${actualModuleId}_${key}`, JSON.stringify(modData));
+                   }
+                 }
+               }
+               // Sync epic meta
+               let meta = {};
+               try {
+                 const stored = localStorage.getItem('sop_user_story_meta_' + username + '_' + key);
+                 if (stored) meta = JSON.parse(stored);
+               } catch(e){}
+               meta.epicKey = data.epicKey || meta.epicKey;
+               meta.assignee = (testerData && testerData.assignee) || data.assignee || meta.assignee;
+               localStorage.setItem('sop_user_story_meta_' + username + '_' + key, JSON.stringify(meta));
+               fetchedCount++;
+             }
+           }
+           localStorage.setItem('sop_user_story_registry_' + username, JSON.stringify(reg));
+           if (typeof updateUserStoryDropdown === 'function') updateUserStoryDropdown();
+           return fetchedCount;
+        }
+        return 0;
+      } catch (e) {
+        console.error("Error fetching stories:", e);
+        return 0;
+      }
+    };
+
+    window.deleteStateFromCloud = async function(userStoryKey) {
+      if (!userStoryKey || userStoryKey === "default") return;
+      try {
+        await update(ref(db), { ['user_stories/' + userStoryKey]: null });
+        console.log(`Successfully deleted ${userStoryKey} from Firebase RTDB.`);
+      } catch (e) {
+        console.error("Error deleting from Firebase:", e);
+      }
+    };
+  </script>
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/prompt_generator.js"></script>
+
+  <div id="jira-alarm-toast" style="display: none; position: fixed; bottom: 30px; right: 30px; background: #3b82f6; color: white; padding: 20px 25px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 9999; max-width: 350px; font-family: 'Outfit', sans-serif; animation: fadeIn 0.5s ease-out;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+      <h3 style="margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 1.3rem;">⏰</span> Jira Work Log Reminder
+      </h3>
+      <button onclick="dismissJiraAlarm()" style="background: none; border: none; color: white; cursor: pointer; font-size: 1.2rem; line-height: 1; padding: 0; margin-top: -2px;">&times;</button>
+    </div>
+    <p style="margin: 0; font-size: 0.95rem; line-height: 1.5; opacity: 0.9;">Please ensure you have logged all your testing hours on the respective Jira sub-tasks. The automated weekly export runs today at <strong>10:00 EET</strong>.</p>
+    <button onclick="dismissJiraAlarm()" style="margin-top: 15px; width: 100%; padding: 8px; background: white; color: #3b82f6; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">I've logged my time</button>
+  </div>
+
+  <!-- AI CO-PILOT CHAT WIDGET -->
+  <button id="ai-chat-fab" onclick="toggleAIChat()" title="Ghidul">
+    <span class="icon">✨</span>
+  </button>
+
+  <div id="ai-chat-window">
+    <div class="ai-chat-header">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 1.4rem;">✨</span>
+        <div>
+          <h4 style="margin: 0; color: white;">Ghidul</h4>
+          <span style="font-size: 0.75rem; opacity: 0.8;">SOP Assistant</span>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button onclick="openAISettings()" class="ai-header-btn" title="Settings">⚙️</button>
+        <button onclick="toggleAIChat()" class="ai-header-btn" title="Close">&times;</button>
+      </div>
+    </div>
+    
+    <div id="ai-chat-messages" class="ai-chat-messages">
+      <div class="ai-message ai">
+        Hello! I'm Ghidul, your Libra SOP Co-Pilot. I can answer questions about the current module or explain testing procedures. How can I help you today?
+      </div>
+    </div>
+    
+    <div class="ai-chat-input-area">
+      <input type="text" id="ai-chat-input" placeholder="Ask Ghidul..." onkeypress="handleAIChatKeyPress(event)">
+      <button onclick="sendAIChatMessage()">Send</button>
+    </div>
+  </div>
+
+  <!-- AI SETTINGS MODAL -->
+  <div id="ai-settings-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <h3 style="margin-top: 0; color: var(--primary);">✨ Ghidul Settings</h3>
+      <p style="font-size: 0.9rem; color: #777; margin-bottom: 15px;">Enter your Gemini API key to enable Ghidul. Your key is stored securely in your browser's local storage.</p>
+      
+      <div style="margin-bottom: 20px;">
+        <label for="ai-api-key-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Gemini API Key</label>
+        <input type="password" id="ai-api-key-input" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box;" placeholder="AIzaSy...">
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <label for="ai-model-select" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Gemini Model</label>
+        <select id="ai-model-select" class="form-input" style="width: 100%; margin-top: 5px; box-sizing: border-box; background: var(--input-bg); color: var(--text-color);">
+          <option value="gemini-2.5-flash">Gemini 2.5 Flash (Newest)</option>
+          <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+          <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash</option>
+          <option value="gemini-pro">Gemini 1.0 Pro (Legacy)</option>
+        </select>
+      </div>
+      
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="btn btn-danger" onclick="document.getElementById('ai-settings-modal').style.display='none'" style="margin: 0; background: transparent; color: #777; border: 1px solid #ddd;">Cancel</button>
+        <button class="btn btn-primary" onclick="saveAISettings()" style="margin: 0;">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXECUTIVE REPORT MODAL -->
+  <div id="executive-report-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10001; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 800px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px;">
+        <h3 style="margin: 0; color: var(--primary);">✨ AI Executive QA Report</h3>
+        <button class="btn btn-danger" onclick="document.getElementById('executive-report-modal').style.display='none'" style="margin: 0;">Close</button>
+      </div>
+      <div id="executive-report-content" style="overflow-y: auto; flex-grow: 1; font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; padding-right: 10px;">
+        Loading report...
+      </div>
+    </div>
+  </div>
+
+  <!-- TIMELINE MODAL -->
+  <div id="timeline-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10002; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 600px; width: 90%; max-height: 90vh; display: flex; flex-direction: column; text-align: left; border: 1px solid var(--border); box-shadow: var(--shadow);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px;">
+        <h3 style="margin: 0; color: var(--primary);">⏱️ Predictive Timeline</h3>
+        <button class="btn btn-danger" onclick="document.getElementById('timeline-modal').style.display='none'" style="margin: 0;">Close</button>
+      </div>
+      <div id="timeline-content" style="overflow-y: auto; flex-grow: 1;">
+        Loading timeline...
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -79,11 +79,29 @@ const qaModules = {
             "Change Assignee to self and move tests to proper Scrum folder."
           ]
         },
-        templates: `<div class="code-block">Approved Prompts in Test Manager:
-- Positive Scenario Test Creator
-- Negative Scenario Test Creator
-- Non-functional Test Case Generator
-- UI/UX Non-functional Test Generator</div>`
+        templates: `<div style="background: rgba(16, 185, 129, 0.05); padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px solid rgba(16, 185, 129, 0.2);">
+    <h3 style="margin-top: 0; color: #10b981; display: flex; align-items: center; justify-content: space-between;">
+        <span>🤖 Local AI Prompt Generator (100% Private)</span>
+        <button onclick="window.initPromptGenerator()" style="padding: 5px 10px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: bold;">Initialize Local AI</button>
+    </h3>
+    <div id="pg-status" style="font-size: 0.85rem; color: #64748b; margin-bottom: 15px;">AI Model Not Loaded. Click Initialize to load the private model into your browser's GPU.</div>
+    
+    <div style="display: flex; gap: 20px;">
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
+            <h4 style="margin: 0; color: var(--text-color, #334155);">Step 1: Paste User Story</h4>
+            <textarea id="in-user-story" style="width: 100%; height: 100px; padding: 10px; border-radius: 4px; border: 1px solid #cbd5e1; font-family: inherit; resize: vertical; box-sizing: border-box;" placeholder="Paste the Jira User Story or Epic here..."></textarea>
+            <button id="btn-gen-ac" disabled onclick="window.generateACMatrix()" style="padding: 8px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Generate AC & Matrix</button>
+            <textarea id="out-ac" style="width: 100%; height: 200px; padding: 10px; border-radius: 4px; border: 1px solid #cbd5e1; font-family: inherit; resize: vertical; box-sizing: border-box; background: var(--bg-color, #f8fafc);" placeholder="Acceptance Criteria and Test Coverage Matrix will appear here..."></textarea>
+        </div>
+        
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
+            <h4 style="margin: 0; color: var(--text-color, #334155);">Step 2: Generate UiPath Prompt</h4>
+            <textarea id="in-ac-matrix" style="width: 100%; height: 100px; padding: 10px; border-radius: 4px; border: 1px solid #cbd5e1; font-family: inherit; resize: vertical; box-sizing: border-box;" placeholder="Paste the generated AC & Matrix from Step 1 here..."></textarea>
+            <button id="btn-gen-uipath" disabled onclick="window.generateUiPathPrompt()" style="padding: 8px; background: #8b5cf6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Generate UiPath Prompt</button>
+            <textarea id="out-uipath" style="width: 100%; height: 200px; padding: 10px; border-radius: 4px; border: 1px solid #cbd5e1; font-family: inherit; resize: vertical; box-sizing: border-box; background: var(--bg-color, #f8fafc);" placeholder="Markdown BDD prompt for UiPath Test Manager will appear here..."></textarea>
+        </div>
+    </div>
+</div>`
       },
       "test_design": {
         title: "Test Design & Xray Management",
