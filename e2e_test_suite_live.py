@@ -38,7 +38,11 @@ def run_e2e_tests():
         # =========================================================
         # PHASE 1: AUTHENTICATION
         # =========================================================
-        driver.get("http://localhost:8000/")
+        driver.get("https://testersofison.github.io/Testers_SOP/")
+        time.sleep(2) # Give it some time to fetch new sw.js
+        # Force a hard refresh to bypass old service workers in Chrome
+        driver.execute_script("window.location.reload(true);")
+        time.sleep(2)
         
         # -------------------------------------------------------------
         # Inject our testing User Story into SOP_CONFIG so Admin panel finds it
@@ -221,23 +225,34 @@ def run_e2e_tests():
         
         # Test Oracle Mode Toggle
         oracle_toggle = driver.find_element(By.ID, "oracle-mode-toggle")
+        driver.save_screenshot("slide6_oracle.png")
+        
         driver.execute_script("arguments[0].click();", oracle_toggle)
         time.sleep(2) # wait for fetch
         
         status_bar = driver.find_element(By.ID, "oracle-status-bar")
         report("Oracle Mode status bar becomes visible", status_bar.is_displayed())
         report("Oracle Knowledge Base loaded successfully", "loaded" in status_bar.text.lower())
-
-        # =========================================================
-        # PHASE 3.6: BUG BEAUTIFIER TEMPLATES
-        # =========================================================
-        print("\n--- Phase 3.6: Bug Beautifier ---")
         
-        # Open Bugs Workflow Module
+        driver.execute_script("document.getElementById('ai-settings-modal').style.display='none';")
+        time.sleep(1)
+
+        # -------------------------------------------------------------
+        # Phase 3.6: Bug Beautifier Module
+        # -------------------------------------------------------------
+        print("\n--- Phase 3.6: Bug Beautifier ---")
+        # Navigate to Bugs Workflow module first
+        # Expand the "Defect Management" accordion panel
+        accordions = driver.find_elements(By.CLASS_NAME, "accordion")
+        for acc in accordions:
+            if "Defect Management" in acc.text:
+                driver.execute_script("arguments[0].click();", acc)
+                break
+        time.sleep(1)
         bugs_module_btn = driver.find_element(By.XPATH, "//button[contains(text(), 'Bugs Workflow')]")
         driver.execute_script("arguments[0].click();", bugs_module_btn)
         time.sleep(2)
-
+        
         tabs = driver.find_elements(By.CLASS_NAME, "tab-btn")
         for tab in tabs:
             if "Templates" in tab.text:
