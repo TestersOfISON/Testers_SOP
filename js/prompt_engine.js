@@ -175,26 +175,38 @@ window.PromptEngine = (function() {
     }
 
     const lastAcNum = parsed.aiRules ? parsed.aiRules.length + 1 : 2;
-    if (parsed.routineType === 'RESTRICTION') {
-      sections.push(`#### AC-${lastAcNum}: Restriction condition NOT met (Negative Flow)`);
-      sections.push(`- **GIVEN** the deposit does not meet the restriction condition (e.g. no active loan attached)`);
-      sections.push(`- **WHEN** the user attempts the closure activity`);
-      sections.push(`- **THEN** the system allows the transaction without restriction errors\n`);
-    } else if (parsed.routineType === 'SYNCHRONIZATION') {
-      sections.push(`#### AC-${lastAcNum}: Source modification rejected or unauthorized (Negative Flow)`);
-      sections.push(`- **GIVEN** the record explicitly fails the criteria or is manually locked`);
-      sections.push(`- **WHEN** the modification is rejected`);
-      sections.push(`- **THEN** Target records remain unchanged\n`);
-    } else if (parsed.routineType === 'CONFIGURATION') {
-      sections.push(`#### AC-${lastAcNum}: GL Accounting Integrity (Backend Flow)`);
-      sections.push(`- **GIVEN** the deposit has been correctly assigned the new category`);
-      sections.push(`- **WHEN** the deposit is funded`);
-      sections.push(`- **THEN** the underlying STMT.ENTRY and CATEG.ENTRY records hit the correct accounting buckets\n`);
-    } else {
-      sections.push(`#### AC-${lastAcNum}: Reject locked or active bypass records (Negative Flow)`);
-      sections.push(`- **GIVEN** the record explicitly fails the criteria or is manually locked`);
-      sections.push(`- **WHEN** the ${mainRoutine} executes`);
-      sections.push(`- **THEN** the system bypasses the record and applies no field changes\n`);
+    
+    // Auto-detect if Negative or Edge cases are warranted
+    const textUpper = parsed.rawText.toUpperCase();
+    const needsNegative = textUpper.match(/\b(REJECT|FAIL|FAILS|BYPASS|NOT MET|UNAUTHORIZED|BLOCK|BLOCKED)\b/);
+    const needsEdge = textUpper.match(/\b(LOCK|LOCKED|EXCEPTION|ERROR|OVERRIDE|CONCURRENT)\b/);
+
+    // Save for matrix generation
+    parsed.needsNegative = !!needsNegative;
+    parsed.needsEdge = !!needsEdge;
+
+    if (parsed.needsNegative) {
+      if (parsed.routineType === 'RESTRICTION') {
+        sections.push(`#### AC-${lastAcNum}: Restriction condition NOT met (Negative Flow)`);
+        sections.push(`- **GIVEN** the deposit does not meet the restriction condition (e.g. no active loan attached)`);
+        sections.push(`- **WHEN** the user attempts the closure activity`);
+        sections.push(`- **THEN** the system allows the transaction without restriction errors\n`);
+      } else if (parsed.routineType === 'SYNCHRONIZATION') {
+        sections.push(`#### AC-${lastAcNum}: Source modification rejected or unauthorized (Negative Flow)`);
+        sections.push(`- **GIVEN** the record explicitly fails the criteria or is manually locked`);
+        sections.push(`- **WHEN** the modification is rejected`);
+        sections.push(`- **THEN** Target records remain unchanged\n`);
+      } else if (parsed.routineType === 'CONFIGURATION') {
+        sections.push(`#### AC-${lastAcNum}: GL Accounting Integrity (Backend Flow)`);
+        sections.push(`- **GIVEN** the deposit has been correctly assigned the new category`);
+        sections.push(`- **WHEN** the deposit is funded`);
+        sections.push(`- **THEN** the underlying STMT.ENTRY and CATEG.ENTRY records hit the correct accounting buckets\n`);
+      } else {
+        sections.push(`#### AC-${lastAcNum}: Reject locked or active bypass records (Negative Flow)`);
+        sections.push(`- **GIVEN** the record explicitly fails the criteria or is manually locked`);
+        sections.push(`- **WHEN** the ${mainRoutine} executes`);
+        sections.push(`- **THEN** the system bypasses the record and applies no field changes\n`);
+      }
     }
 
     const totalExecutions = matrix.length;
@@ -250,18 +262,17 @@ window.PromptEngine = (function() {
     }
     
     if (parsed.routineType === 'RESTRICTION') {
-      addScenario('Negative', 'Condition NOT met (e.g., no active loan attached)', 'System allows the transaction without restriction errors');
-      addScenario('Edge Case', 'Supervisor attempts Override', 'System logs override exception and processes the record');
+      if (parsed.needsNegative) addScenario('Negative', 'Condition NOT met (e.g., no active loan attached)', 'System allows the transaction without restriction errors');
+      if (parsed.needsEdge) addScenario('Edge Case', 'Supervisor attempts Override', 'System logs override exception and processes the record');
     } else if (parsed.routineType === 'SYNCHRONIZATION') {
-      addScenario('Negative', 'Source modification rejected or unauthorized', 'Target records remain unchanged');
-      addScenario('Edge Case', 'Target record locked during synchronization batch', 'System logs sync delay exception');
+      if (parsed.needsNegative) addScenario('Negative', 'Source modification rejected or unauthorized', 'Target records remain unchanged');
+      if (parsed.needsEdge) addScenario('Edge Case', 'Target record locked during synchronization batch', 'System logs sync delay exception');
     } else if (parsed.routineType === 'CONFIGURATION') {
-      addScenario('Negative', 'Invalid Customer Segment mapped', 'System rejects Category mapping');
-      addScenario('Edge Case', 'STMT.ENTRY GL mapping fails validation', 'System throws Accounting Exception');
+      if (parsed.needsNegative) addScenario('Negative', 'Invalid Customer Segment mapped', 'System rejects Category mapping');
+      if (parsed.needsEdge) addScenario('Edge Case', 'STMT.ENTRY GL mapping fails validation', 'System throws Accounting Exception');
     } else {
-      // Always add negative and edge cases
-      addScenario('Negative', 'Condition explicitly NOT met (e.g., active deposit bypass)', 'Record bypassed, no fields updated');
-      addScenario('Edge Case', 'Record locked by another user/process during COB execution', 'Routine logs exception, skips record without crashing batch');
+      if (parsed.needsNegative) addScenario('Negative', 'Condition explicitly NOT met (e.g., active deposit bypass)', 'Record bypassed, no fields updated');
+      if (parsed.needsEdge) addScenario('Edge Case', 'Record locked by another user/process during COB execution', 'Routine logs exception, skips record without crashing batch');
     }
 
     return rows;
