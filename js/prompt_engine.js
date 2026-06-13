@@ -36,7 +36,15 @@ window.PromptEngine = (function() {
     }
 
     const upperText = text.toUpperCase();
-    if (upperText.includes('RESTRICTION') || upperText.includes('VALIDATION') || upperText.includes('BLOCK')) {
+    const upperTitle = parsed.title.toUpperCase();
+
+    if (upperTitle.includes('SYNCHRONIZATION') || upperTitle.includes('SYNCHRONIZE')) {
+      parsed.routineType = 'SYNCHRONIZATION';
+    } else if (upperTitle.includes('RESTRICTION') || upperTitle.includes('VALIDATION') || upperTitle.includes('BLOCK')) {
+      parsed.routineType = 'RESTRICTION';
+    } else if (upperTitle.includes('LIQUIDATION') || upperTitle.includes('LIQUIDATE')) {
+      parsed.routineType = 'LIQUIDATION';
+    } else if (upperText.includes('RESTRICTION') || upperText.includes('VALIDATION') || upperText.includes('BLOCK')) {
       parsed.routineType = 'RESTRICTION';
     } else if (upperText.includes('LBK.SOLDARE.GARANTII') || upperText.includes('LIQUIDATE') || upperText.includes('LIQUIDATION')) {
       parsed.routineType = 'LIQUIDATION';
@@ -61,14 +69,17 @@ window.PromptEngine = (function() {
       return parsed;
     }
 
-    // Fallback Regex
-    const lines = text.split('\n');
+    // Fallback Regex - fix mid-sentence cutoffs by concatenating broken lines
+    const flatText = text.replace(/\n(?![A-Z•\-*0-9])/g, ' '); 
+    const lines = flatText.split('\n');
     lines.forEach(line => {
       const l = line.trim();
-      if (l.startsWith('•') || l.startsWith('-') || l.startsWith('*')) {
+      if (l.startsWith('•') || l.startsWith('-') || l.startsWith('*') || l.toLowerCase().startsWith('user story:')) {
         const lower = l.toLowerCase();
-        if (lower.includes('when') || lower.includes('if') || lower.includes('where') || lower.includes('selects')) {
-          parsed.conditions.push(l.replace(/^[•\-*]\s*(when|if|where|selects)?\s*/i, '').trim());
+        if (lower.includes('when') || lower.includes('if') || lower.includes('where') || lower.includes('selects') || lower.startsWith('user story:')) {
+          let cleanCond = l.replace(/^[•\-*]\s*(when|if|where|selects)?\s*/i, '').trim();
+          cleanCond = cleanCond.replace(/^user story:\s*as a user,?\s*i need that\s*/i, '').trim();
+          parsed.conditions.push(cleanCond);
         }
       }
     });
@@ -111,6 +122,9 @@ window.PromptEngine = (function() {
         if (parsed.routineType === 'RESTRICTION') {
           sections.push(`- **WHEN** the user attempts to manually execute a closure activity`);
           sections.push(`- **THEN** the system triggers the restriction`);
+        } else if (parsed.routineType === 'SYNCHRONIZATION') {
+          sections.push(`- **WHEN** the user modifies and authorizes the profile in the source application (e.g., CUSTOMER)`);
+          sections.push(`- **THEN** the system automatically synchronizes the updated data to the target arrangement/collateral`);
         } else {
           sections.push(`- **WHEN** the ${mainRoutine} executes during COB (or is manually triggered intra-day)`);
           sections.push(`- **THEN** the record is processed`);
@@ -132,6 +146,12 @@ window.PromptEngine = (function() {
         sections.push(`- **WHEN** the user attempts to manually execute a closure activity`);
         sections.push(`- **THEN** the system blocks the transaction and triggers the restriction`);
         sections.push(`- **AND** ${parsed.updates.join(', ')}\n`);
+      } else if (parsed.routineType === 'SYNCHRONIZATION') {
+        sections.push(`#### AC-1: Cross-Module Synchronization Propagation`);
+        sections.push(`- **GIVEN** ${parsed.conditions[0]}`);
+        sections.push(`- **WHEN** the user modifies and authorizes the profile in the source application (e.g., CUSTOMER)`);
+        sections.push(`- **THEN** the system automatically synchronizes the updated data to the target arrangement/collateral`);
+        sections.push(`- **AND** fields updated: ${parsed.updates.join(', ')}\n`);
       } else {
         sections.push(`#### AC-1: Core execution and field updates`);
         sections.push(`- **GIVEN** ${parsed.conditions[0]}`);
@@ -146,6 +166,11 @@ window.PromptEngine = (function() {
       sections.push(`- **GIVEN** the deposit does not meet the restriction condition (e.g. no active loan attached)`);
       sections.push(`- **WHEN** the user attempts the closure activity`);
       sections.push(`- **THEN** the system allows the transaction without restriction errors\n`);
+    } else if (parsed.routineType === 'SYNCHRONIZATION') {
+      sections.push(`#### AC-${lastAcNum}: Source modification rejected or unauthorized (Negative Flow)`);
+      sections.push(`- **GIVEN** the record explicitly fails the criteria or is manually locked`);
+      sections.push(`- **WHEN** the modification is rejected`);
+      sections.push(`- **THEN** Target records remain unchanged\n`);
     } else {
       sections.push(`#### AC-${lastAcNum}: Reject locked or active bypass records (Negative Flow)`);
       sections.push(`- **GIVEN** the record explicitly fails the criteria or is manually locked`);
@@ -186,13 +211,17 @@ window.PromptEngine = (function() {
       // Intelligent Scaling
       parsed.aiRules.forEach(rule => {
         let upList = Array.isArray(rule.updates) ? rule.updates.join(', ') : rule.updates;
-        let expected = parsed.routineType === 'RESTRICTION' ? `System triggers restriction/override: ${upList}` : `Fields updated: ${upList} and verify systemic audit log update`;
+        let expected = 'Fields updated: ' + upList + ' and verify systemic audit log update';
+        if (parsed.routineType === 'RESTRICTION') expected = `System triggers restriction/override: ${upList}`;
+        if (parsed.routineType === 'SYNCHRONIZATION') expected = `System automatically synchronizes: ${upList}`;
         addScenario('Happy Path', rule.condition, expected);
       });
     } else {
       // Deterministic Fallback
       const dynCondition = parsed.conditions[0];
-      const dynResult = parsed.routineType === 'RESTRICTION' ? `System triggers restriction/override: ${parsed.updates.join(', ')}` : `Fields updated: ${parsed.updates.join(', ')} and verify systemic audit log update`;
+      let dynResult = `Fields updated: ${parsed.updates.join(', ')} and verify systemic audit log update`;
+      if (parsed.routineType === 'RESTRICTION') dynResult = `System triggers restriction/override: ${parsed.updates.join(', ')}`;
+      if (parsed.routineType === 'SYNCHRONIZATION') dynResult = `System automatically synchronizes: ${parsed.updates.join(', ')}`;
       addScenario('Happy Path', dynCondition, dynResult);
       if (parsed.conditions.length > 1) {
         addScenario('Happy Path', parsed.conditions[1], dynResult);
@@ -202,6 +231,9 @@ window.PromptEngine = (function() {
     if (parsed.routineType === 'RESTRICTION') {
       addScenario('Negative', 'Condition NOT met (e.g., no active loan attached)', 'System allows the transaction without restriction errors');
       addScenario('Edge Case', 'Supervisor attempts Override', 'System logs override exception and processes the record');
+    } else if (parsed.routineType === 'SYNCHRONIZATION') {
+      addScenario('Negative', 'Source modification rejected or unauthorized', 'Target records remain unchanged');
+      addScenario('Edge Case', 'Target record locked during synchronization batch', 'System logs sync delay exception');
     } else {
       // Always add negative and edge cases
       addScenario('Negative', 'Condition explicitly NOT met (e.g., active deposit bypass)', 'Record bypassed, no fields updated');
