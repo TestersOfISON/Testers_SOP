@@ -686,6 +686,52 @@ Please send observations before the meeting.</div>`
             "Execute functional and integration testing."
           ]
         },
+      },
+      "kpi_predictor": {
+        title: "My KPI Predictor 🎯",
+        guidelines: `<h3>Gamify Your Productivity</h3>
+          <p>Instantly calculate your projected end-of-month KPI score based on the client's metrics. Note: These metrics do NOT affect other teams. Focus on your personal excellence and setting new high scores!</p>
+          <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 20px;">
+            <div style="flex: 1; min-width: 300px; background: var(--card-bg); padding: 20px; border-radius: 10px; border: 1px solid var(--border); box-shadow: var(--shadow);">
+              <h4 style="margin-top: 0;">Input Your Current Metrics</h4>
+              <label style="font-weight: 600; display: block; margin-top: 10px;">Total Story Points (Approval Required):</label>
+              <input type="number" id="kpi-story-points" class="form-input" style="width: 100%; margin-top: 5px;" value="0" min="0">
+              
+              <label style="font-weight: 600; display: block; margin-top: 10px;">Total Bugs Reported:</label>
+              <input type="number" id="kpi-bugs" class="form-input" style="width: 100%; margin-top: 5px;" value="0" min="0">
+              
+              <label style="font-weight: 600; display: block; margin-top: 10px;">Test Scenarios Created:</label>
+              <input type="number" id="kpi-scenarios-created" class="form-input" style="width: 100%; margin-top: 5px;" value="0" min="0">
+              
+              <label style="font-weight: 600; display: block; margin-top: 10px;">Test Scenarios Executed:</label>
+              <input type="number" id="kpi-scenarios-executed" class="form-input" style="width: 100%; margin-top: 5px;" value="0" min="0">
+              
+              <label style="font-weight: 600; display: block; margin-top: 10px;">Regression Scenarios Executed:</label>
+              <input type="number" id="kpi-regression-executed" class="form-input" style="width: 100%; margin-top: 5px;" value="0" min="0">
+              
+              <label style="font-weight: 600; display: block; margin-top: 10px; color: #ef4444;">Leaked Incidents (Penalties):</label>
+              <input type="number" id="kpi-leaked-incidents" class="form-input" style="width: 100%; margin-top: 5px; border-color: #ef4444;" value="0" min="0">
+              
+              <button class="btn btn-primary" style="width: 100%; margin-top: 20px;" onclick="window.calculateKPI()">Calculate Projected Score</button>
+            </div>
+            
+            <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 20px;">
+              <div style="background: var(--card-bg); padding: 20px; border-radius: 10px; border: 1px solid var(--border); box-shadow: var(--shadow); text-align: center;">
+                <h4 style="margin-top: 0;">Projected KPI Score</h4>
+                <div style="max-width: 250px; margin: 0 auto; position: relative;">
+                  <canvas id="kpiGaugeChart"></canvas>
+                  <div id="kpi-score-text" style="position: absolute; top: 60%; left: 50%; transform: translate(-50%, -50%); font-size: 2rem; font-weight: bold; color: var(--primary);">0</div>
+                </div>
+              </div>
+              
+              <div id="kpi-tips-container" style="background: rgba(217, 119, 6, 0.05); padding: 20px; border-radius: 10px; border: 1px solid rgba(217, 119, 6, 0.2); display: none;">
+                <h4 style="margin-top: 0; color: #d97706;">💡 Score Boosters</h4>
+                <ul id="kpi-tips-list" style="margin-bottom: 0; padding-left: 20px; font-size: 0.95rem; line-height: 1.5; text-align: left;"></ul>
+              </div>
+            </div>
+          </div>`,
+        mermaid: ``,
+        checklist: null,
         templates: ""
       }
     };
