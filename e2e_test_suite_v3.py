@@ -17,7 +17,7 @@ def run_e2e_tests():
     driver = webdriver.Chrome(options=options)
     
     print("============================================================")
-    print("  🚀 LIBRA SOP - END TO END TEST SUITE (V3)")
+    print("  LIBRA SOP - END TO END TEST SUITE (V3)")
     print("============================================================")
 
     passes = 0
@@ -28,10 +28,10 @@ def run_e2e_tests():
         nonlocal passes, failures, total_tests
         total_tests += 1
         if condition:
-            print(f"[PASS ✅] {name}")
+            print(f"[PASS] {name}")
             passes += 1
         else:
-            print(f"[FAIL ❌] {name}")
+            print(f"[FAIL] {name}")
             failures += 1
 
     try:
@@ -349,7 +349,7 @@ def run_e2e_tests():
     finally:
         driver.quit()
         print("============================================================")
-        print(f"  🏁 TEST SUITE COMPLETED: {passes} PASSED | {failures} FAILED")
+        print(f"  TEST SUITE COMPLETED: {passes} PASSED | {failures} FAILED")
         print("============================================================")
         
         if failures > 0:

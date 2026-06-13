@@ -22,3 +22,12 @@ This document outlines the core structural and functional mappings required when
 *   **MM Context:** Used `MM.MONEY.MARKET` application for input and authorization.
 *   **AA Mapping:** Uses `AA.ARRANGEMENT.ACTIVITY` (AAA) for all transactions.
 *   **Critical QA Check:** User profiles with authorization limits on MM deals must be correctly translated to AAA activity limits. Validate that users can no longer access `MM.MONEY.MARKET` directly after the cutover date.
+
+## 6. Guarantee Synchronization (LBK.ACTUALIZARE.CASH.COLL)
+*   **Context:** The `LBK.ACTUALIZARE.CASH.COLL` routine synchronizes active guarantees with their underlying AA/MM deposits.
+*   **Rules:** Do NOT liquidate active collateral. Do NOT set `WORKING.BALANCE = 0` for active records.
+*   **Sync Triggers:** Must extract the following triggers if they occur:
+    *   **Rollovers:** Update `MATURITY.DATE = NEW.DATE`.
+    *   **Capitalization:** Update `AMOUNT = NEW.AMOUNT`.
+    *   **Rate Changes:** Update `INTEREST.RATE = NEW.RATE`.
+*   **Critical QA Check:** Validate that synchronization accurately updates fields without zeroing out active balances. Testing must explicitly cover the 3 sync triggers across all segments (15-execution matrix).
