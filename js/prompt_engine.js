@@ -20,7 +20,7 @@ window.PromptEngine = (function() {
   // SECTION 1: USER STORY PARSER (AI PIPELINE)
   // ============================================================================
 
-  function parseUserStory(text, aiRules = null) {
+  function parseUserStory(text, aiRules = null, criticFeedback = []) {
     const parsed = {
       id: '', title: '', routines: [], conditions: [], updates: [], aiRules: aiRules,
       routineType: 'GENERIC', // 'LIQUIDATION' | 'SYNCHRONIZATION' | 'GENERIC'
@@ -37,18 +37,23 @@ window.PromptEngine = (function() {
 
     const upperText = text.toUpperCase();
     const upperTitle = parsed.title ? parsed.title.toUpperCase() : '';
+    
+    // Auto-Correction Logic: Parse Critic Feedback to block hallucinations
+    let blockSync = criticFeedback.some(f => f.includes('Synchronization hallucination'));
+    let blockRestr = criticFeedback.some(f => f.includes('Restriction hallucination'));
+    let blockConfig = criticFeedback.some(f => f.includes('Configuration hallucination'));
 
-    if (upperTitle.includes('SYNCHRONIZATION') || upperTitle.includes('SYNCHRONIZE')) {
+    if (!blockSync && (upperTitle.includes('SYNCHRONIZATION') || upperTitle.includes('SYNCHRONIZE'))) {
       parsed.routineType = 'SYNCHRONIZATION';
-    } else if (upperTitle.includes('RESTRICTION') || upperTitle.includes('VALIDATION') || upperTitle.includes('BLOCK')) {
+    } else if (!blockRestr && (upperTitle.includes('RESTRICTION') || upperTitle.includes('VALIDATION') || upperTitle.includes('BLOCK'))) {
       parsed.routineType = 'RESTRICTION';
     } else if (upperTitle.includes('LIQUIDATION') || upperTitle.includes('LIQUIDATE')) {
       parsed.routineType = 'LIQUIDATION';
-    } else if (upperTitle.includes('CATEGORY') || upperTitle.includes('CONFIGURE')) {
+    } else if (!blockConfig && (upperTitle.includes('CATEGORY') || upperTitle.includes('CONFIGURE'))) {
       parsed.routineType = 'CONFIGURATION';
     } else if (upperText.includes('LBK.SOLDARE.GARANTII')) {
       parsed.routineType = 'LIQUIDATION';
-    } else if (upperText.includes('LBK.ACTUALIZARE')) {
+    } else if (!blockSync && upperText.includes('LBK.ACTUALIZARE')) {
       parsed.routineType = 'SYNCHRONIZATION';
     }
 

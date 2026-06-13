@@ -18,54 +18,6 @@ window.generateACMatrix = async function() {
     // Brief UI feedback
     btnAc.disabled = true;
     btnAc.innerText = '⚙️ Analyzing...';
-    outAc.value = 'Waking up Local AI Worker for Contextual JSON Extraction...';
-
-    if (!window.aiWorker) {
-        // Fallback to purely deterministic if AI Worker not initialized
-        try {
-            const parsed = window.PromptEngine.parseUserStory(userStory);
-            const result = window.PromptEngine.generateAcceptanceCriteria(parsed);
-            
-            outAc.value = 'Critic AI reviewing matrix...';
-            let criticApproved = true;
-            let criticFlags = [];
-            
-            if (window.criticAiWorker) {
-                const criticPromise = new Promise((resolve) => {
-                    const onMsg = (e) => {
-                        if (e.data.status === 'review_complete') {
-                            window.criticAiWorker.removeEventListener('message', onMsg);
-                            resolve(e.data);
-                        }
-                    };
-                    window.criticAiWorker.addEventListener('message', onMsg);
-                    window.criticAiWorker.postMessage({ type: 'review_matrix', matrix: result, prompt: userStory });
-                });
-                const criticResponse = await criticPromise;
-                criticApproved = criticResponse.approved;
-                criticFlags = criticResponse.flags;
-            }
-            
-            if (!criticApproved) {
-                outAc.value = criticFlags.join('\n\n') + '\n\n---\n\n' + result;
-                btnAc.disabled = false;
-                btnAc.innerText = '✨ Generate AC & Matrix';
-                showPGToast('🚨 Critic AI Flag: Hallucination detected!', 'error');
-                return;
-            }
-
-            outAc.value = result;
-            btnAc.disabled = false;
-            btnAc.innerText = '✨ Generate AC & Matrix';
-            showPGToast('✅ Generated via Fallback Deterministic Engine!', 'success');
-        } catch (err) {
-            outAc.value = 'Error: ' + err.message;
-            btnAc.disabled = false;
-            btnAc.innerText = '✨ Generate AC & Matrix';
-            showPGToast('❌ Generation failed: ' + err.message, 'error');
-        }
-        return;
-    }
 
     // Promise wrapper for AI Worker communication
     const extractJSON = () => new Promise((resolve, reject) => {
@@ -86,60 +38,79 @@ window.generateACMatrix = async function() {
         window.aiWorker.postMessage({ type: 'extract_rules', prompt: userStory });
     });
 
-    try {
-        outAc.value = 'AI Worker analyzing banking logic... this may take a moment...';
-        const aiExtractedRules = await extractJSON();
-        
-        // Pass JSON array into engine
-        const parsed = window.PromptEngine.parseUserStory(userStory, aiExtractedRules);
-        const result = window.PromptEngine.generateAcceptanceCriteria(parsed);
+    let attempts = 0;
+    const maxAttempts = 3;
+    let finalResult = '';
+    let criticFeedback = [];
 
-        outAc.value = 'Critic AI reviewing matrix against sandbox rules...';
-        
-        let criticApproved = true;
-        let criticFlags = [];
-        
-        if (window.criticAiWorker) {
-            const criticPromise = new Promise((resolve) => {
-                const onMsg = (e) => {
-                    if (e.data.status === 'review_complete') {
-                        window.criticAiWorker.removeEventListener('message', onMsg);
-                        resolve(e.data);
-                    }
-                };
-                window.criticAiWorker.addEventListener('message', onMsg);
-                window.criticAiWorker.postMessage({ type: 'review_matrix', matrix: result, prompt: userStory });
-            });
-            const criticResponse = await criticPromise;
-            criticApproved = criticResponse.approved;
-            criticFlags = criticResponse.flags;
-        }
-        
-        if (!criticApproved) {
-            outAc.value = criticFlags.join('\n\n') + '\n\n---\n\n' + result;
+    while (attempts < maxAttempts) {
+        attempts++;
+        try {
+            outAc.value = `Attempt ${attempts}/${maxAttempts}: Generating Draft Matrix...`;
+            
+            let aiExtractedRules = null;
+            if (window.aiWorker) {
+                outAc.value = `Attempt ${attempts}/${maxAttempts}: AI Worker analyzing banking logic...`;
+                try {
+                    aiExtractedRules = await extractJSON();
+                } catch (e) {
+                    console.warn("AI extraction failed, using deterministic fallback", e);
+                }
+            }
+
+            // Pass criticFeedback to parseUserStory to actively avoid previous hallucinations
+            const parsed = window.PromptEngine.parseUserStory(userStory, aiExtractedRules, criticFeedback);
+            const result = window.PromptEngine.generateAcceptanceCriteria(parsed);
+            
+            outAc.value = `Attempt ${attempts}/${maxAttempts}: Critic AI reviewing draft...`;
+            
+            let criticApproved = true;
+            let criticFlags = [];
+            
+            if (window.criticAiWorker) {
+                const criticPromise = new Promise((resolve) => {
+                    const onMsg = (e) => {
+                        if (e.data.status === 'review_complete') {
+                            window.criticAiWorker.removeEventListener('message', onMsg);
+                            resolve(e.data);
+                        }
+                    };
+                    window.criticAiWorker.addEventListener('message', onMsg);
+                    window.criticAiWorker.postMessage({ type: 'review_matrix', matrix: result, prompt: userStory });
+                });
+                const criticResponse = await criticPromise;
+                criticApproved = criticResponse.approved;
+                criticFlags = criticResponse.flags;
+            }
+            
+            if (criticApproved) {
+                outAc.value = result;
+                btnAc.disabled = false;
+                btnAc.innerText = '✨ Generate AC & Matrix';
+                showPGToast('✅ Intelligent Matrix generated successfully!', 'success');
+                return;
+            } else {
+                criticFeedback = criticFlags;
+                finalResult = result;
+                outAc.value = `Attempt ${attempts}/${maxAttempts}: Critic rejected draft. Regenerating...\nFlags:\n${criticFlags.join('\n')}`;
+                // small delay for UI updates so user sees the text
+                await new Promise(r => setTimeout(r, 600)); 
+            }
+
+        } catch (err) {
+            outAc.value = 'Error: ' + err.message;
             btnAc.disabled = false;
             btnAc.innerText = '✨ Generate AC & Matrix';
-            showPGToast('🚨 Critic AI Flag: Hallucination detected!', 'error');
+            showPGToast('❌ Generation failed: ' + err.message, 'error');
             return;
         }
-
-        outAc.value = result;
-        btnAc.disabled = false;
-        btnAc.innerText = '✨ Generate AC & Matrix';
-        showPGToast('✅ Intelligent Matrix generated successfully!', 'success');
-    } catch (err) {
-        outAc.value = 'AI Extraction Error: ' + err.message + '\n\nFalling back to regex deterministic engine...';
-        try {
-            const parsed = window.PromptEngine.parseUserStory(userStory);
-            const result = window.PromptEngine.generateAcceptanceCriteria(parsed);
-            outAc.value += '\n\n' + result;
-        } catch (fallbackErr) {
-            outAc.value += '\nFallback failed: ' + fallbackErr.message;
-        }
-        btnAc.disabled = false;
-        btnAc.innerText = '✨ Generate AC & Matrix';
-        showPGToast('⚠️ Used fallback deterministic engine due to AI error.', 'warning');
     }
+    
+    // If it reaches here, max attempts failed
+    outAc.value = criticFeedback.join('\n\n') + '\n\n---\n\n' + finalResult;
+    btnAc.disabled = false;
+    btnAc.innerText = '✨ Generate AC & Matrix';
+    showPGToast('🚨 Critic AI Flag: Hallucination detected after max retries!', 'error');
 };
 
 window.generateUiPathPrompt = function() {
