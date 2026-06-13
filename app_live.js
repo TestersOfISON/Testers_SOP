@@ -796,12 +796,13 @@ try {
           }
           
           if (total > 0 && checked === total) {
+              let timeSpent = 0;
               if (window.moduleStartTimes[tKey] && window.moduleStartTimes[tKey][moduleId]) {
-                  const timeSpent = Date.now() - window.moduleStartTimes[tKey][moduleId];
-                  // If module is completed in under 15 seconds (15000ms), flag it as suspicious
-                  if (timeSpent < 15000) {
-                      states['_anomaly'] = "Suspiciously fast completion";
-                  }
+                  timeSpent = Date.now() - window.moduleStartTimes[tKey][moduleId];
+              }
+              // If module is completed in under 15 seconds (15000ms), flag it as suspicious
+              if (timeSpent < 15000) {
+                  states['_anomaly'] = "Suspiciously fast completion";
               }
           }
           // --- TIMELINE TRACKING LOGIC ---

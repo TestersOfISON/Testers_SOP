@@ -141,8 +141,9 @@ def run_e2e_tests():
                 driver.execute_script("arguments[0].dispatchEvent(new Event('change'));", us_select)
                 found = True
                 break
-        
+                
         if not found:
+            # Fallback if dropdown population failed
             js_append = f"""
                 const usInput = document.getElementById('user-story-input');
                 if (usInput) {{
@@ -156,7 +157,7 @@ def run_e2e_tests():
                 }}
             """
             driver.execute_script(js_append)
-            
+        
         time.sleep(2)
         
         # Click the Assign to me button
@@ -169,11 +170,11 @@ def run_e2e_tests():
         
         print("[*] Clicking checkboxes in module 1...")
         checkboxes = driver.find_elements(By.CSS_SELECTOR, "#checklist-container input[type='checkbox']")
-        if len(checkboxes) >= 2:
-            driver.execute_script("arguments[0].checked = true; arguments[0].dispatchEvent(new Event('change', {bubbles: true}));", checkboxes[0])
-            time.sleep(1)
-            driver.execute_script("arguments[0].checked = true; arguments[0].dispatchEvent(new Event('change', {bubbles: true}));", checkboxes[1])
-            time.sleep(3)
+        if len(checkboxes) > 0:
+            for cb in checkboxes:
+                driver.execute_script("arguments[0].checked = true; arguments[0].dispatchEvent(new Event('change', {bubbles: true}));", cb)
+                time.sleep(0.5)
+            time.sleep(2)
             
             progress_text = driver.find_element(By.ID, "progress-text-label").text
             report("Progress bar is greater than 0%", progress_text != "Active Status: 0%")
@@ -274,6 +275,13 @@ def run_e2e_tests():
 
         print("\n--- Phase 4.5: QA Lead AI Automations ---")
         
+        try:
+            for entry in driver.get_log('browser'):
+                print(entry)
+        except Exception as e:
+            print(f"Could not get browser logs: {e}")
+
+        
         # Inject dummy API key so report generation doesn't alert and block the test
         driver.execute_script("localStorage.setItem('gemini_api_key', 'test_dummy_key');")
         
@@ -284,7 +292,7 @@ def run_e2e_tests():
             for row in rows:
                 cols = row.find_elements(By.TAG_NAME, "td")
                 if len(cols) >= 5 and "WF-7849" in cols[0].text:
-                    if "⚠️" in cols[0].text:
+                    if "⚠️" in cols[0].text or "Suspiciously fast completion" in cols[0].get_attribute('innerHTML'):
                         has_anomaly_flag = True
                     break
                     

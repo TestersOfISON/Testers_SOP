@@ -432,6 +432,9 @@
         } catch(e){}
 
         updates['user_stories/' + userStoryKey + '/testers/' + testerName + '/' + moduleId] = stateObject;
+        if (moduleId === 'timeline') {
+          updates['user_stories/' + userStoryKey + '/timeline'] = stateObject;
+        }
         updates['user_stories/' + userStoryKey + '/testers/' + testerName + '/overallProgress'] = overallProgress;
         updates['user_stories/' + userStoryKey + '/testers/' + testerName + '/lastUpdated'] = new Date().toISOString();
         
@@ -714,14 +717,14 @@
                 const tl = row.timeline;
                 if (tl.storyStartedAt && tl.designFinishedAt) {
                     const diffMins = (new Date(tl.designFinishedAt) - new Date(tl.storyStartedAt)) / 60000;
-                    if (diffMins < 2 && diffMins > 0) {
+                    if (diffMins < 2 && diffMins >= 0) {
                         hasAnomaly = true;
                         anomalyDetails.push(`Design Phase Rushed (${diffMins.toFixed(1)}m)`);
                     }
                 }
                 if (tl.executionStartedAt && tl.executionFinishedAt) {
                     const diffMins = (new Date(tl.executionFinishedAt) - new Date(tl.executionStartedAt)) / 60000;
-                    if (diffMins < 2 && diffMins > 0) {
+                    if (diffMins < 2 && diffMins >= 0) {
                         hasAnomaly = true;
                         anomalyDetails.push(`Execution Phase Rushed (${diffMins.toFixed(1)}m)`);
                     }
