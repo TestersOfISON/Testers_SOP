@@ -25,16 +25,30 @@ class WebLLMSingleton {
             });
 
             try {
-                // Fetch context for Local RAG
-                const response = await fetch('../knowledge_base/t24_mapping.md');
-                const text = await response.text();
-                const sections = text.split('\n## ');
+                // Fetch generic context for Local RAG
+                const response1 = await fetch('../knowledge_base/t24_mapping.md');
+                const text1 = await response1.text();
+                const sections1 = text1.split('\n## ');
                 
-                for (let i = 1; i < sections.length; i++) {
-                    const lines = sections[i].split('\n');
+                for (let i = 1; i < sections1.length; i++) {
+                    const lines = sections1[i].split('\n');
                     const title = lines[0].trim();
                     const content = lines.slice(1).join('\n').trim();
                     await insert(this.oramaDb, { title, content });
+                }
+
+                // Fetch SENSITIVE context for Local RAG
+                const response2 = await fetch('../knowledge_base/t24_sensitive_logic.md');
+                if (response2.ok) {
+                    const text2 = await response2.text();
+                    const sections2 = text2.split('\n## ');
+                    
+                    for (let i = 1; i < sections2.length; i++) {
+                        const lines = sections2[i].split('\n');
+                        const title = lines[0].trim();
+                        const content = lines.slice(1).join('\n').trim();
+                        await insert(this.oramaDb, { title, content });
+                    }
                 }
             } catch (e) {
                 console.warn("Could not load T24 mappings for RAG", e);
