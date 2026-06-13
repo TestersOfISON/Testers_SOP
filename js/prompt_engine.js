@@ -36,7 +36,7 @@ window.PromptEngine = (function() {
     }
 
     const upperText = text.toUpperCase();
-    const upperTitle = parsed.title.toUpperCase();
+    const upperTitle = parsed.title ? parsed.title.toUpperCase() : '';
 
     if (upperTitle.includes('SYNCHRONIZATION') || upperTitle.includes('SYNCHRONIZE')) {
       parsed.routineType = 'SYNCHRONIZATION';
@@ -44,11 +44,11 @@ window.PromptEngine = (function() {
       parsed.routineType = 'RESTRICTION';
     } else if (upperTitle.includes('LIQUIDATION') || upperTitle.includes('LIQUIDATE')) {
       parsed.routineType = 'LIQUIDATION';
-    } else if (upperText.includes('RESTRICTION') || upperText.includes('VALIDATION') || upperText.includes('BLOCK')) {
-      parsed.routineType = 'RESTRICTION';
-    } else if (upperText.includes('LBK.SOLDARE.GARANTII') || upperText.includes('LIQUIDATE') || upperText.includes('LIQUIDATION')) {
+    } else if (upperTitle.includes('CATEGORY') || upperTitle.includes('CONFIGURE')) {
+      parsed.routineType = 'CONFIGURATION';
+    } else if (upperText.includes('LBK.SOLDARE.GARANTII')) {
       parsed.routineType = 'LIQUIDATION';
-    } else if (upperText.includes('LBK.ACTUALIZARE') || upperText.includes('UPDATE') || upperText.includes('SYNCHRONIZE')) {
+    } else if (upperText.includes('LBK.ACTUALIZARE')) {
       parsed.routineType = 'SYNCHRONIZATION';
     }
 
@@ -125,6 +125,9 @@ window.PromptEngine = (function() {
         } else if (parsed.routineType === 'SYNCHRONIZATION') {
           sections.push(`- **WHEN** the user modifies and authorizes the profile in the source application (e.g., CUSTOMER)`);
           sections.push(`- **THEN** the system automatically synchronizes the updated data to the target arrangement/collateral`);
+        } else if (parsed.routineType === 'CONFIGURATION') {
+          sections.push(`- **WHEN** the Maker creates a new Cash Collateral deposit`);
+          sections.push(`- **THEN** the system automatically assigns the correct CATEGORY code`);
         } else {
           sections.push(`- **WHEN** the ${mainRoutine} executes during COB (or is manually triggered intra-day)`);
           sections.push(`- **THEN** the record is processed`);
@@ -152,6 +155,12 @@ window.PromptEngine = (function() {
         sections.push(`- **WHEN** the user modifies and authorizes the profile in the source application (e.g., CUSTOMER)`);
         sections.push(`- **THEN** the system automatically synchronizes the updated data to the target arrangement/collateral`);
         sections.push(`- **AND** fields updated: ${parsed.updates.join(', ')}\n`);
+      } else if (parsed.routineType === 'CONFIGURATION') {
+        sections.push(`#### AC-1: Category Code Assignment`);
+        sections.push(`- **GIVEN** ${parsed.conditions[0]}`);
+        sections.push(`- **WHEN** the Maker creates a new Cash Collateral deposit`);
+        sections.push(`- **THEN** the system automatically assigns the correct CATEGORY code`);
+        sections.push(`- **AND** fields updated: ${parsed.updates.join(', ')}\n`);
       } else {
         sections.push(`#### AC-1: Core execution and field updates`);
         sections.push(`- **GIVEN** ${parsed.conditions[0]}`);
@@ -171,6 +180,11 @@ window.PromptEngine = (function() {
       sections.push(`- **GIVEN** the record explicitly fails the criteria or is manually locked`);
       sections.push(`- **WHEN** the modification is rejected`);
       sections.push(`- **THEN** Target records remain unchanged\n`);
+    } else if (parsed.routineType === 'CONFIGURATION') {
+      sections.push(`#### AC-${lastAcNum}: GL Accounting Integrity (Backend Flow)`);
+      sections.push(`- **GIVEN** the deposit has been correctly assigned the new category`);
+      sections.push(`- **WHEN** the deposit is funded`);
+      sections.push(`- **THEN** the underlying STMT.ENTRY and CATEG.ENTRY records hit the correct accounting buckets\n`);
     } else {
       sections.push(`#### AC-${lastAcNum}: Reject locked or active bypass records (Negative Flow)`);
       sections.push(`- **GIVEN** the record explicitly fails the criteria or is manually locked`);
@@ -214,6 +228,7 @@ window.PromptEngine = (function() {
         let expected = 'Fields updated: ' + upList + ' and verify systemic audit log update';
         if (parsed.routineType === 'RESTRICTION') expected = `System triggers restriction/override: ${upList}`;
         if (parsed.routineType === 'SYNCHRONIZATION') expected = `System automatically synchronizes: ${upList}`;
+        if (parsed.routineType === 'CONFIGURATION') expected = `System assigns correct CATEGORY and STMT.ENTRY hits correct GL: ${upList}`;
         addScenario('Happy Path', rule.condition, expected);
       });
     } else {
@@ -222,6 +237,7 @@ window.PromptEngine = (function() {
       let dynResult = `Fields updated: ${parsed.updates.join(', ')} and verify systemic audit log update`;
       if (parsed.routineType === 'RESTRICTION') dynResult = `System triggers restriction/override: ${parsed.updates.join(', ')}`;
       if (parsed.routineType === 'SYNCHRONIZATION') dynResult = `System automatically synchronizes: ${parsed.updates.join(', ')}`;
+      if (parsed.routineType === 'CONFIGURATION') dynResult = `System assigns correct CATEGORY and STMT.ENTRY hits correct GL: ${parsed.updates.join(', ')}`;
       addScenario('Happy Path', dynCondition, dynResult);
       if (parsed.conditions.length > 1) {
         addScenario('Happy Path', parsed.conditions[1], dynResult);
@@ -234,6 +250,9 @@ window.PromptEngine = (function() {
     } else if (parsed.routineType === 'SYNCHRONIZATION') {
       addScenario('Negative', 'Source modification rejected or unauthorized', 'Target records remain unchanged');
       addScenario('Edge Case', 'Target record locked during synchronization batch', 'System logs sync delay exception');
+    } else if (parsed.routineType === 'CONFIGURATION') {
+      addScenario('Negative', 'Invalid Customer Segment mapped', 'System rejects Category mapping');
+      addScenario('Edge Case', 'STMT.ENTRY GL mapping fails validation', 'System throws Accounting Exception');
     } else {
       // Always add negative and edge cases
       addScenario('Negative', 'Condition explicitly NOT met (e.g., active deposit bypass)', 'Record bypassed, no fields updated');
