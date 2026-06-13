@@ -34,7 +34,14 @@ class WebLLMSingleton {
                     const lines = sections1[i].split('\n');
                     const title = lines[0].trim();
                     const content = lines.slice(1).join('\n').trim();
-                    await insert(this.oramaDb, { title, content });
+                    
+                    // Semantic Chunking: Split large context into paragraph-level blocks
+                    const chunks = content.split(/\n\s*\n/);
+                    for (let chunk of chunks) {
+                        if (chunk.trim().length > 15) {
+                            await insert(this.oramaDb, { title: title, content: chunk.trim() });
+                        }
+                    }
                 }
 
                 // Fetch SENSITIVE context for Local RAG
@@ -47,7 +54,14 @@ class WebLLMSingleton {
                         const lines = sections2[i].split('\n');
                         const title = lines[0].trim();
                         const content = lines.slice(1).join('\n').trim();
-                        await insert(this.oramaDb, { title, content });
+                        
+                        // Semantic Chunking for Sensitive DB: Prevent LLM Overload
+                        const chunks = content.split(/\n\s*\n/);
+                        for (let chunk of chunks) {
+                            if (chunk.trim().length > 15) {
+                                await insert(this.oramaDb, { title: title, content: chunk.trim() });
+                            }
+                        }
                     }
                 }
             } catch (e) {
