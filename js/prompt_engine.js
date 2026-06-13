@@ -111,20 +111,20 @@ window.PromptEngine = (function() {
       sections.push(`#### AC-1: Liquidate orphaned guarantees (No active LD/PD)`);
       sections.push(`- **GIVEN** a guarantee record exists with VAL.EVAL.INT > 0`);
       sections.push(`- **AND** there are no active LD or PD records attached`);
-      sections.push(`- **WHEN** the ${parsed.routines[0] || 'batch routine'} executes during COB`);
+      sections.push(`- **WHEN** the ${parsed.routines[0] || 'batch routine'} executes during COB (or is manually triggered intra-day)`);
       sections.push(`- **THEN** the record transitions to liquidated state`);
       sections.push(`- **AND** the system updates fields simultaneously: NOMINAL.VALUE = 0, VAL.EVAL.INT = 0, EXPIRY.DATE = TODAY\n`);
       
       sections.push(`#### AC-2: Liquidate guarantees attached to closed AA/MM deposits`);
       sections.push(`- **GIVEN** a guarantee has COLLATERAL.CODE = 100`);
       sections.push(`- **AND** it is linked to an AA or MM deposit where STATUS = LIQ`);
-      sections.push(`- **WHEN** the batch routine executes`);
+      sections.push(`- **WHEN** the batch routine executes during COB (or is manually triggered intra-day)`);
       sections.push(`- **THEN** it bypasses any active LD/PD checks and forces liquidation`);
       sections.push(`- **AND** the system updates fields simultaneously: NOMINAL.VALUE = 0, VAL.EVAL.INT = 0, EXPIRY.DATE = TODAY\n`);
 
       sections.push(`#### AC-3: Reject locked or active deposit records (Negative Flow)`);
       sections.push(`- **GIVEN** a guarantee is linked to an active AA deposit`);
-      sections.push(`- **WHEN** the batch routine executes`);
+      sections.push(`- **WHEN** the batch routine executes during COB (or is manually triggered intra-day)`);
       sections.push(`- **THEN** the system bypasses the record and applies no field changes\n`);
     } else {
       // Generic fallback for non-guarantee processes
@@ -176,10 +176,10 @@ window.PromptEngine = (function() {
 
     if (parsed.isGuaranteeProcess) {
       // 1. Orphaned records (Happy Path) -> 3 tests (PF, PJ, PRE)
-      addScenario('Happy Path', 'Orphaned guarantee (No active LD/PD attached), VAL.EVAL.INT > 0', 'Fields zeroed: NOMINAL.VALUE=0, VAL.EVAL.INT=0, EXPIRY.DATE=TODAY');
+      addScenario('Happy Path', 'Orphaned guarantee (No active LD/PD attached), VAL.EVAL.INT > 0', 'Fields zeroed: NOMINAL.VALUE=0, VAL.EVAL.INT=0, EXPIRY.DATE=TODAY and verify systemic audit log update');
       
       // 2. Liquidated MM/AA deposits (Happy Path) -> 3 tests
-      addScenario('Happy Path', 'COLLATERAL.CODE=100, attached AA/MM deposit is STATUS=LIQ (even if LD active)', 'Fields zeroed: NOMINAL.VALUE=0, VAL.EVAL.INT=0, EXPIRY.DATE=TODAY');
+      addScenario('Happy Path', 'COLLATERAL.CODE=100, attached AA/MM deposit is STATUS=LIQ (even if LD active)', 'Fields zeroed: NOMINAL.VALUE=0, VAL.EVAL.INT=0, EXPIRY.DATE=TODAY and verify systemic audit log update');
       
       // 3. Active AA bypass (Negative) -> 3 tests
       addScenario('Negative', 'Attached AA deposit is ACTIVE', 'Record bypassed, no fields updated');
