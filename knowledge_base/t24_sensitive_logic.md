@@ -19,3 +19,9 @@
     *   **Rate Changes:** `INTEREST.RATE = NEW.RATE`
 *   **WARNING - LIQUIDATION OVERRIDE:** Do NOT liquidate active collateral. Do NOT set `WORKING.BALANCE = 0`.
 *   **Matrix Rule:** Testing must explicitly duplicate execution across all 3 sync triggers across all 3 customer segments (PF, PJ, PRE), resulting in a minimum 15-execution matrix including bypass flows.
+
+## WF-8171 - Liquidation restriction for collateral deposits
+*   **Routine Action:** A real-time UI restriction (Override) preventing manual liquidation of deposits guaranteeing an active loan.
+*   **Conditions:** The user attempts a PAYOFF or CLOSE activity on an AA collateral deposit that is actively guaranteeing a loan (associated via collateral code 100).
+*   **Updates / Sync Triggers:** Throws a Supervisor Override error preventing immediate liquidation.
+*   **Matrix Rule:** Negative Flow means the deposit does NOT guarantee a loan, so the transaction is allowed. Edge Case means testing the Supervisor Override mechanism.

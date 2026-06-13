@@ -36,7 +36,9 @@ window.PromptEngine = (function() {
     }
 
     const upperText = text.toUpperCase();
-    if (upperText.includes('LBK.SOLDARE.GARANTII') || upperText.includes('LIQUIDATE') || upperText.includes('LIQUIDATION')) {
+    if (upperText.includes('RESTRICTION') || upperText.includes('VALIDATION') || upperText.includes('BLOCK')) {
+      parsed.routineType = 'RESTRICTION';
+    } else if (upperText.includes('LBK.SOLDARE.GARANTII') || upperText.includes('LIQUIDATE') || upperText.includes('LIQUIDATION')) {
       parsed.routineType = 'LIQUIDATION';
     } else if (upperText.includes('LBK.ACTUALIZARE') || upperText.includes('UPDATE') || upperText.includes('SYNCHRONIZE')) {
       parsed.routineType = 'SYNCHRONIZATION';
@@ -106,8 +108,13 @@ window.PromptEngine = (function() {
       parsed.aiRules.forEach((rule, idx) => {
         sections.push(`#### AC-${idx+1}: Dynamic Rule Execution`);
         sections.push(`- **GIVEN** ${rule.condition}`);
-        sections.push(`- **WHEN** the ${mainRoutine} executes during COB (or is manually triggered intra-day)`);
-        sections.push(`- **THEN** the record is processed`);
+        if (parsed.routineType === 'RESTRICTION') {
+          sections.push(`- **WHEN** the user attempts to manually execute a closure activity`);
+          sections.push(`- **THEN** the system triggers the restriction`);
+        } else {
+          sections.push(`- **WHEN** the ${mainRoutine} executes during COB (or is manually triggered intra-day)`);
+          sections.push(`- **THEN** the record is processed`);
+        }
         let upList = Array.isArray(rule.updates) ? rule.updates.join(', ') : rule.updates;
         sections.push(`- **AND** the system updates fields: ${upList}\n`);
       });
@@ -119,6 +126,12 @@ window.PromptEngine = (function() {
         sections.push(`- **WHEN** the ${mainRoutine} executes during COB`);
         sections.push(`- **THEN** the record transitions to liquidated state`);
         sections.push(`- **AND** the system updates fields: ${parsed.updates.join(', ')}\n`);
+      } else if (parsed.routineType === 'RESTRICTION') {
+        sections.push(`#### AC-1: Real-Time UI Validation Trigger`);
+        sections.push(`- **GIVEN** ${parsed.conditions[0]}`);
+        sections.push(`- **WHEN** the user attempts to manually execute a closure activity`);
+        sections.push(`- **THEN** the system blocks the transaction and triggers the restriction`);
+        sections.push(`- **AND** ${parsed.updates.join(', ')}\n`);
       } else {
         sections.push(`#### AC-1: Core execution and field updates`);
         sections.push(`- **GIVEN** ${parsed.conditions[0]}`);
@@ -128,10 +141,17 @@ window.PromptEngine = (function() {
     }
 
     const lastAcNum = parsed.aiRules ? parsed.aiRules.length + 1 : 2;
-    sections.push(`#### AC-${lastAcNum}: Reject locked or active bypass records (Negative Flow)`);
-    sections.push(`- **GIVEN** the record explicitly fails the criteria or is manually locked`);
-    sections.push(`- **WHEN** the ${mainRoutine} executes`);
-    sections.push(`- **THEN** the system bypasses the record and applies no field changes\n`);
+    if (parsed.routineType === 'RESTRICTION') {
+      sections.push(`#### AC-${lastAcNum}: Restriction condition NOT met (Negative Flow)`);
+      sections.push(`- **GIVEN** the deposit does not meet the restriction condition (e.g. no active loan attached)`);
+      sections.push(`- **WHEN** the user attempts the closure activity`);
+      sections.push(`- **THEN** the system allows the transaction without restriction errors\n`);
+    } else {
+      sections.push(`#### AC-${lastAcNum}: Reject locked or active bypass records (Negative Flow)`);
+      sections.push(`- **GIVEN** the record explicitly fails the criteria or is manually locked`);
+      sections.push(`- **WHEN** the ${mainRoutine} executes`);
+      sections.push(`- **THEN** the system bypasses the record and applies no field changes\n`);
+    }
 
     const totalExecutions = matrix.length;
     sections.push(`## Enterprise Test Coverage Matrix (${totalExecutions}-Execution Standard)`);
@@ -166,21 +186,27 @@ window.PromptEngine = (function() {
       // Intelligent Scaling
       parsed.aiRules.forEach(rule => {
         let upList = Array.isArray(rule.updates) ? rule.updates.join(', ') : rule.updates;
-        addScenario('Happy Path', rule.condition, `Fields updated: ${upList} and verify systemic audit log update`);
+        let expected = parsed.routineType === 'RESTRICTION' ? `System triggers restriction/override: ${upList}` : `Fields updated: ${upList} and verify systemic audit log update`;
+        addScenario('Happy Path', rule.condition, expected);
       });
     } else {
       // Deterministic Fallback
       const dynCondition = parsed.conditions[0];
-      const dynResult = `Fields updated: ${parsed.updates.join(', ')} and verify systemic audit log update`;
+      const dynResult = parsed.routineType === 'RESTRICTION' ? `System triggers restriction/override: ${parsed.updates.join(', ')}` : `Fields updated: ${parsed.updates.join(', ')} and verify systemic audit log update`;
       addScenario('Happy Path', dynCondition, dynResult);
       if (parsed.conditions.length > 1) {
         addScenario('Happy Path', parsed.conditions[1], dynResult);
       }
     }
     
-    // Always add negative and edge cases
-    addScenario('Negative', 'Condition explicitly NOT met (e.g., active deposit bypass)', 'Record bypassed, no fields updated');
-    addScenario('Edge Case', 'Record locked by another user/process during COB execution', 'Routine logs exception, skips record without crashing batch');
+    if (parsed.routineType === 'RESTRICTION') {
+      addScenario('Negative', 'Condition NOT met (e.g., no active loan attached)', 'System allows the transaction without restriction errors');
+      addScenario('Edge Case', 'Supervisor attempts Override', 'System logs override exception and processes the record');
+    } else {
+      // Always add negative and edge cases
+      addScenario('Negative', 'Condition explicitly NOT met (e.g., active deposit bypass)', 'Record bypassed, no fields updated');
+      addScenario('Edge Case', 'Record locked by another user/process during COB execution', 'Routine logs exception, skips record without crashing batch');
+    }
 
     return rows;
   }
