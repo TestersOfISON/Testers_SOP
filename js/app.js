@@ -2231,3 +2231,128 @@ function formatMarkdown(text) {
     .replace(/\n/g, '<br>');
   return formatted;
 }
+
+// --- KPI PREDICTOR MODULE LOGIC ---
+let kpiGaugeInstance = null;
+
+window.loadKPIData = function() {
+  const testerName = localStorage.getItem('testerName') || "Anonymous Tester";
+  const storedStr = localStorage.getItem('kpi_metrics_' + testerName);
+  if (storedStr) {
+    try {
+      const metrics = JSON.parse(storedStr);
+      document.getElementById('kpi-story-points').value = metrics.storyPoints || 0;
+      document.getElementById('kpi-bugs').value = metrics.bugs || 0;
+      document.getElementById('kpi-scenarios-created').value = metrics.scenariosCreated || 0;
+      document.getElementById('kpi-scenarios-executed').value = metrics.scenariosExecuted || 0;
+      document.getElementById('kpi-regression-executed').value = metrics.regressionExecuted || 0;
+      document.getElementById('kpi-leaked-incidents').value = metrics.leakedIncidents || 0;
+      window.calculateKPI();
+    } catch(e) {}
+  } else {
+    // Initial render
+    window.calculateKPI();
+  }
+};
+
+window.calculateKPI = function() {
+  const storyPoints = parseInt(document.getElementById('kpi-story-points').value) || 0;
+  const bugs = parseInt(document.getElementById('kpi-bugs').value) || 0;
+  const scenariosCreated = parseInt(document.getElementById('kpi-scenarios-created').value) || 0;
+  const scenariosExecuted = parseInt(document.getElementById('kpi-scenarios-executed').value) || 0;
+  const regressionExecuted = parseInt(document.getElementById('kpi-regression-executed').value) || 0;
+  const leakedIncidents = parseInt(document.getElementById('kpi-leaked-incidents').value) || 0;
+  
+  // Save to local storage
+  const testerName = localStorage.getItem('testerName') || "Anonymous Tester";
+  localStorage.setItem('kpi_metrics_' + testerName, JSON.stringify({
+    storyPoints, bugs, scenariosCreated, scenariosExecuted, regressionExecuted, leakedIncidents
+  }));
+
+  // Client formula
+  let score = (storyPoints * 10) + 
+              (bugs * 31) + 
+              (scenariosCreated * 4.8) + 
+              (scenariosExecuted * 2) + 
+              (regressionExecuted * 1.5) - 
+              (leakedIncidents * 30);
+  
+  score = Math.round(score);
+  if (score < 0) score = 0;
+  
+  const MAX_TARGET = 220; // assumed target based on client 
+  
+  document.getElementById('kpi-score-text').innerText = score;
+  
+  // Render Gauge
+  const ctx = document.getElementById('kpiGaugeChart');
+  if (ctx) {
+    const theme = document.documentElement.getAttribute('data-theme') || 'light';
+    const bgColor = theme === 'dark' ? '#334155' : '#e2e8f0';
+    let progressColor = '#10b981'; // Green
+    if (score < MAX_TARGET * 0.5) progressColor = '#ef4444'; // Red
+    else if (score < MAX_TARGET * 0.8) progressColor = '#d97706'; // Orange
+    
+    let percent = Math.min((score / MAX_TARGET) * 100, 100);
+    
+    if (kpiGaugeInstance) {
+      kpiGaugeInstance.data.datasets[0].data = [percent, 100 - percent];
+      kpiGaugeInstance.data.datasets[0].backgroundColor = [progressColor, bgColor];
+      kpiGaugeInstance.update();
+    } else {
+      if(typeof Chart !== 'undefined') {
+        kpiGaugeInstance = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: ['Score Progress', 'Remaining'],
+            datasets: [{
+              data: [percent, 100 - percent],
+              backgroundColor: [progressColor, bgColor],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            cutout: '80%',
+            rotation: -90,
+            circumference: 180,
+            plugins: { legend: { display: false }, tooltip: { enabled: false } }
+          }
+        });
+      }
+    }
+  }
+  
+  // Generate Actionable Tips
+  const tipsList = document.getElementById('kpi-tips-list');
+  const tipsContainer = document.getElementById('kpi-tips-container');
+  if (!tipsList || !tipsContainer) return;
+  tipsList.innerHTML = '';
+  let tips = [];
+  
+  if (leakedIncidents > 0) {
+    tips.push(`<li>🚨 <strong>Critical Penalty:</strong> You lost ${leakedIncidents * 30} points due to Leaked Incidents. Ensure you are following the exact UAT checklist before signing off any story!</li>`);
+  } else if (score > 0) {
+    tips.push(`<li>🛡️ <strong>Flawless execution!</strong> Zero leaked incidents. Double-check your boundary validations on your final story to protect your baseline.</li>`);
+  }
+  
+  if (scenariosCreated > 0 && scenariosExecuted < scenariosCreated) {
+    let pending = scenariosCreated - scenariosExecuted;
+    tips.push(`<li>💡 <strong>Quick Win:</strong> You designed ${scenariosCreated} scenarios but only executed ${scenariosExecuted}. Execute the remaining ${pending} scenarios to instantly gain ${pending * 2} points.</li>`);
+  }
+  
+  if (scenariosCreated === 0) {
+    tips.push(`<li>💡 <strong>Boost Coverage:</strong> Generating just 5 more edge-case test scenarios for your active story will increase your metric by 24 points! Use the AI Generator.</li>`);
+  }
+  
+  if (regressionExecuted === 0) {
+    tips.push(`<li>📈 <strong>Maximize Multiplier:</strong> Don't forget to execute your regression suite. Even 10 regression scenarios executed adds 15 points to your final score.</li>`);
+  }
+  
+  if (tips.length > 0) {
+    tipsContainer.style.display = 'block';
+    tipsList.innerHTML = tips.join('');
+  } else {
+    tipsContainer.style.display = 'none';
+  }
+};
