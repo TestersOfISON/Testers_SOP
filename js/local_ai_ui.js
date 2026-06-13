@@ -13,6 +13,9 @@ function initWorker() {
         // Create the worker
         aiWorker = new Worker('js/local_ai_worker.js', { type: 'module' });
         window.aiWorker = aiWorker;
+        
+        // Initialize the Critic AI worker
+        window.criticAiWorker = new Worker('js/critic_ai_worker.js');
 
         // Listen for messages from the worker
         aiWorker.onmessage = function(e) {

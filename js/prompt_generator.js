@@ -25,6 +25,35 @@ window.generateACMatrix = async function() {
         try {
             const parsed = window.PromptEngine.parseUserStory(userStory);
             const result = window.PromptEngine.generateAcceptanceCriteria(parsed);
+            
+            outAc.value = 'Critic AI reviewing matrix...';
+            let criticApproved = true;
+            let criticFlags = [];
+            
+            if (window.criticAiWorker) {
+                const criticPromise = new Promise((resolve) => {
+                    const onMsg = (e) => {
+                        if (e.data.status === 'review_complete') {
+                            window.criticAiWorker.removeEventListener('message', onMsg);
+                            resolve(e.data);
+                        }
+                    };
+                    window.criticAiWorker.addEventListener('message', onMsg);
+                    window.criticAiWorker.postMessage({ type: 'review_matrix', matrix: result, prompt: userStory });
+                });
+                const criticResponse = await criticPromise;
+                criticApproved = criticResponse.approved;
+                criticFlags = criticResponse.flags;
+            }
+            
+            if (!criticApproved) {
+                outAc.value = criticFlags.join('\n\n') + '\n\n---\n\n' + result;
+                btnAc.disabled = false;
+                btnAc.innerText = '✨ Generate AC & Matrix';
+                showPGToast('🚨 Critic AI Flag: Hallucination detected!', 'error');
+                return;
+            }
+
             outAc.value = result;
             btnAc.disabled = false;
             btnAc.innerText = '✨ Generate AC & Matrix';
@@ -64,6 +93,35 @@ window.generateACMatrix = async function() {
         // Pass JSON array into engine
         const parsed = window.PromptEngine.parseUserStory(userStory, aiExtractedRules);
         const result = window.PromptEngine.generateAcceptanceCriteria(parsed);
+
+        outAc.value = 'Critic AI reviewing matrix against sandbox rules...';
+        
+        let criticApproved = true;
+        let criticFlags = [];
+        
+        if (window.criticAiWorker) {
+            const criticPromise = new Promise((resolve) => {
+                const onMsg = (e) => {
+                    if (e.data.status === 'review_complete') {
+                        window.criticAiWorker.removeEventListener('message', onMsg);
+                        resolve(e.data);
+                    }
+                };
+                window.criticAiWorker.addEventListener('message', onMsg);
+                window.criticAiWorker.postMessage({ type: 'review_matrix', matrix: result, prompt: userStory });
+            });
+            const criticResponse = await criticPromise;
+            criticApproved = criticResponse.approved;
+            criticFlags = criticResponse.flags;
+        }
+        
+        if (!criticApproved) {
+            outAc.value = criticFlags.join('\n\n') + '\n\n---\n\n' + result;
+            btnAc.disabled = false;
+            btnAc.innerText = '✨ Generate AC & Matrix';
+            showPGToast('🚨 Critic AI Flag: Hallucination detected!', 'error');
+            return;
+        }
 
         outAc.value = result;
         btnAc.disabled = false;
