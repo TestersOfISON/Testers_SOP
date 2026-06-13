@@ -125,7 +125,11 @@ Output strictly a JSON object with a single key 'rules' containing an array of o
 Example Output:
 {"rules": [{"condition": "deposit rolls over", "updates": ["MATURITY.DATE = NEW.DATE"]}]}`;
 
-            const userPrompt = `User Story:\n${data.prompt}${ragContext}`;
+            const feedbackContext = (data.feedback && data.feedback.length > 0) 
+                ? `\n\nCRITICAL CONSTRAINTS (Avoid these previous errors):\n${data.feedback.join('\n')}`
+                : '';
+
+            const userPrompt = `User Story:\n${data.prompt}${ragContext}${feedbackContext}`;
 
             // PASS 1: The Extractor Agent
             const reply1 = await engine.chat.completions.create({

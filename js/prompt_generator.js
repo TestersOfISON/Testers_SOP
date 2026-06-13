@@ -35,7 +35,7 @@ window.generateACMatrix = async function() {
         window.addEventListener('ai_extract_complete', onSuccess);
         window.addEventListener('ai_extract_error', onError);
         
-        window.aiWorker.postMessage({ type: 'extract_rules', prompt: userStory });
+        window.aiWorker.postMessage({ type: 'extract_rules', prompt: userStory, feedback: criticFeedback });
     });
 
     let attempts = 0;
