@@ -64,6 +64,25 @@ class WebLLMSingleton {
                         }
                     }
                 }
+
+                // Fetch ARCHITECTURE context for Local RAG
+                const response3 = await fetch('../knowledge_base/t24_architecture.md');
+                if (response3.ok) {
+                    const text3 = await response3.text();
+                    const sections3 = text3.split('\n## ');
+                    for (let i = 1; i < sections3.length; i++) {
+                        const lines = sections3[i].split('\n');
+                        const title = lines[0].trim();
+                        const content = lines.slice(1).join('\n').trim();
+                        const chunks = content.split(/\n\s*\n/);
+                        for (let chunk of chunks) {
+                            if (chunk.trim().length > 15) {
+                                await insert(this.oramaDb, { title: title, content: chunk.trim() });
+                            }
+                        }
+                    }
+                }
+
             } catch (e) {
                 console.warn("Could not load T24 mappings for RAG", e);
             }
