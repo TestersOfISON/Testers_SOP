@@ -1,8 +1,10 @@
 import { CreateMLCEngine } from "https://esm.run/@mlc-ai/webllm";
+import { create, insert, search } from "https://esm.run/@orama/orama";
 
 class WebLLMSingleton {
     static engine = null;
-    static model = "Phi-3-mini-4k-instruct-q4f16_1-MLC"; // 3.8B WebGPU Model (~2.2GB)
+    static oramaDb = null;
+    static model = "Phi-3-mini-4k-instruct-q4f16_1-MLC";
 
     static async getInstance(progressCallback) {
         if (this.engine === null) {
@@ -11,6 +13,34 @@ class WebLLMSingleton {
             });
         }
         return this.engine;
+    }
+
+    static async getOrama() {
+        if (this.oramaDb === null) {
+            this.oramaDb = await create({
+                schema: {
+                    title: 'string',
+                    content: 'string'
+                }
+            });
+
+            try {
+                // Fetch context for Local RAG
+                const response = await fetch('../knowledge_base/t24_mapping.md');
+                const text = await response.text();
+                const sections = text.split('\n## ');
+                
+                for (let i = 1; i < sections.length; i++) {
+                    const lines = sections[i].split('\n');
+                    const title = lines[0].trim();
+                    const content = lines.slice(1).join('\n').trim();
+                    await insert(this.oramaDb, { title, content });
+                }
+            } catch (e) {
+                console.warn("Could not load T24 mappings for RAG", e);
+            }
+        }
+        return this.oramaDb;
     }
 }
 
@@ -21,20 +51,20 @@ self.addEventListener('message', async (event) => {
     // Initialization Request
     if (data.type === 'load') {
         try {
-            // Post initiate event
             self.postMessage({ status: 'initiate', name: WebLLMSingleton.model });
 
-            // Initialize engine with progress callback mapping to the UI
+            // Initialize Engine
             await WebLLMSingleton.getInstance((progress) => {
-                // WebLLM progress.progress is a float from 0.0 to 1.0
                 self.postMessage({ 
                     status: 'progress', 
                     loaded: progress.progress * 100, 
                     total: 100 
                 });
             });
+
+            // Initialize Orama DB asynchronously
+            await WebLLMSingleton.getOrama();
             
-            // Engine initialized
             self.postMessage({ status: 'done' });
             self.postMessage({ status: 'ready' });
         } catch (error) {
@@ -43,41 +73,83 @@ self.addEventListener('message', async (event) => {
         }
     }
 
-    // JSON Extraction Request
+    // JSON Extraction Request (Multi-Agent Pipeline)
     if (data.type === 'extract_rules') {
         try {
             const engine = await WebLLMSingleton.getInstance();
-            const systemPrompt = `You are a strict data extraction AI for Temenos T24. Extract the conditional triggers and field updates from the provided banking user story. 
-Output strictly a JSON array of objects with 'condition' (string) and 'updates' (array of strings). Do not output any conversational text or markdown blocks. 
-Example Output:
-[{"condition": "deposit rolls over", "updates": ["MATURITY.DATE = NEW.DATE"]}]`;
+            const db = await WebLLMSingleton.getOrama();
 
-            const messages = [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: data.prompt }
-            ];
-
-            // WebLLM uses OpenAI compatible chat completions
-            const reply = await engine.chat.completions.create({
-                messages,
-                temperature: 0.1,
-                max_tokens: 500,
+            // 1. RAG Search
+            let ragContext = "";
+            const searchResult = await search(db, {
+                term: data.prompt,
+                properties: ['content', 'title'],
+                limit: 1
             });
-
-            const finalOutput = reply.choices[0].message.content.trim();
-
-            let parsedJson = [];
-            try {
-                parsedJson = JSON.parse(finalOutput);
-            } catch (e) {
-                const jsonMatch = finalOutput.match(/\[\s*\{.*\}\s*\]/s);
-                if (jsonMatch) {
-                    parsedJson = JSON.parse(jsonMatch[0]);
-                } else {
-                    throw new Error("Failed to extract valid JSON array.");
-                }
+            
+            if (searchResult.hits.length > 0) {
+                ragContext = `\n\nRelevant T24 Banking Context:\n[${searchResult.hits[0].document.title}]\n${searchResult.hits[0].document.content}`;
             }
 
+            // 2. KV Cache Optimized Prompt (System prompt remains entirely static)
+            const systemPrompt = `You are a strict data extraction AI for Temenos T24. Extract the conditional triggers and field updates from the provided banking user story. 
+Output strictly a JSON object with a single key 'rules' containing an array of objects with 'condition' (string) and 'updates' (array of strings). Do not output any conversational text.
+Example Output:
+{"rules": [{"condition": "deposit rolls over", "updates": ["MATURITY.DATE = NEW.DATE"]}]}`;
+
+            const userPrompt = `User Story:\n${data.prompt}${ragContext}`;
+
+            // PASS 1: The Extractor Agent
+            const reply1 = await engine.chat.completions.create({
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userPrompt }
+                ],
+                temperature: 0.1,
+                max_tokens: 500,
+                response_format: { type: "json_object" }
+            });
+
+            const extractedJsonString = reply1.choices[0].message.content.trim();
+            let parsedJson = [];
+
+            try {
+                parsedJson = JSON.parse(extractedJsonString).rules || [];
+            } catch (e) {
+                // Fallback catch if json_object format slightly fails
+                const match = extractedJsonString.match(/\[\s*\{.*\}\s*\]/s);
+                if (match) parsedJson = JSON.parse(match[0]);
+            }
+
+            // PASS 2: The Critic Agent (Multi-Agent Reflection)
+            const criticSystemPrompt = `You are an expert QA Reviewer for T24 banking logic. Verify that the extracted JSON perfectly captures the triggers and updates from the User Story. 
+Output strictly a JSON object with a single key 'rules' containing the validated array.`;
+            
+            const criticUserPrompt = `User Story:\n${data.prompt}\n\nExtracted JSON:\n${extractedJsonString}\n\nIs this accurate? If yes, return it exactly. If no, fix the logic and return the corrected JSON object.`;
+
+            const reply2 = await engine.chat.completions.create({
+                messages: [
+                    { role: 'system', content: criticSystemPrompt },
+                    { role: 'user', content: criticUserPrompt }
+                ],
+                temperature: 0.1,
+                max_tokens: 500,
+                response_format: { type: "json_object" }
+            });
+
+            const criticJsonString = reply2.choices[0].message.content.trim();
+            
+            try {
+                const finalObj = JSON.parse(criticJsonString);
+                if (finalObj.rules && Array.isArray(finalObj.rules)) {
+                    parsedJson = finalObj.rules;
+                }
+            } catch (e) {
+                // If the critic fails, we silently default to the Extractor's output
+                console.warn("Critic Agent failed to output valid JSON, defaulting to Extractor.");
+            }
+
+            // Return to UI
             self.postMessage({
                 status: 'extract_complete',
                 output: parsedJson
