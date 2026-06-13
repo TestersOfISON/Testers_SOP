@@ -79,26 +79,50 @@ const qaModules = {
             "Change Assignee to self and move tests to proper Scrum folder."
           ]
         },
-        templates: `<div style="background: rgba(16, 185, 129, 0.05); padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px solid rgba(16, 185, 129, 0.2);">
-    <h3 style="margin-top: 0; color: #10b981; display: flex; align-items: center; justify-content: space-between;">
-        <span>🤖 Local AI Prompt Generator (100% Private)</span>
-        <button onclick="window.initPromptGenerator()" style="padding: 5px 10px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: bold;">Initialize Local AI</button>
-    </h3>
-    <div id="pg-status" style="font-size: 0.85rem; color: #64748b; margin-bottom: 15px;">AI Model Not Loaded. Click Initialize to load the private model into your browser's GPU.</div>
+        templates: `<div style="background: rgba(16, 185, 129, 0.05); padding: 20px; border-radius: 12px; margin-top: 15px; border: 1px solid rgba(16, 185, 129, 0.2);">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+        <h3 style="margin: 0; color: #10b981; display: flex; align-items: center; gap: 8px;">
+            <span>⚡ Smart Prompt Generator</span>
+            <span style="font-size: 0.7rem; background: rgba(16, 185, 129, 0.2); padding: 3px 8px; border-radius: 20px; color: #10b981; font-weight: 600;">V2 — INSTANT</span>
+        </h3>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <span style="font-size: 0.8rem; color: #10b981; font-weight: 600;">🔒 100% Local • Zero Data Exposure • No AI Model Required</span>
+            <button onclick="window.clearPGFields()" style="padding: 5px 12px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; cursor: pointer; font-size: 0.78rem; font-weight: 600; transition: all 0.2s;">🗑️ Clear All</button>
+        </div>
+    </div>
     
-    <div style="display: flex; gap: 20px;">
-        <div style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
-            <h4 style="margin: 0; color: var(--text-color, #334155);">Step 1: Paste User Story</h4>
-            <textarea id="in-user-story" style="width: 100%; height: 100px; padding: 10px; border-radius: 4px; border: 1px solid #cbd5e1; font-family: inherit; resize: vertical; box-sizing: border-box;" placeholder="Paste the Jira User Story or Epic here..."></textarea>
-            <button id="btn-gen-ac" disabled onclick="window.generateACMatrix()" style="padding: 8px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Generate AC & Matrix</button>
-            <textarea id="out-ac" style="width: 100%; height: 200px; padding: 10px; border-radius: 4px; border: 1px solid #cbd5e1; font-family: inherit; resize: vertical; box-sizing: border-box; background: var(--bg-color, #f8fafc);" placeholder="Acceptance Criteria and Test Coverage Matrix will appear here..."></textarea>
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+        <!-- STEP 1: User Story → AC & Matrix -->
+        <div style="flex: 1; min-width: 320px; display: flex; flex-direction: column; gap: 10px; background: var(--card-bg, #fff); padding: 18px; border-radius: 10px; border: 1px solid var(--border, #e2e8f0);">
+            <h4 style="margin: 0; color: var(--text-color, #334155); display: flex; align-items: center; gap: 6px;">
+                <span style="background: #3b82f6; color: white; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold;">1</span>
+                Paste User Story
+            </h4>
+            <textarea id="in-user-story" class="form-input" style="width: 100%; height: 120px; resize: vertical; box-sizing: border-box; font-size: 0.9rem;" placeholder="Paste the full Jira User Story here (including AS IS / TO BE sections)..."></textarea>
+            <button id="btn-gen-ac" onclick="window.generateACMatrix()" style="padding: 10px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.9rem; transition: all 0.2s; box-shadow: 0 2px 8px rgba(37,99,235,0.3);">✨ Generate AC & Matrix</button>
+            <div style="position: relative;">
+                <textarea id="out-ac" class="form-input" style="width: 100%; height: 220px; resize: vertical; box-sizing: border-box; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.85rem; line-height: 1.5; background: var(--bg-color, #f8fafc);" placeholder="Acceptance Criteria and Test Coverage Matrix will appear here..." readonly></textarea>
+                <div style="position: absolute; top: 8px; right: 8px; display: flex; gap: 5px;">
+                    <button onclick="window.copyPGOutput('out-ac')" style="padding: 4px 10px; background: rgba(37,99,235,0.1); color: #3b82f6; border: 1px solid rgba(37,99,235,0.2); border-radius: 5px; cursor: pointer; font-size: 0.75rem; font-weight: 600;">📋 Copy</button>
+                </div>
+            </div>
+            <button onclick="window.transferACToStep2()" style="padding: 8px; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.85rem; transition: all 0.2s; box-shadow: 0 2px 8px rgba(16,185,129,0.3);">➡️ Transfer to Step 2</button>
         </div>
         
-        <div style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
-            <h4 style="margin: 0; color: var(--text-color, #334155);">Step 2: Generate UiPath Prompt</h4>
-            <textarea id="in-ac-matrix" style="width: 100%; height: 100px; padding: 10px; border-radius: 4px; border: 1px solid #cbd5e1; font-family: inherit; resize: vertical; box-sizing: border-box;" placeholder="Paste the generated AC & Matrix from Step 1 here..."></textarea>
-            <button id="btn-gen-uipath" disabled onclick="window.generateUiPathPrompt()" style="padding: 8px; background: #8b5cf6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Generate UiPath Prompt</button>
-            <textarea id="out-uipath" style="width: 100%; height: 200px; padding: 10px; border-radius: 4px; border: 1px solid #cbd5e1; font-family: inherit; resize: vertical; box-sizing: border-box; background: var(--bg-color, #f8fafc);" placeholder="Markdown BDD prompt for UiPath Test Manager will appear here..."></textarea>
+        <!-- STEP 2: AC & Matrix → UiPath BDD Prompt -->
+        <div style="flex: 1; min-width: 320px; display: flex; flex-direction: column; gap: 10px; background: var(--card-bg, #fff); padding: 18px; border-radius: 10px; border: 1px solid var(--border, #e2e8f0);">
+            <h4 style="margin: 0; color: var(--text-color, #334155); display: flex; align-items: center; gap: 6px;">
+                <span style="background: #8b5cf6; color: white; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold;">2</span>
+                Generate UiPath Prompt
+            </h4>
+            <textarea id="in-ac-matrix" class="form-input" style="width: 100%; height: 120px; resize: vertical; box-sizing: border-box; font-size: 0.9rem;" placeholder="Paste the AC & Matrix from Step 1 here (or use the Transfer button)..."></textarea>
+            <button id="btn-gen-uipath" onclick="window.generateUiPathPrompt()" style="padding: 10px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.9rem; transition: all 0.2s; box-shadow: 0 2px 8px rgba(139,92,246,0.3);">🚀 Generate UiPath Prompt</button>
+            <div style="position: relative;">
+                <textarea id="out-uipath" class="form-input" style="width: 100%; height: 220px; resize: vertical; box-sizing: border-box; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.85rem; line-height: 1.5; background: var(--bg-color, #f8fafc);" placeholder="Markdown BDD prompt for UiPath Test Manager will appear here..." readonly></textarea>
+                <div style="position: absolute; top: 8px; right: 8px; display: flex; gap: 5px;">
+                    <button onclick="window.copyPGOutput('out-uipath')" style="padding: 4px 10px; background: rgba(139,92,246,0.1); color: #8b5cf6; border: 1px solid rgba(139,92,246,0.2); border-radius: 5px; cursor: pointer; font-size: 0.75rem; font-weight: 600;">📋 Copy</button>
+                </div>
+            </div>
         </div>
     </div>
 </div>`
