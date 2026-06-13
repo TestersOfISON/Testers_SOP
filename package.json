@@ -4,7 +4,7 @@
   "description": "QA Lead Dashboard Automation Scripts",
   "main": "scripts/weekly_report.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "setup-golden": "cp scripts/golden_rule.sh .git/hooks/pre-push && chmod +x .git/hooks/pre-push"
   },
   "keywords": [],
   "author": "",
