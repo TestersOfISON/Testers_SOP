@@ -1,44 +1,33 @@
 /**
- * prompt_engine.js — T24 Domain-Specific Expert System (Prompt Generator V2.1)
+ * prompt_engine.js — T24 Domain-Specific Expert System (Prompt Generator V3.0)
  * 
- * Replaces the basic text parser with a T24-aware rule engine.
- * - Understands T24 Batch Routines vs Data Fields.
- * - Groups multiple field assertions into single execution steps.
- * - Applies Cross-Segment Multipliers (PF, PJ, PRE).
- * - Enforces strict Gherkin formatting.
- * - Detects cross-module impacts (e.g., orphaned records, active deposits).
+ * Replaces the basic text parser with a Dynamic T24 Rule Engine.
+ * - Extracts dynamic preconditions and field updates.
+ * - Applies Cross-Segment Multipliers (PF, PJ, PRE) automatically.
+ * - Avoids context bleeding by removing hardcoded guarantees logic.
  */
 
 window.PromptEngine = (function() {
 
-  // --- T24 KNOWLEDGE GRAPH & RULES ---
-  const T24_ROUTINES = ['LBK.SOLDARE.GARANTII', 'LBK.DIMINUARE.GARANTII.EOM', 'EOD.MM.STATEMENTS'];
   const T24_SEGMENTS = ['PF (Retail)', 'PJ (Corporate)', 'PRE (Premium)'];
-  
+  const KNOWN_ROUTINES = ['LBK.SOLDARE.GARANTII', 'LBK.DIMINUARE.GARANTII.EOM', 'EOD.MM.STATEMENTS', 'LBK.ACTUALIZARE.CASH.COLL'];
+
   function isRoutine(name) {
-    return T24_ROUTINES.includes(name) || (name.split('.').length >= 3 && name === name.toUpperCase());
-  }
-  
-  function isField(name) {
-    return name.includes('.') && name === name.toUpperCase() && !isRoutine(name);
+    return KNOWN_ROUTINES.includes(name) || (name.split('.').length >= 3 && name === name.toUpperCase());
   }
 
   // ============================================================================
-  // SECTION 1: USER STORY PARSER (T24 AWARE)
+  // SECTION 1: USER STORY PARSER (DYNAMIC T24 RULE EXTRACTION)
   // ============================================================================
 
   function parseUserStory(text) {
     const parsed = {
-      id: '', title: '', actor: '', goal: '', benefit: '',
-      affectedApps: [], fieldNames: [], routines: [], conditions: [],
-      updates: [], asIsSteps: [], toBeSteps: [],
-      isGuaranteeProcess: false, hasAA: false, hasMM: false,
+      id: '', title: '', routines: [], conditions: [], updates: [],
+      routineType: 'GENERIC', // 'LIQUIDATION' | 'SYNCHRONIZATION' | 'GENERIC'
       rawText: text
     };
 
     if (!text || !text.trim()) return parsed;
-
-    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
     // ID and Title
     const idMatch = text.match(/([A-Z]{1,10}-\d{1,10})\s*[-–]\s*(.+?)(?:\n|$)/);
@@ -47,94 +36,96 @@ window.PromptEngine = (function() {
       parsed.title = idMatch[2].trim();
     }
 
-    // T24 specific flags
-    parsed.isGuaranteeProcess = text.toLowerCase().includes('guarantee') || text.includes('GARANTII');
-    parsed.hasAA = text.includes(' AA ') || text.includes('AA deposit');
-    parsed.hasMM = text.includes(' MM ');
+    // Dynamic Routine Type Classification
+    const upperText = text.toUpperCase();
+    if (upperText.includes('LBK.SOLDARE.GARANTII') || upperText.includes('LIQUIDATE') || upperText.includes('LIQUIDATION')) {
+      parsed.routineType = 'LIQUIDATION';
+    } else if (upperText.includes('LBK.ACTUALIZARE') || upperText.includes('UPDATE') || upperText.includes('SYNCHRONIZE')) {
+      parsed.routineType = 'SYNCHRONIZATION';
+    }
 
     // Field vs Routine extraction
     const wordPattern = /\b([A-Z][A-Z0-9]*(?:\.[A-Z][A-Z0-9]*)+)\b/g;
-    const fieldSet = new Set();
     const routineSet = new Set();
     let wordMatch;
     while ((wordMatch = wordPattern.exec(text)) !== null) {
       const candidate = wordMatch[1];
       if (candidate.match(/^(AS\.IS|TO\.BE|US\.NAME)$/)) continue;
-      
       if (isRoutine(candidate)) {
         routineSet.add(candidate);
-      } else {
-        fieldSet.add(candidate);
       }
     }
-    parsed.fieldNames = Array.from(fieldSet);
     parsed.routines = Array.from(routineSet);
 
-    // Aggregate updates per step (fixing the 3-step assertion inflation)
-    const blocks = text.split(/•|-|\*/).slice(1);
-    blocks.forEach(block => {
-      const updatePattern = /([A-Z][A-Z0-9]*(?:\.[A-Z][A-Z0-9]*)*)\s*=\s*(0|TODAY|NULL|[A-Z]+)/g;
-      let upMatch;
-      const blockUpdates = [];
-      while ((upMatch = updatePattern.exec(block)) !== null) {
-        if (!isRoutine(upMatch[1])) {
-          blockUpdates.push(`${upMatch[1]} = ${upMatch[2]}`);
+    // Extract dynamic conditions
+    const lines = text.split('\n');
+    lines.forEach(line => {
+      const l = line.trim();
+      if (l.startsWith('•') || l.startsWith('-') || l.startsWith('*')) {
+        const lower = l.toLowerCase();
+        if (lower.includes('when') || lower.includes('if') || lower.includes('where') || lower.includes('selects')) {
+          parsed.conditions.push(l.replace(/^[•\-*]\s*(when|if|where|selects)?\s*/i, '').trim());
         }
       }
-      
-      if (blockUpdates.length > 0) {
-        parsed.updates.push(blockUpdates);
-      }
     });
+    
+    // Extract dynamic updates (Field=Value)
+    const updatePattern = /([A-Z][A-Z0-9]*(?:\.[A-Z][A-Z0-9]*)*)\s*=\s*([^ \n,]+)/g;
+    let upMatch;
+    const updateSet = new Set();
+    while ((upMatch = updatePattern.exec(text)) !== null) {
+      if (!isRoutine(upMatch[1])) {
+        updateSet.add(`${upMatch[1]} = ${upMatch[2]}`);
+      }
+    }
+    parsed.updates = Array.from(updateSet);
+    
+    // Fallbacks if extraction fails
+    if (parsed.conditions.length === 0) parsed.conditions.push("Target records matching user story criteria");
+    if (parsed.updates.length === 0) parsed.updates.push("Fields updated according to business rules");
 
     return parsed;
   }
 
   // ============================================================================
-  // SECTION 2: EXPERT SYSTEM ACCEPTANCE CRITERIA
+  // SECTION 2: DYNAMIC MATRIX GENERATOR
   // ============================================================================
 
   function generateAcceptanceCriteria(parsed) {
     const sections = [];
     sections.push(`## Acceptance Criteria — ${parsed.id || 'US-XXXX'}`);
     sections.push(`**${parsed.title || 'User Story'}**\n`);
-    sections.push(`> 🧠 **T24 Expert System Analysis Applied:** Cross-segment permutations (PF/PJ/PRE) and orphaned/locked record rules enabled based on detected core banking routine.\n`);
+    sections.push(`> 🧠 **T24 Dynamic Rule Engine Applied:** Cross-segment permutations (PF/PJ/PRE) dynamically generated based on extracted business rules.\n`);
 
     const matrix = buildT24ExpertMatrix(parsed);
     
-    // Output standard AC format
     sections.push(`### Business Rules & Acceptance Criteria\n`);
-    let acCount = 1;
+    const mainRoutine = parsed.routines[0] || 'batch routine';
     
-    // Grouped logic for Guarantee Liquidation
-    if (parsed.isGuaranteeProcess && parsed.routines.includes('LBK.SOLDARE.GARANTII')) {
-      sections.push(`#### AC-1: Liquidate orphaned guarantees (No active LD/PD)`);
-      sections.push(`- **GIVEN** a guarantee record exists with VAL.EVAL.INT > 0`);
-      sections.push(`- **AND** there are no active LD or PD records attached`);
-      sections.push(`- **WHEN** the ${parsed.routines[0] || 'batch routine'} executes during COB (or is manually triggered intra-day)`);
+    if (parsed.routineType === 'LIQUIDATION') {
+      sections.push(`#### AC-1: Dynamic Liquidation Execution`);
+      sections.push(`- **GIVEN** ${parsed.conditions[0]}`);
+      sections.push(`- **WHEN** the ${mainRoutine} executes during COB (or is manually triggered intra-day)`);
       sections.push(`- **THEN** the record transitions to liquidated state`);
-      sections.push(`- **AND** the system updates fields simultaneously: NOMINAL.VALUE = 0, VAL.EVAL.INT = 0, EXPIRY.DATE = TODAY\n`);
-      
-      sections.push(`#### AC-2: Liquidate guarantees attached to closed AA/MM deposits`);
-      sections.push(`- **GIVEN** a guarantee has COLLATERAL.CODE = 100`);
-      sections.push(`- **AND** it is linked to an AA or MM deposit where STATUS = LIQ`);
-      sections.push(`- **WHEN** the batch routine executes during COB (or is manually triggered intra-day)`);
-      sections.push(`- **THEN** it bypasses any active LD/PD checks and forces liquidation`);
-      sections.push(`- **AND** the system updates fields simultaneously: NOMINAL.VALUE = 0, VAL.EVAL.INT = 0, EXPIRY.DATE = TODAY\n`);
-
-      sections.push(`#### AC-3: Reject locked or active deposit records (Negative Flow)`);
-      sections.push(`- **GIVEN** a guarantee is linked to an active AA deposit`);
-      sections.push(`- **WHEN** the batch routine executes during COB (or is manually triggered intra-day)`);
-      sections.push(`- **THEN** the system bypasses the record and applies no field changes\n`);
+      sections.push(`- **AND** the system updates fields: ${parsed.updates.join(', ')}\n`);
+    } else if (parsed.routineType === 'SYNCHRONIZATION') {
+      sections.push(`#### AC-1: Dynamic Synchronization Execution`);
+      sections.push(`- **GIVEN** ${parsed.conditions[0]}`);
+      sections.push(`- **WHEN** the ${mainRoutine} executes during COB (or is manually triggered intra-day)`);
+      sections.push(`- **THEN** the record synchronizes with the active deposit`);
+      sections.push(`- **AND** the system updates fields: ${parsed.updates.join(', ')}\n`);
     } else {
-      // Generic fallback for non-guarantee processes
       sections.push(`#### AC-1: Core execution and field updates`);
-      sections.push(`- **GIVEN** the preconditions outlined in the user story are met`);
-      sections.push(`- **WHEN** the routine executes`);
-      sections.push(`- **THEN** the expected outcome is applied correctly\n`);
+      sections.push(`- **GIVEN** ${parsed.conditions[0]}`);
+      sections.push(`- **WHEN** the ${mainRoutine} executes`);
+      sections.push(`- **THEN** fields are updated: ${parsed.updates.join(', ')}\n`);
     }
 
-    // --- Enterprise Test Coverage Matrix ---
+    sections.push(`#### AC-2: Reject locked or active bypass records (Negative Flow)`);
+    sections.push(`- **GIVEN** the record explicitly fails the criteria or is manually locked`);
+    sections.push(`- **WHEN** the ${mainRoutine} executes`);
+    sections.push(`- **THEN** the system bypasses the record and applies no field changes\n`);
+
     sections.push(`## Enterprise Test Coverage Matrix (12-Execution Standard)`);
     sections.push(`*Includes Segment Multipliers and Cross-Module Exceptions*\n`);
     sections.push(`| ID | Segment | Scenario Type | Condition | Expected Result |`);
@@ -151,53 +142,39 @@ window.PromptEngine = (function() {
     const rows = [];
     let idCounter = 1;
 
-    // Helper to add permutations
-    function addScenario(type, condition, result, isSegmented = true) {
-      if (isSegmented) {
-        T24_SEGMENTS.forEach(segment => {
-          rows.push({
-            id: `TC-${String(idCounter++).padStart(3, '0')}`,
-            segment: segment,
-            type: type,
-            condition: condition,
-            result: result
-          });
-        });
-      } else {
+    function addScenario(type, condition, result) {
+      T24_SEGMENTS.forEach(segment => {
         rows.push({
           id: `TC-${String(idCounter++).padStart(3, '0')}`,
-          segment: 'ALL',
+          segment: segment,
           type: type,
           condition: condition,
           result: result
         });
-      }
+      });
     }
 
-    if (parsed.isGuaranteeProcess) {
-      // 1. Orphaned records (Happy Path) -> 3 tests (PF, PJ, PRE)
-      addScenario('Happy Path', 'Orphaned guarantee (No active LD/PD attached), VAL.EVAL.INT > 0', 'Fields zeroed: NOMINAL.VALUE=0, VAL.EVAL.INT=0, EXPIRY.DATE=TODAY and verify systemic audit log update');
-      
-      // 2. Liquidated MM/AA deposits (Happy Path) -> 3 tests
-      addScenario('Happy Path', 'COLLATERAL.CODE=100, attached AA/MM deposit is STATUS=LIQ (even if LD active)', 'Fields zeroed: NOMINAL.VALUE=0, VAL.EVAL.INT=0, EXPIRY.DATE=TODAY and verify systemic audit log update');
-      
-      // 3. Active AA bypass (Negative) -> 3 tests
-      addScenario('Negative', 'Attached AA deposit is ACTIVE', 'Record bypassed, no fields updated');
-      
-      // 4. Locked record exceptions (Edge Case) -> 3 tests
-      addScenario('Edge Case', 'Record locked by another user/process during COB execution', 'Routine logs exception, skips record without crashing batch');
-    } else {
-      // Generic
-      addScenario('Happy Path', 'Standard qualifying criteria met', 'Fields updated successfully');
-      addScenario('Negative', 'Qualifying criteria explicitly NOT met', 'Record bypassed');
-      addScenario('Edge Case', 'Required data fields are null', 'Exception logged, batch continues');
-    }
+    const dynCondition = parsed.conditions[0];
+    const dynResult = `Fields updated: ${parsed.updates.join(', ')} and verify systemic audit log update`;
+
+    // 1. Primary Happy Path -> 3 tests (PF, PJ, PRE)
+    addScenario('Happy Path', dynCondition, dynResult);
+    
+    // 2. Secondary Happy Path (Alternative condition) -> 3 tests
+    const altCondition = parsed.conditions.length > 1 ? parsed.conditions[1] : `${dynCondition} (Alternative Trigger)`;
+    addScenario('Happy Path', altCondition, dynResult);
+    
+    // 3. Negative Flow -> 3 tests
+    addScenario('Negative', 'Condition explicitly NOT met (e.g., active deposit bypass)', 'Record bypassed, no fields updated');
+    
+    // 4. Locked record exceptions (Edge Case) -> 3 tests
+    addScenario('Edge Case', 'Record locked by another user/process during COB execution', 'Routine logs exception, skips record without crashing batch');
 
     return rows;
   }
 
   // ============================================================================
-  // SECTION 3: UIPATH BDD GHERKIN GENERATOR
+  // SECTION 3: INSTRUCTIONAL PROMPT GENERATOR
   // ============================================================================
 
   function generateUiPathBDD(acText) {
@@ -206,13 +183,14 @@ window.PromptEngine = (function() {
     const matrixRows = extractMatrix(acText);
     const numCases = matrixRows.length;
     
-    // Extract title/ID
     const titleMatch = acText.match(/##\s*Acceptance Criteria\s*[—\-]\s*([A-Z]+-\d+)\s*\n\*\*(.+?)\*\*/);
     const id = titleMatch ? titleMatch[1] : 'US-XXXX';
     const title = titleMatch ? titleMatch[2] : 'Feature Under Test';
     const fullStoryTitle = `${id} - ${title}`;
     
-    const isGuarantee = acText.includes('LBK.SOLDARE.GARANTII');
+    const isLiquidation = acText.includes('Dynamic Liquidation');
+    const isSync = acText.includes('Dynamic Synchronization');
+    const detectedRoutine = isLiquidation ? 'Liquidation' : isSync ? 'Synchronization' : 'Batch Update';
 
     const sections = [];
     sections.push(`# **Role:**`);
@@ -222,17 +200,10 @@ window.PromptEngine = (function() {
     sections.push(`Generate EXACTLY ${numCases} explicitly defined MANUAL test cases in English for UiPath Test Manager based on the user story: "${fullStoryTitle}".\n`);
     
     sections.push(`# **Context:**`);
-    if (isGuarantee) {
-      sections.push(`The system relies on an automated batch service (\`LBK.SOLDARE.GARANTII\`) to clean up orphaned guarantees. When a collateral deposit is manually liquidated, the attached guarantee is left behind. This service runs during COB (Close of Business) to detect these orphaned guarantees and systemicly close them.`);
-      sections.push(`* **Trigger:** The service runs when no active LD/PD records are attached, or when the attached AA/MM deposit STATUS = LIQ.`);
-      sections.push(`* **Action:** The system automatically zeros out the balances (\`NOMINAL.VALUE = 0\`, \`VAL.EVAL.INT = 0\`) and sets \`EXPIRY.DATE = TODAY\`.`);
-      sections.push(`* **Negative/Exceptions:** It must bypass active deposits and safely skip records that are locked by a user.`);
-      sections.push(`* **Segments:** Testing must be explicitly duplicated across three customer segments: PF (Retail), PJ (Corporate), and PRE (Professional).\n`);
-    } else {
-      sections.push(`This user story defines a core T24 banking process or batch routine update.`);
-      sections.push(`* **Execution:** The process validates specific preconditions and qualifying criteria before applying field updates.`);
-      sections.push(`* **Resilience:** The process must handle edge cases like null fields or concurrent record locks gracefully.\n`);
-    }
+    sections.push(`This user story defines a core T24 banking ${detectedRoutine} process.`);
+    sections.push(`* **Execution:** The routine evaluates dynamic preconditions and applies exact field updates across specific segments.`);
+    sections.push(`* **Segments:** Testing must be explicitly duplicated across three customer segments: PF (Retail), PJ (Corporate), and PRE (Professional).`);
+    sections.push(`* **Resilience:** It must handle negative flows (bypass criteria) and edge cases (concurrent record locks) gracefully.\n`);
 
     sections.push(`# **Instructions:**\n`);
     sections.push(`## **Instruction 1: Test Case Generation Rules**`);
@@ -243,26 +214,23 @@ window.PromptEngine = (function() {
     sections.push(`* Format all titles strictly as: ${id} - [Scenario Type] - [Segment] - [Description]\n`);
 
     sections.push(`## **Instruction 2: Required Step-by-Step Flow Adaptation**`);
-    if (isGuarantee) {
-      sections.push(`Adapt the step-by-step flow based on the scenario expected result:`);
-      sections.push(`* **For Happy Path (Orphan Closure):** Set up an orphaned guarantee (liquidated deposit) for the specific segment -> Trigger/Wait for \`LBK.SOLDARE.GARANTII\` service -> Open the COLLATERAL record -> Assert NOMINAL.VALUE=0, VAL.EVAL.INT=0, EXPIRY.DATE=TODAY -> Verify the systemic audit log.`);
-      sections.push(`* **For Negative Flow (Active Bypass):** Set up a guarantee with an ACTIVE deposit for the specific segment -> Trigger/Wait for service -> Open COLLATERAL record -> Assert record was completely bypassed (no fields updated).`);
-      sections.push(`* **For Edge Case (Record Locked):** Set up an orphaned guarantee -> Open the record in 'Input' mode to lock it -> Trigger/Wait for service -> Assert the routine safely skipped the record and logged an exception without crashing.\n`);
+    sections.push(`Adapt the step-by-step flow based on the scenario expected result:`);
+    if (isLiquidation) {
+      sections.push(`* **For Happy Path (Closure):** Set up the exact conditions for liquidation -> Trigger the execution -> Assert the fields are correctly zeroed/updated -> Verify systemic audit log.`);
+    } else if (isSync) {
+      sections.push(`* **For Happy Path (Synchronization):** Set up the exact conditions for the update -> Trigger the execution -> Assert the synced fields are updated correctly -> Verify systemic audit log.`);
     } else {
-      sections.push(`Adapt the step-by-step flow based on the scenario expected result:`);
-      sections.push(`* **For Happy Path:** Set up the required precondition data in T24 -> Trigger the execution -> Assert the expected field updates have been applied -> Verify systemic audit log.`);
-      sections.push(`* **For Negative Flow:** Set up data that explicitly violates the criteria -> Trigger execution -> Assert the record was bypassed.`);
-      sections.push(`* **For Edge Case:** Set up the edge case condition (e.g. locked record or null fields) -> Trigger execution -> Assert the system handles it gracefully without crashing the batch.\n`);
+      sections.push(`* **For Happy Path:** Set up the required precondition data -> Trigger the execution -> Assert the expected field updates are applied -> Verify systemic audit log.`);
     }
+    sections.push(`* **For Negative Flow:** Set up data that explicitly violates the criteria -> Trigger execution -> Assert the record was bypassed and no fields updated.`);
+    sections.push(`* **For Edge Case:** Set up the edge case condition (locked record) -> Trigger execution -> Assert the system handles it gracefully without crashing the batch.\n`);
 
     sections.push(`## **Instruction 3: Exact Scope Boundaries (Generate exactly ${numCases} distinct scenarios)**`);
     if (matrixRows.length > 0) {
       matrixRows.forEach((row, i) => {
         const shortType = row.type.includes('Happy') ? 'Happy Path' : row.type.includes('Negative') ? 'Negative' : 'Edge Case';
         const shortSeg = row.segment.split(' ')[0];
-        let desc = '';
-        if (row.condition.includes('STATUS=LIQ')) desc = ` (STATUS=LIQ)`;
-        sections.push(`* **Scenario ${i+1}: ${shortType} ${shortSeg}${desc}** -> Segment: ${row.segment} | Condition: ${row.condition.substring(0, 60)}... | Expected Result: ${row.result}`);
+        sections.push(`* **Scenario ${i+1}: ${shortType} ${shortSeg}** -> Segment: ${row.segment} | Condition: ${row.condition.substring(0, 75)}... | Expected Result: ${row.result}`);
       });
     }
 
