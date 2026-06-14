@@ -31,6 +31,57 @@ class OracleRagDB {
                     }
                 }
 
+                const response2 = await fetch('../knowledge_base/t24_sensitive_logic.md');
+                if (response2.ok) {
+                    const text2 = await response2.text();
+                    const sections2 = text2.split('\n## ');
+                    for (let i = 1; i < sections2.length; i++) {
+                        const lines = sections2[i].split('\n');
+                        const title = lines[0].trim();
+                        const content = lines.slice(1).join('\n').trim();
+                        const chunks = content.split(/\n\s*\n/);
+                        for (let chunk of chunks) {
+                            if (chunk.trim().length > 15) {
+                                await insert(this.oramaDb, { title: title, content: chunk.trim() });
+                            }
+                        }
+                    }
+                }
+
+                const response3 = await fetch('../knowledge_base/t24_architecture.md');
+                if (response3.ok) {
+                    const text3 = await response3.text();
+                    const sections3 = text3.split('\n## ');
+                    for (let i = 1; i < sections3.length; i++) {
+                        const lines = sections3[i].split('\n');
+                        const title = lines[0].trim();
+                        const content = lines.slice(1).join('\n').trim();
+                        const chunks = content.split(/\n\s*\n/);
+                        for (let chunk of chunks) {
+                            if (chunk.trim().length > 15) {
+                                await insert(this.oramaDb, { title: title, content: chunk.trim() });
+                            }
+                        }
+                    }
+                }
+
+                const response4 = await fetch('../knowledge_base/t24_transcripts.md');
+                if (response4.ok) {
+                    const text4 = await response4.text();
+                    const sections4 = text4.split('\n## ');
+                    for (let i = 1; i < sections4.length; i++) {
+                        const lines = sections4[i].split('\n');
+                        const title = lines[0].trim();
+                        const content = lines.slice(1).join('\n').trim();
+                        const paragraphs = content.split(/\n\s*\n/);
+                        for (let chunk of paragraphs) {
+                            if (chunk.trim().length > 30) {
+                                await insert(this.oramaDb, { title: title, content: chunk.trim() });
+                            }
+                        }
+                    }
+                }
+
                 // Fetch MULTI-MODAL VIDEO NOTES for Local RAG
                 const response5 = await fetch('../playlist.json');
                 if (response5.ok) {
