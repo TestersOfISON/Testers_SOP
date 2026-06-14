@@ -258,4 +258,30 @@ Output strictly a JSON object with a single key 'rules' containing the validated
             self.postMessage({ status: 'error', message: error.message });
         }
     }
+
+    // Direct Hybrid RAG Search for Ghidul Oracle
+    if (data.type === 'rag_search') {
+        try {
+            const db = await WebLLMSingleton.getOrama();
+            const searchResult = await search(db, {
+                term: data.prompt,
+                properties: ['content', 'title'],
+                limit: 5 // Return top 5 semantic matches
+            });
+            
+            let ragContext = "";
+            if (searchResult.hits.length > 0) {
+                ragContext = searchResult.hits.map(hit => `[Source: ${hit.document.title}]\n${hit.document.content}`).join('\n\n');
+            }
+
+            self.postMessage({
+                status: 'rag_complete',
+                queryId: data.queryId,
+                output: ragContext
+            });
+        } catch (error) {
+            console.error("RAG Search Error:", error);
+            self.postMessage({ status: 'rag_error', queryId: data.queryId, message: error.message });
+        }
+    }
 });

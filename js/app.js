@@ -1828,34 +1828,59 @@ window.toggleAIChat = function() {
   }
 };
 
-window.oracleKnowledgeBaseText = "";
+window.oracleModeActive = false;
+window.ragWorker = new Worker('js/local_ai_worker.js', { type: 'module' });
+window.ragResolvers = {};
+window.ragWorker.onmessage = function(e) {
+    if (e.data.status === 'rag_complete' || e.data.status === 'rag_error') {
+        if (window.ragResolvers[e.data.queryId]) {
+            window.ragResolvers[e.data.queryId](e.data.output || "");
+            delete window.ragResolvers[e.data.queryId];
+        }
+    } else if (e.data.status === 'ready') {
+        const statusBar = document.getElementById('oracle-status-bar');
+        if (statusBar && window.oracleModeActive) {
+            statusBar.innerText = '✅ Local T24 Hybrid RAG DB Online!';
+        }
+    }
+};
+
+function performRagSearch(query) {
+    return new Promise((resolve) => {
+        const qid = Date.now().toString() + Math.random().toString();
+        window.ragResolvers[qid] = resolve;
+        window.ragWorker.postMessage({ type: 'rag_search', prompt: query, queryId: qid });
+        
+        // Timeout just in case
+        setTimeout(() => {
+            if (window.ragResolvers[qid]) {
+                window.ragResolvers[qid]("");
+                delete window.ragResolvers[qid];
+            }
+        }, 15000);
+    });
+}
 
 window.toggleOracleMode = async function(checkbox) {
   const statusBar = document.getElementById('oracle-status-bar');
   if (checkbox.checked) {
+    window.oracleModeActive = true;
     statusBar.style.display = 'block';
-    statusBar.innerText = 'Loading Oracle knowledge base...';
+    statusBar.innerText = 'Loading Oracle Vector Database (WebLLM/Orama)...';
     try {
-      // In production, you might have multiple files to fetch or a single compiled JSON
-      const res = await fetch('knowledge_base/t24_mapping.md');
-      if (res.ok) {
-        window.oracleKnowledgeBaseText = await res.text();
-        statusBar.innerText = '✅ T24 Oracle Knowledge Base loaded (' + window.oracleKnowledgeBaseText.length + ' chars)';
+        window.ragWorker.postMessage({ type: 'load' });
+        // The worker will reply with 'ready' when done
         
         if (document.querySelectorAll('.ai-message').length <= 1) {
-            appendAIMessage("🔮 **T24 Migration Oracle Online.** I have ingested the proprietary mapping documentation. Ask me any complex migration questions!");
+            appendAIMessage("🔮 **T24 Hybrid RAG Oracle Online.** I have connected to the multi-modal video DB. Ask me any complex architectural questions!");
         }
-      } else {
-        statusBar.innerText = '❌ Failed to load knowledge base (HTTP ' + res.status + ')';
-        checkbox.checked = false;
-      }
     } catch (e) {
-      statusBar.innerText = '❌ Error loading knowledge base: ' + e.message;
+      statusBar.innerText = '❌ Error loading Hybrid RAG DB: ' + e.message;
       checkbox.checked = false;
     }
   } else {
+    window.oracleModeActive = false;
     statusBar.style.display = 'none';
-    window.oracleKnowledgeBaseText = "";
     appendAIMessage("Oracle Mode disabled. Returning to standard Ghidul SOP guidance.");
   }
 };
@@ -1974,8 +1999,9 @@ async function callAIAssistant(userMessage, apiKey, modelName) {
   // Build Context from current module
   let contextStr = "You are Ghidul, an AI Co-Pilot for Libra Bank QA testers. Be concise, helpful, and direct.\n";
   
-  if (window.oracleKnowledgeBaseText) {
-      contextStr = `You are the T24 Migration Oracle. Answer strictly using the following proprietary documentation. If the answer is not in the documentation, say 'I cannot find this in the Oracle Knowledge Base.' \n\n <KNOWLEDGE_BASE>\n${window.oracleKnowledgeBaseText}\n</KNOWLEDGE_BASE>\n\n`;
+  if (window.oracleModeActive) {
+      const ragContext = await performRagSearch(userMessage);
+      contextStr = `You are the T24 Migration Oracle. Answer strictly using the following proprietary documentation retrieved via Semantic Vector DB. If the answer is not in the documentation, say 'I cannot find this in the Oracle Knowledge Base.' \n\n <KNOWLEDGE_BASE>\n${ragContext}\n</KNOWLEDGE_BASE>\n\n`;
   }
   if (currentModuleId && qaModules[currentModuleId]) {
     const mod = qaModules[currentModuleId];
