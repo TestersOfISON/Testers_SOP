@@ -1829,7 +1829,7 @@ window.toggleAIChat = function() {
 };
 
 window.oracleModeActive = false;
-window.ragWorker = new Worker('js/local_ai_worker.js', { type: 'module' });
+window.ragWorker = new Worker('js/oracle_rag_worker.js', { type: 'module' });
 window.ragResolvers = {};
 window.ragWorker.onmessage = function(e) {
     if (e.data.status === 'rag_complete' || e.data.status === 'rag_error') {
@@ -1842,6 +1842,18 @@ window.ragWorker.onmessage = function(e) {
         if (statusBar && window.oracleModeActive) {
             statusBar.innerText = '✅ Local T24 Hybrid RAG DB Online!';
         }
+    } else if (e.data.status === 'error') {
+        const statusBar = document.getElementById('oracle-status-bar');
+        if (statusBar && window.oracleModeActive) {
+            statusBar.innerText = '❌ Error loading Hybrid RAG DB: ' + e.data.message;
+        }
+    }
+};
+window.ragWorker.onerror = function(e) {
+    console.error("Worker Error:", e.message, e.filename, e.lineno);
+    const statusBar = document.getElementById('oracle-status-bar');
+    if (statusBar && window.oracleModeActive) {
+        statusBar.innerText = '❌ Fatal Worker Error: ' + (e.message || "Unknown error");
     }
 };
 
