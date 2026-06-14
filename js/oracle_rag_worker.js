@@ -82,6 +82,24 @@ class OracleRagDB {
                     }
                 }
 
+                // Fetch Mathisi Documentation for Local RAG
+                const responseMathisi = await fetch('../knowledge_base/t24_mathisi_docs.md');
+                if (responseMathisi.ok) {
+                    const textMathisi = await responseMathisi.text();
+                    const sectionsMathisi = textMathisi.split('\n## ');
+                    for (let i = 1; i < sectionsMathisi.length; i++) {
+                        const lines = sectionsMathisi[i].split('\n');
+                        const title = lines[0].trim();
+                        const content = lines.slice(1).join('\n').trim();
+                        const chunks = content.split(/\n\s*\n/);
+                        for (let chunk of chunks) {
+                            if (chunk.trim().length > 15) {
+                                await insert(this.oramaDb, { title: title, content: chunk.trim() });
+                            }
+                        }
+                    }
+                }
+
                 // Fetch MULTI-MODAL VIDEO NOTES for Local RAG
                 const response5 = await fetch('../playlist.json');
                 if (response5.ok) {

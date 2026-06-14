@@ -1,59 +1,71 @@
-# Temenos T24 AA (Arrangement Architecture) Module
+# Temenos T24 AA Module - Arrangement Architecture
 
-This video provides an introduction to the Temenos T24 Arrangement Architecture (AA) module, focusing on its fundamentals, the product lifecycle, and how to create or amend products using the AA Product Builder.
+## Objectives
+1. Fundamentals of T24 Arrangement Architecture
+2. Product life-cycle in AA
+3. Create new Products or amend existing ones using AA Product Builder
 
-## 1. Fundamentals of T24 Arrangement Architecture
+## Core Architecture and Application Structure
+The AA (Arrangement Architecture) module in Temenos T24 uses a multi-layered, component-based structure to build and manage financial products.
 
-The AA module is built upon several hierarchical components.
+### 1. Product Lines and Property Classes (Top Level)
+* **Product Lines** (`AA.PRODUCT.LINE`) and **Property Classes** (`AA.PROPERTY.CLASS`) are the fundamental building blocks of the architecture.
+* Defined and maintained exclusively by Temenos. Financial institutions cannot create new ones or modify their structure (only the descriptions can be amended).
+* **Product Line:** Represents a high-level category of products (e.g., Accounts, Deposits, Lending). A product line is composed of different property classes.
+* **Property Class:** A reusable component that contains `ATTRIBUTES` and `ACTIONS`. A property class can be used across multiple product lines (e.g., the `ACCOUNT` or `INTEREST` property classes are used in both Accounts and Deposits product lines).
 
-### Product Lines and Property Classes
-*   **Product Lines (`AA.PRODUCT.LINE`)** and **Property Classes (`AA.PROPERTY.CLASS`)** are the fundamental building blocks of the AA module.
-*   These are strictly defined and maintained by **Temenos**. Financial institutions cannot modify them, except for the description.
-*   A **Product Line** (e.g., Accounts, Deposits, Lending) is constructed by assembling different **Property Classes**.
-*   A **Property Class** (e.g., Account, Interest, Charge, Customer) acts as a reusable high-level component that contains specific **Attributes** and **Actions**. The same Property Class can be used across multiple Product Lines.
+### 2. Product Groups and Properties (Middle Level)
+* **Product Groups** (`AA.PRODUCT.GROUP`): These are subsets of Product Lines. They group different products with similar properties. Example: Under the "Accounts" product line, there might be product groups for "Current Accounts" and "Savings Accounts". Banks do not sell product groups.
+* **Properties** (`AA.PROPERTY`): These are named types of Property Classes.
+* Created and modified by the bank (financial institution).
+* A Product Group has a number of properties associated with it. When creating a product group, mandatory property classes defined in the product line *must* be included. Optional property classes can be added as needed.
 
-### Product Groups and Properties
-*   **Product Groups (`AA.PRODUCT.GROUP`)** are subsets of Product Lines. They are used to group similar products together.
-*   **Properties (`AA.PROPERTY`)** are named instances or types of Property Classes.
-*   Unlike Product Lines and Property Classes, Product Groups and Properties **can be created and modified by the bank**.
-*   Banks create Product Groups from the Temenos-defined Product Lines. A Product Group will have a number of properties associated with it.
-*   Banks do not sell Product Groups directly to customers; they use them to organize products.
+### 3. Products and Product Conditions (Bottom Level)
+* **Product**: The lowest level of the hierarchy and what is actually sold to the customer.
+* **Product Conditions**: Define the default values and business rules for the arrangement (e.g., default interest rate, maintenance fees, age restrictions).
+* Conditions also specify what is negotiable (and the permitted negotiation range/restrictions) and what is non-negotiable.
+* Each Property within a Product must have a corresponding Product Condition.
 
-### Products and Product Conditions
-*   **Products** represent the lowest level of the product hierarchy and are the actual items sold to customers.
-*   A Product belongs to a Product Group and inherits its properties.
-*   At this level, the bank creates **Product Conditions**. These conditions define the default values for each property associated with the product.
-*   Product Conditions also specify if a property is **negotiable** and set the associated **restrictions** (e.g., minimum and maximum limits for an interest rate). If a condition is marked as non-negotiable, it cannot be changed when creating an arrangement for a customer.
-*   Every property within a product must have a corresponding Product Condition.
+### 4. Arrangements and Arrangement Conditions
+* An **Arrangement** is the actual contractual agreement created between the financial institution and the client when a product is sold (e.g., a specific customer's Current Account).
+* It inherits the conditions from the Product but can have specific negotiated values applied (if allowed by the Product Conditions).
 
-### Arrangements and Arrangement Conditions
-*   An **Arrangement** is the actual contract or agreement created in the system between the financial institution and a specific client for a particular product (e.g., opening a specific Current Account for John Doe).
-*   It incorporates all the negotiated **Arrangement Conditions** based on the rules defined in the Product Conditions.
+### 5. Activity Classes
+* **Activity Class** relates to the Property class (`@ID: PRODUCT.LINE-PROCESS-PROPERTY.CLASS`). Example: `LENDING-APPLY.RATE-INTEREST`, `LENDING-CAPITALISE-INTEREST`.
+* It defines the system behavior when a certain activity is run (e.g., how interest is capitalized for a lending product vs. a deposit product).
 
-### Activity Classes
-*   Activity classes define the system behavior when a specific activity is triggered or run on an arrangement.
-*   The ID structure for an activity class is typically: `PRODUCT.LINE-PROCESS-PROPERTY.CLASS`.
-*   Examples: `LENDING-APPLY.RATE-INTEREST`, `LENDING-CAPITALISE-INTEREST`.
+## Product Life-Cycle
+Products in AA go through a strict three-stage life-cycle:
+1. **Design**: Defining all properties and product conditions (default values, restrictions).
+2. **Proof**: Validating the design to ensure all conditions are correct and no errors exist.
+3. **Publish**: Pushing the product to the Product Catalog, making it available for users to sell to customers.
+*Modifying an existing product requires it to go back through the Design -> Proof -> Publish cycle. Product conditions can also have different tracking states (e.g., Tracking vs. Non-Tracking) which dictate whether changes affect existing arrangements or only new ones.*
 
-## 2. Product Life-Cycle in AA
+## Application Navigation and Enquiries
+The video demonstrates navigating the T24 Browser Interface to manage AA products.
+* **Navigation Path:** `Admin Menu` -> `Product Builder` -> `Products`.
+* **T24 Product Browser:** This interface provides columns for `Product Lines`, `Product Groups`, and `Products`. 
+    * Users can drill down from a Product Line to see associated Product Groups and Property Classes.
+    * Users can drill down from a Product Group to see child Products.
+* **Product Catalog:** Once published, products appear in the Product Catalog where users can simulate or create new arrangements.
+    * **Navigation Path:** `User Menu` -> `Product Catalog`.
+* **Commands/Enquiries:**
+    * `AA.PRODUCT.DESIGN,CHARGE`: Used to view/design charge property conditions.
+    * `AA.PRODUCT.DESIGN,FACILITY`: Used to view/design facility property conditions.
 
-Every product in the AA module goes through a three-stage lifecycle:
+## Product Creation Workflow (Demonstration)
+1. **Create Product Group:** Groups are often created by duplicating standard Temenos groups (e.g., copying standard Current Accounts). Mandatory property classes (e.g., `ACCOUNTING`) cannot be removed.
+2. **Create Parent Product:** Set up a top-level product to define shared conditions (e.g., `MTD.CURRENT.PAR.STD`). This product is marked as "Inheritance Only" so it cannot be sold directly.
+3. **Create Child Product:** Create a product (e.g., `MTD.CURRENT.NORMAL`) that extends the parent product. It inherits all properties and conditions but allows specific overrides (e.g., setting an Account Maintenance Fee of $3.00, or limiting Currency to USD/EUR/GBP).
+4. **Proof & Publish:** The new product is proofed for errors. Once successfully proofed, it is published to make it available in the Product Catalog.
 
-1.  **Design:** This is where the product is created. All the properties and product conditions (default values, negotiability, restrictions) are defined.
-2.  **Proof:** This stage validates the design. The system checks if all defined conditions and rules are correct and consistent. No errors must be present to proceed.
-3.  **Publish:** Once successfully proofed, the product is published to the Product Catalog, making it available to be sold to customers.
-
-If an existing product is modified (e.g., changing the default interest rate), it re-enters the **Design** stage, must be **Proofed** again, and then re-**Published**.
-
-## 3. Practical Session: Using AA Product Builder
-
-The video demonstrates how to use the T24 Product Builder (found under the Admin Menu) to manage these components.
-
-*   **Viewing Components:** You can drill down from Product Lines to see the mandatory and optional Property Classes assigned to them.
-*   **Mandatory Property Classes:** When creating a Product Group or Product, any Property Class marked as "Mandatory" at the Product Line level (e.g., the 'Accounting' class for the 'Accounts' product line) *must* be included. It cannot be removed.
-*   **Creating a New Product Group:** The demonstration shows creating a new Product Group by copying an existing one (e.g., "MTD Current Accounts") and modifying its properties.
-*   **Creating a New Product:** A new product (e.g., "MTD Current Account Normal") is created under a Product Group.
-    *   **Inheritance:** The new product can be set to inherit properties from a parent product (e.g., a "Standard" current account definition). This avoids redefining all conditions.
-    *   **Overriding Conditions:** Specific conditions can be overridden. For example, setting an `ELIGIBILITY` condition (Customer Age > 18) and a specific `CHARGE` (Management Fee of $3).
-    *   **Tracking:** Conditions can be set to "Tracking" (changes to the product definition affect existing arrangements) or "Non-Tracking".
-*   **Proofing and Publishing:** The video shows the process of taking the newly created product through the "Proof" stage and finally "Publishing" it to make it visible in the Product Catalog. It highlights that a child product cannot be proofed if its parent product has not been proofed/published yet.
+## Future Topics Highlighted
+* T24 Core Banking System Navigation (classic vs. browser interface)
+* High-level introduction to T24 modules:
+    * Open Financial Services (OFS)
+    * Customer (CU)
+    * Funds Transfer (FT)
+    * Loans and Deposits (LD)
+    * Arrangement Architecture (AA)
+* T24 Administration
+* Integration with Python, Java, JavaScript (Socket Programming, CALLJ, consuming APIs)
