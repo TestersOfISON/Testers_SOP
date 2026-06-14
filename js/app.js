@@ -1868,7 +1868,7 @@ window.toggleOracleMode = async function(checkbox) {
     statusBar.style.display = 'block';
     statusBar.innerText = 'Loading Oracle Vector Database (WebLLM/Orama)...';
     try {
-        window.ragWorker.postMessage({ type: 'load' });
+        window.ragWorker.postMessage({ type: 'load_rag_only' });
         // The worker will reply with 'ready' when done
         
         if (document.querySelectorAll('.ai-message').length <= 1) {

@@ -167,6 +167,16 @@ self.addEventListener('message', async (event) => {
         }
     }
 
+    if (data.type === 'load_rag_only') {
+        try {
+            await WebLLMSingleton.getOrama();
+            self.postMessage({ status: 'ready' });
+        } catch (error) {
+            console.error(error);
+            self.postMessage({ status: 'error', message: error.message });
+        }
+    }
+
     // JSON Extraction Request (Multi-Agent Pipeline)
     if (data.type === 'extract_rules') {
         try {
