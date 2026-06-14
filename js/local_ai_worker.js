@@ -83,8 +83,27 @@ class WebLLMSingleton {
                     }
                 }
 
-            } catch (e) {
-                console.warn("Could not load T24 mappings for RAG", e);
+                // Fetch FULL TRANSCRIPTS context for Local RAG
+                const response4 = await fetch('../knowledge_base/t24_transcripts.md');
+                if (response4.ok) {
+                    const text4 = await response4.text();
+                    const sections4 = text4.split('\n## ');
+                    for (let i = 1; i < sections4.length; i++) {
+                        const lines = sections4[i].split('\n');
+                        const title = lines[0].trim();
+                        const content = lines.slice(1).join('\n').trim();
+                        // Sub-chunk the transcripts into smaller 300-word blocks for better semantic search
+                        const paragraphs = content.split(/\n\s*\n/);
+                        for (let chunk of paragraphs) {
+                            if (chunk.trim().length > 30) {
+                                await insert(this.oramaDb, { title: title, content: chunk.trim() });
+                            }
+                        }
+                    }
+                }
+
+            } catch (error) {
+                console.warn("Could not load T24 mappings for RAG", error);
             }
         }
         return this.oramaDb;
