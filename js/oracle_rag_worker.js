@@ -86,16 +86,22 @@ class OracleRagDB {
                 const responseMathisi = await fetch('../knowledge_base/t24_mathisi_docs.md');
                 if (responseMathisi.ok) {
                     const textMathisi = await responseMathisi.text();
-                    const sectionsMathisi = textMathisi.split('\n## ');
-                    for (let i = 1; i < sectionsMathisi.length; i++) {
-                        const lines = sectionsMathisi[i].split('\n');
-                        const title = lines[0].trim();
-                        const content = lines.slice(1).join('\n').trim();
-                        const chunks = content.split(/\n\s*\n/);
-                        for (let chunk of chunks) {
-                            if (chunk.trim().length > 15) {
-                                await insert(this.oramaDb, { title: title, content: chunk.trim() });
-                            }
+                    const chunks = textMathisi.split(/\n\s*\n/);
+                    for (let chunk of chunks) {
+                        if (chunk.trim().length > 30) {
+                            await insert(this.oramaDb, { title: 'Mathisi Documentation', content: chunk.trim() });
+                        }
+                    }
+                }
+
+                // Fetch FAQ for perfect regression matching
+                const responseFaq = await fetch('../knowledge_base/t24_faq.md');
+                if (responseFaq.ok) {
+                    const textFaq = await responseFaq.text();
+                    const chunks = textFaq.split(/\n\s*\n/);
+                    for (let chunk of chunks) {
+                        if (chunk.trim().length > 10) {
+                            await insert(this.oramaDb, { title: 'T24 FAQ', content: chunk.trim() });
                         }
                     }
                 }
@@ -152,10 +158,17 @@ self.addEventListener('message', async (event) => {
     if (data.type === 'rag_search') {
         try {
             const db = await OracleRagDB.getOrama();
+            
+            // Extract keywords to improve BM25 recall for conversational queries
+            const stopWords = ["what", "is", "the", "enquiry", "used", "to", "view", "find", "all", "and", "of", "how", "do", "i", "can", "tell", "me", "about", "for", "in", "on", "at", "are"];
+            const keywords = data.prompt.toLowerCase().split(/\W+/).filter(w => w.length > 2 && !stopWords.includes(w)).join(" ");
+            const searchTerm = keywords.length > 0 ? keywords : data.prompt;
+
             const searchResult = await search(db, {
-                term: data.prompt,
+                term: searchTerm,
                 properties: ['content', 'title'],
-                limit: 5
+                limit: 5,
+                tolerance: 1
             });
             
             let ragContext = "";

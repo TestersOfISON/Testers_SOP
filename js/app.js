@@ -2013,9 +2013,9 @@ async function callAIAssistant(userMessage, apiKey, modelName) {
   
   if (window.oracleModeActive) {
       const ragContext = await performRagSearch(userMessage);
-      contextStr = `You are the T24 Migration Oracle. Answer strictly using the following proprietary documentation retrieved via Semantic Vector DB. If the answer is not in the documentation, say 'I cannot find this in the Oracle Knowledge Base.' \n\n <KNOWLEDGE_BASE>\n${ragContext}\n</KNOWLEDGE_BASE>\n\n`;
+      contextStr = `You are the T24 Migration Oracle. You must answer the user's question using ONLY the information provided in the KNOWLEDGE BASE below. If the answer is not present in the KNOWLEDGE BASE, you must reply with exactly this sentence: 'I cannot find this in the Oracle Knowledge Base.'\n\n=== KNOWLEDGE BASE ===\n${ragContext}\n======================\n`;
   }
-  if (currentModuleId && qaModules[currentModuleId]) {
+  if (!window.oracleModeActive && currentModuleId && qaModules[currentModuleId]) {
     const mod = qaModules[currentModuleId];
     contextStr += `The user is currently viewing the module: "${mod.title}".\n`;
     contextStr += `Guidelines: ${mod.guidelines.replace(/<[^>]+>/g, ' ')}\n`;

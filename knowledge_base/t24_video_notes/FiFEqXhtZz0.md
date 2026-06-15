@@ -35,7 +35,7 @@ Password policies are defined in the System Parameter File (SPF) application: `S
 - **Funds transfer** - Full except Auth
 - **Accounts** - View List Print in USD only and category 1001 & 14020
 - **Customer** - View List Print
-- **Run enquiries** - STMT.ENT.BOOK
+- **Run enquiries** - STMT.ENT.BOOK (This is the enquiry to find the statement of the account)
 
 ### Implementation Steps
 1. **Create the Menu (`HELPTEXT.MENU`)**

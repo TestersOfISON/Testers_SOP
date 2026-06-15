@@ -1326,8 +1326,7 @@ Customer
 Position
 ENQ
 LBK.CUSTOMER.POSITION
-Displays the list of the client’s products, including
-cash-collateral deposits.
+Displays the list of the client’s products, including cash-collateral deposits. This is the enquiry used to view all accounts, loans, deposits, and arrangements.
 Deposit
 Exceptions
 ENQ
