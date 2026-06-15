@@ -1,38 +1,33 @@
-# DevOps Temenos T24 TAFJ - CI/CD Demonstration
+# DevOps in Banking: Temenos T24 TAFJ CI/CD with Jenkins and GitHub
 
-This video demonstrates a fully automated Continuous Integration and Continuous Deployment (CI/CD) pipeline for a Temenos T24 TAFJ environment using Jenkins, GitHub, and email notifications.
+## Overview
+A technical demonstration by Aaron from Mathisi Digital on implementing Continuous Integration and Continuous Deployment (CI/CD) in a Temenos T24 TAFJ environment. The workflow integrates a TAFJ development server, GitHub for version control, and Jenkins for automated pipeline execution.
 
-## Key Components
+## The CI/CD Workflow
+1. **Code Commit**: A developer writes or modifies T24 routines/components using an IDE (like Visual Studio Code) and commits the changes to a Git branch (e.g., `MT220002`).
+2. **GitHub Webhook Trigger**: Pushing the commit to GitHub automatically triggers a webhook to the Jenkins server.
+3. **Jenkins Pipeline Execution**: 
+   - **Init**: Initializes the environment and checks out code from the SCM.
+   - **Build**: Compiles the T24 basic source code and components using the Temenos TAFJ Compiler Runner.
+   - **Test**: Executes automated test programs to ensure logical correctness.
+   - **Deploy**: If successful, packages the code (e.g., into `.jar` files) and deploys it to the target T24 deployment directory using deployment scripts (e.g., Windows batch files).
+4. **Feedback Loop**:
+   - Jenkins sends the build status back to GitHub, marking the commit status checks as successful or failed directly in the GitHub UI.
+   - Automated email notifications containing build logs and status are sent to the developer.
 
-*   **Jenkins:** Used as the automation server to orchestrate the CI/CD pipeline.
-*   **GitHub:** Used for source code management. Commits pushed to GitHub automatically trigger Jenkins builds.
-*   **Visual Studio Code (VS Code):** Used as the Integrated Development Environment (IDE) by the developer to write and modify TAFJ routines and component files.
-*   **Email Notifications:** Configured to notify developers of build successes and failures.
+## Technical Details & Tools
+- **Source Code Management**: Git, GitHub
+- **CI/CD Orchestration**: Jenkins (Declarative Pipeline)
+- **Development Environment**: Visual Studio Code, Windows 10 OS
+- **T24 Specifics**:
+  - **TAFJ Compiler**: Used to compile basic source code into Java class files and package them.
+  - **Routines & Components**: Demonstrated with `MTD.Greeting` routine and `EB.LocalDev.component`.
+  - **Testing**: Using `tRun` to execute test programs from the command line (e.g., `tRun TestProg`).
+  - **Deployment**: Compiled resources like `EB_LocalDev.jar` are copied directly into the TAFJ deployment folder (`C:\Temenos\TAFJ\deploy`).
 
-## Pipeline Workflow Demonstration
-
-1.  **Initial State:** The video shows a Jenkins pipeline (`t24tafj`) with a history of builds, including a recent failed build. The failure is also reflected in the GitHub repository's build status.
-2.  **Developer Workflow:**
-    *   The developer uses VS Code to modify a TAFJ routine (`MTD.Greeting.b`) and a test program (`TestProg.b`).
-    *   The changes are committed and pushed to a GitHub branch (`MT220002`).
-3.  **Automated Build (Failure):**
-    *   The push to GitHub automatically triggers a new Jenkins build.
-    *   The pipeline goes through initialization, build, and test stages.
-    *   The build fails during compilation because of a typo in the component name within the code.
-    *   The developer receives an email notification with a link to the Jenkins console output to investigate the failure.
-4.  **Fixing the Bug:**
-    *   The developer identifies the error (incorrect component name) from the Jenkins logs and fixes it in VS Code.
-    *   The fixed code is committed and pushed to GitHub.
-5.  **Automated Build (Success):**
-    *   Jenkins automatically triggers another build.
-    *   This time, the compilation and deployment stages are successful.
-    *   The developer receives a success email notification containing details of the commit that fixed the bug.
-6.  **Verification:**
-    *   The developer logs into the T24 development server.
-    *   They execute the test program using the command `tRun TestProg` in the command prompt.
-    *   The output `Hello Aaron!` confirms that the changes were successfully compiled and deployed.
-    *   The video also shows the newly deployed JAR file (`EB_LocalDev.jar`) in the TAFJ deployment directory.
-
-## Summary
-
-This demo effectively illustrates how DevOps practices like CI/CD can be implemented in a Temenos T24 TAFJ environment, enabling automated compilation, testing, deployment, and immediate feedback loops for developers, ultimately improving software quality and release speed.
+## Practical Scenario: Fixing a Build Failure
+The video highlights a scenario where a pipeline fails during the build phase due to a typo in a T24 TAFJ component.
+- **Identification**: Jenkins console logs identify a compilation error due to an incorrect symbol/name in `EB.LocalDev.component`. 
+- **Resolution**: The developer fixes the naming error in VS Code, updates the test routine to call `MTD.Greeting` (to output "Hello Aaron!"), commits via the terminal, and pushes the code.
+- **Automated Recovery**: GitHub notifies Jenkins, which triggers a new pipeline run. The console output shows successful compilation of the files, execution of `TestProg` during the test phase, and the packaging and deployment of `EB_LocalDev.jar`. 
+- **Verification**: The developer logs into the Windows Server via Remote Desktop, opens the command prompt, and runs `tRun TestProg` directly, confirming the changes successfully reached the development environment and generate the expected output.

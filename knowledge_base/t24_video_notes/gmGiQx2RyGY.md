@@ -1,40 +1,66 @@
-# T24 Componentisation - Table
+# T24 Componentisation - Table Component
 
-This video explains how to work with tables in T24 programming, contrasting the traditional approach with the newer component-based approach.
+This note covers the transition from traditional T24 programming (using `F.READ` and `$INSERT` files) to modern Component-based programming using T24 Table Components.
 
-## Traditional T24 Programming
-- **Insert Files:** You would typically include an insert file (e.g., `$INSERT I_F.MTD.CHANNEL`) to access the predefined field positions of an application.
-- **Reading Data:** To retrieve data from a table, you needed to declare variables, open the file using `OPF` (Open File), and read the record using `F.READ` with the specific record ID.
-- **Accessing Fields:** Fields were accessed via array-like indexing using field positions (e.g., `record<2>`) or by utilizing the field names defined in the insert file.
+## 1. Traditional T24 Programming (Legacy Approach)
 
-## T24 Componentisation Approach
-With componentisation, the process is streamlined and relies on object-oriented-like concepts, bypassing the need for `$INSERT`, `OPF`, and `F.READ`.
+In the traditional approach, retrieving and manipulating data from an application required knowledge of field positions and involved several low-level calls:
 
-### 1. Defining the Table Component
-- Create a new Table definition within the component project via Design Studio (`New` -> `Table`).
-- Name the table component (e.g., `MtdChannel`).
-- **Visibility/Scope:** By default, the table definition is `private`. If you intend to use the methods and access the table globally across the program, change it to `public`.
-- **Linking to T24 Table:** You link the component to the actual T24 application name using `t24: T24.NAME = "MTD.CHANNEL"`.
-- **Field Mapping:** You map the exact T24 field names to their corresponding positions in the `fields:` block.
-  ```t24
-  public table MtdChannel {
-      t24: T24.NAME = "MTD.CHANNEL"
-      fields {
-          Description = 1
-          Interface = 2
-          Active = 3
-          // ... map other necessary fields or use exact JBC names
-      }
-  }
-  ```
-- **Compilation:** The component must be compiled, which produces a compiled `.component` definition allowing its methods to be accessed.
+1.  **Insert Files**: You had to include an insert file for the specific application to access field positions (e.g., `$INSERT I_F.MTD.CHANNEL`).
+2.  **File Opening**: You had to open the file using `CALL OPF` which requires defining file name and descriptor variables.
+3.  **Reading Records**: You used `CALL F.READ` to retrieve a record by its ID, passing the file descriptor, ID, record variable, and error variable.
+4.  **Field Access**: Data was accessed using dynamic arrays and equated variables, e.g., `record<MtChannel_Description>`.
 
-### 2. Using the Table Component in Programs
-- Import the component namespace using the `$USING` keyword (e.g., `$USING MTD.Training`).
-- Retrieve the record directly using the `.Read()` method on the component table class: 
-  ```t24
-  record = MTD.Training.MtdChannel.Read("KAFKA", error)
-  ```
-- This single method call replaces the traditional `OPF` and `F.READ` routines.
-- **Accessing Data:** Access fields via clean dot notation on the returned record object instead of array indexes. For example: `record.MtdChannel_Description` or `record.MtdChannel_Interface`.
-- This approach makes code significantly more readable, modular, and easier to maintain.
+## 2. Modern T24 Component-based Programming
+
+The component approach eliminates the need for `$INSERT`, `OPF`, and `F.READ` by abstracting them into a `Table` object.
+
+### Creating a Table Component
+
+1.  **Create Table Definition**: In your Design Studio/Eclipse, right-click the component package, select `New > Component > Table`.
+2.  **Naming**: Name the table component identical to the application name (e.g., `MTD.CHANNEL`).
+3.  **Structure**:
+    ```basic
+    public table MTD.CHANNEL {
+        T24: MTD.CHANNEL
+        fields {
+            Description = 1
+            Interface = 2
+            Active = 3
+        }
+    }
+    ```
+4.  **Visibility**: By default, table scope is `private`. If the table needs to be accessed globally across different routines in the component, change the scope to `public`.
+5.  **Linking**: The `T24: MTD.CHANNEL` line links the component table to the actual T24 application.
+6.  **Mapping Fields**: The `fields {}` block maps user-friendly names to their numerical positions in the table. You can also map them explicitly to the JBC equated variable names in parentheses, though this is optional:
+    ```basic
+    Description(MT.CHN.DESCRIPTION) = 1
+    Interface(MT.CHN.INTERFACE) = 2
+    ```
+7.  **Compile**: After defining the table, you must build/compile the component. This automatically generates the necessary wrapper methods (like `Read`, `ReadArchive`, `ReadHistory`, etc.).
+
+### Using the Table Component in Code
+
+Once compiled, you can easily use the component to read records and access fields.
+
+1.  **Import Component**: Use the `$USING` directive to import your component:
+    ```basic
+    $USING MTD.Training
+    ```
+2.  **Read Record**: Call the generated `.Read()` method on the table component. This method acts as a wrapper around `F.READ` and directly returns the record object.
+    ```basic
+    // Syntax: Component.Table.Read(ID, Error)
+    record = MTD.Training.MtdChannel.Read("KAFKA", err)
+    ```
+3.  **Error Handling**: Check if the error variable is populated to handle missing records.
+4.  **Access Data**: Use simple dot notation to access fields by the names defined in your table component.
+    ```basic
+    CRT "Description: " : record.Description
+    CRT "Interface  : " : record.Interface
+    ```
+
+### Advantages
+- Cleaner, more readable code.
+- No need for manual file opens (`OPF`).
+- Object-oriented dot notation for field access instead of dynamic array extraction (`<>`).
+- Abstraction of common data access routines (`Read`, `ReadHistory`, etc.).

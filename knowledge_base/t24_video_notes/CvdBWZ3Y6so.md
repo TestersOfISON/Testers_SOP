@@ -1,23 +1,49 @@
-# Difference between jBC Functions and jBC Statements
+# T24 Programming: jBC Functions vs jBC Statements
 
-**Author**: Erwan (Mathisi Digital)  
-**Video ID**: CvdBWZ3Y6so  
+This note covers the differences between using functions and statements in InfoBasic (jBC), specifically demonstrated through the `CHANGE` command.
 
 ## Overview
-This video explains the difference between using a command as a function versus as a statement in jBC (InfoBasic), using the `CHANGE` operation as an example.
+In jBC, certain operations can be performed using either a function or a statement. The primary difference lies in whether the operation **mutates the original variable** or **returns a new value** while leaving the original intact.
 
-## Key Concepts
+### Example Scenario
+We have a phone number formatted with dot delimiters, and we want to change the dots to hyphens.
+```basic
+phone = "352.629.564.890"
+```
 
-### jBC Function
-*   **Example**: `phone1 = CHANGE(phone, ".", "-")`
-*   **Behavior**: When used as a function, `CHANGE` returns a new value without mutating the original variable. 
-*   **Use Case**: This is ideal when you need to retain the original value of the variable (e.g., `phone`) while using the modified value for another purpose (e.g., storing it in `phone1`).
+---
 
-### jBC Statement
-*   **Example**: `CHANGE "." TO "-" IN phone`
-*   **Behavior**: When used as a statement, `CHANGE` mutates the original variable directly. The value inside `phone` is permanently updated.
-*   **Use Case**: This approach is often faster and should be used when you no longer need the original value and want to modify it in place.
+## 1. Using CHANGE as a Function
+When used as a function, `CHANGE` returns a new modified value. It **does not mutate** the original variable.
 
-## Summary
-*   **Functions** return new values and do not modify the original variable.
-*   **Statements** modify the variable directly (mutate in place).
+**Syntax & Example:**
+```basic
+phone1 = CHANGE(phone, ".", "-")
+```
+- **Argument 1:** The variable to search in (`phone`).
+- **Argument 2:** The string to find (`"."`).
+- **Argument 3:** The string to replace it with (`"-"`).
+
+**Result:**
+- `phone1` contains the new value: `"352-629-564-890"`
+- `phone` (the original variable) remains unchanged: `"352.629.564.890"`
+
+**Use Case:** Use the function approach when you need to retain the original variable's value for later use.
+
+---
+
+## 2. Using CHANGE as a Statement
+When used as a statement, `CHANGE` applies the replacement directly to the target variable. It **mutates** the original variable.
+
+**Syntax & Example:**
+```basic
+CHANGE "." TO "-" IN phone
+```
+- **"what_to_replace"**: `"."`
+- **TO "replace_with"**: `"-"`
+- **IN variable**: `phone`
+
+**Result:**
+- `phone` is updated in place and now contains: `"352-629-564-890"`
+
+**Use Case:** Use the statement approach when you no longer need the original value and want to modify the variable directly. It is typically faster and requires less memory since no new variable is created.

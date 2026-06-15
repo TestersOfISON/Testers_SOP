@@ -1,50 +1,47 @@
-# T24 Programming - Componentisation Properties
+# T24 TAFJ Development: Component Properties
 
-## Overview
-This video explains how to use and define properties within T24 TafJ components. Properties allow you to set, store, and access component-level values from within your subroutines or external programs based on their defined scope.
+This note summarizes technical details about Component Properties in T24 TAFJ Development, based on the tutorial video.
 
-## Key Concepts
+## Overview of Properties
+Properties in T24 TAFJ components are used to define common variables or values that can be accessed or modified within subroutines or outside the component, depending on their defined scope.
 
-*   **Properties:** Variables defined at the component level that can be accessed and modified.
-*   **Scope Modifiers:**
-    *   `public`: The property and its methods are accessible from anywhere, including programs outside the component.
-    *   `private`: The property and its methods are accessible only from within the component itself.
-*   **Access Modifiers:**
-    *   `readwrite`: Allows both getting and setting the property value.
-    *   `read`: Allows only getting the property value.
-    *   `write`: Allows only setting the property value.
-*   **Automatic Getter/Setter Generation:** When a property is defined (e.g., `Age`), TafJ automatically generates getter and setter methods (`getAge` and `setAge`) depending on the specified access modifiers.
+## Creating Properties
+Properties are defined in the component definition file using the following syntax:
+`[scope_modifier] property [access_type] [PropertyName]`
 
-## Demonstration
-
-### 1. Defining a Public Read/Write Property
-In the component definition file (e.g., `MTD.Training`), you can define a property like so:
-```java
+Example:
+```basic
 public property readwrite Age
 ```
-This automatically gives you access to `MTD.Training.setAge()` and `MTD.Training.getAge()`.
 
-### 2. Setting and Getting Properties from a Program
-In an external program (e.g., `TestGreeting`), you can prompt the user for input and use the setter method:
+## Access Types
+You can specify the allowed access to the property using one of the following keywords:
+*   **`readwrite`**: The property value can be both set (written) and retrieved (read).
+*   **`read`**: The property is read-only. Its value can be retrieved, but not modified.
+*   **`write`**: The property is write-only. Its value can be set, but not retrieved.
+
+## Automatic Methods (Getters and Setters)
+When a property is defined, the system automatically generates corresponding getter and setter methods based on the property name and access type.
+For a property named `Age`:
+*   The setter method is automatically created as `setAge(value)`.
+*   The getter method is automatically created as `getAge()`.
+
+## Scope Modifiers (Public vs. Private)
+*   **`public`**: The property and its associated methods are accessible from outside the component (e.g., from external test programs or other components).
+    *   Example: A test program can call `MTD.Training.setAge(age)` and `MTD.Training.getAge()`.
+*   **`private`**: The property and its associated methods are only accessible from within the subroutines that belong to the component.
+    *   If an external program attempts to access a private property method (e.g., calling `getAge()` on a private read property), a compilation error will occur: `forbidden access : private`.
+
+## Mixed Scopes for Read and Write
+It is possible to define different access scopes for reading and writing the same property.
+Example:
 ```basic
-$USING MTD.Training
-PROMPT "How old are you? "
-INPUT age
-MTD.Training.setAge(age)
-CRT MTD.Training.getAge()
-```
-
-### 3. Accessing Properties from a Subroutine
-Inside a subroutine that belongs to the component, you can retrieve the value using the getter method without needing to pass it as a parameter:
-```basic
-age = MTD.Training.getAge()
-msg = "Hello " : name : "! You are " : age : " years old."
-```
-
-### 4. Restricting Access (Public Write / Private Read)
-You can define separate scopes for reading and writing. For instance, if you want external programs to be able to set a property, but only internal subroutines to read it:
-```java
 public property write Age
 private property read Age
 ```
-If an external program attempts to call `MTD.Training.getAge()` after this change, it will result in a compilation error (`getAge forbidden access : private`). However, internal subroutines can still call `getAge()` successfully.
+In this configuration:
+*   External programs can set the property using the `setAge()` method because write access is public.
+*   Only internal subroutines within the component can read the property using the `getAge()` method because read access is private. An external attempt to use `getAge()` will fail during compilation.
+
+## Usage in Subroutines
+Internal subroutines within the component can access properties using the getter and setter methods (e.g., `MTD.Training.getAge()`) without the need to pass these values as parameters to the subroutines.
