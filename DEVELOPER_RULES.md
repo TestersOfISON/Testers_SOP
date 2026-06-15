@@ -27,5 +27,11 @@ Keep the end-to-end testing scenarios in sync with the latest application update
 
 ### 3. Run a Complete End-to-End Testing Suite
 Validate that all features remain unbroken by running the full E2E automation suite.
-- Execute the E2E Python/Selenium automation tests locally to verify compatibility.
+- Execute the E2E Python/Selenium automation tests locally to verify compatibility before pushing.
 - Ensure all phases of the test suite (Authentication, UI/UX and layout, SOP checklist workflow, progress updates, and Firebase synchronization) pass successfully.
+
+### 4. Mandatory Live Environment Verification
+Testing locally is not sufficient. You must verify the live deployment.
+- After pushing the code, wait for the GitHub Pages deployment to complete.
+- Execute `e2e_test_suite_live.py` (or the equivalent live test script) to ensure the newly deployed changes function flawlessly in the live production environment.
+- Only mark the task as complete once the live tests pass successfully.
