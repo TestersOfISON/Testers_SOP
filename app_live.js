@@ -2202,16 +2202,14 @@ let kpiGaugeInstance = null;
 
 window.loadKPIData = function() {
   const testerName = localStorage.getItem('testerName') || "Anonymous Tester";
-  const storedStr = localStorage.getItem('kpi_metrics_' + testerName);
+  const storedStr = localStorage.getItem('kpi_metrics_qualitative_' + testerName);
   if (storedStr) {
     try {
       const metrics = JSON.parse(storedStr);
-      document.getElementById('kpi-story-points').value = metrics.storyPoints || 0;
-      document.getElementById('kpi-bugs').value = metrics.bugs || 0;
-      document.getElementById('kpi-scenarios-created').value = metrics.scenariosCreated || 0;
-      document.getElementById('kpi-scenarios-executed').value = metrics.scenariosExecuted || 0;
-      document.getElementById('kpi-regression-executed').value = metrics.regressionExecuted || 0;
-      document.getElementById('kpi-leaked-incidents').value = metrics.leakedIncidents || 0;
+      document.getElementById('kpi-scenario-quality').value = metrics.scenario || 0;
+      document.getElementById('kpi-execution-quality').value = metrics.execution || 0;
+      document.getElementById('kpi-bug-quality').value = metrics.bug || 0;
+      document.getElementById('kpi-compliance').value = metrics.compliance || 0;
       window.calculateKPI();
     } catch(e) {}
   } else {
@@ -2221,31 +2219,25 @@ window.loadKPIData = function() {
 };
 
 window.calculateKPI = function() {
-  const storyPoints = parseInt(document.getElementById('kpi-story-points').value) || 0;
-  const bugs = parseInt(document.getElementById('kpi-bugs').value) || 0;
-  const scenariosCreated = parseInt(document.getElementById('kpi-scenarios-created').value) || 0;
-  const scenariosExecuted = parseInt(document.getElementById('kpi-scenarios-executed').value) || 0;
-  const regressionExecuted = parseInt(document.getElementById('kpi-regression-executed').value) || 0;
-  const leakedIncidents = parseInt(document.getElementById('kpi-leaked-incidents').value) || 0;
+  const scenario = parseFloat(document.getElementById('kpi-scenario-quality').value) || 0;
+  const execution = parseFloat(document.getElementById('kpi-execution-quality').value) || 0;
+  const bug = parseFloat(document.getElementById('kpi-bug-quality').value) || 0;
+  const compliance = parseFloat(document.getElementById('kpi-compliance').value) || 0;
   
   // Save to local storage
   const testerName = localStorage.getItem('testerName') || "Anonymous Tester";
-  localStorage.setItem('kpi_metrics_' + testerName, JSON.stringify({
-    storyPoints, bugs, scenariosCreated, scenariosExecuted, regressionExecuted, leakedIncidents
+  localStorage.setItem('kpi_metrics_qualitative_' + testerName, JSON.stringify({
+    scenario, execution, bug, compliance
   }));
 
-  // Client formula
-  let score = (storyPoints * 10) + 
-              (bugs * 31) + 
-              (scenariosCreated * 4.8) + 
-              (scenariosExecuted * 2) + 
-              (regressionExecuted * 1.5) - 
-              (leakedIncidents * 30);
+  // Client formula: Average of all 4 components
+  let score = (scenario + execution + bug + compliance) / 4;
   
-  score = Math.round(score);
+  // Format to 1 decimal place
+  score = Math.round(score * 10) / 10;
   if (score < 0) score = 0;
   
-  const MAX_TARGET = 220; // assumed target based on client 
+  const MAX_TARGET = 13; // New methodology max score
   
   document.getElementById('kpi-score-text').innerText = score;
   
@@ -2254,9 +2246,9 @@ window.calculateKPI = function() {
   if (ctx) {
     const theme = document.documentElement.getAttribute('data-theme') || 'light';
     const bgColor = theme === 'dark' ? '#334155' : '#e2e8f0';
-    let progressColor = '#10b981'; // Green
-    if (score < MAX_TARGET * 0.5) progressColor = '#ef4444'; // Red
-    else if (score < MAX_TARGET * 0.8) progressColor = '#d97706'; // Orange
+    let progressColor = '#10b981'; // Green (Excellent >= 10)
+    if (score < 7) progressColor = '#ef4444'; // Red (Critical < 7)
+    else if (score < 10) progressColor = '#d97706'; // Orange (Needs Improvement 7-9.9)
     
     let percent = Math.min((score / MAX_TARGET) * 100, 100);
     
@@ -2288,30 +2280,27 @@ window.calculateKPI = function() {
     }
   }
   
-  // Generate Actionable Tips
+  // Generate Actionable Tips based on the Bug Reporting Newsletter and Methodology
   const tipsList = document.getElementById('kpi-tips-list');
   const tipsContainer = document.getElementById('kpi-tips-container');
   if (!tipsList || !tipsContainer) return;
   tipsList.innerHTML = '';
   let tips = [];
   
-  if (leakedIncidents > 0) {
-    tips.push(`<li>🚨 <strong>Critical Penalty:</strong> You lost ${leakedIncidents * 30} points due to Leaked Incidents. Ensure you are following the exact UAT checklist before signing off any story!</li>`);
-  } else if (score > 0) {
-    tips.push(`<li>🛡️ <strong>Flawless execution!</strong> Zero leaked incidents. Double-check your boundary validations on your final story to protect your baseline.</li>`);
+  if (bug < 13) {
+    tips.push(`<li>🐞 <strong>Bug Report Quality:</strong> Check your bug reports! Ensure you have a clear Title, numbered Steps to Reproduce, Actual vs Expected results based on requirements, and <strong>ALWAYS attach evidence</strong>.</li>`);
   }
-  
-  if (scenariosCreated > 0 && scenariosExecuted < scenariosCreated) {
-    let pending = scenariosCreated - scenariosExecuted;
-    tips.push(`<li>💡 <strong>Quick Win:</strong> You designed ${scenariosCreated} scenarios but only executed ${scenariosExecuted}. Execute the remaining ${pending} scenarios to instantly gain ${pending * 2} points.</li>`);
+  if (execution < 13) {
+    tips.push(`<li>⚙️ <strong>Execution Quality:</strong> Are your defects directly linked to the execution steps? Ensure all validated tests are executed in the first environment (usually UAT) to maximize this score.</li>`);
   }
-  
-  if (scenariosCreated === 0) {
-    tips.push(`<li>💡 <strong>Boost Coverage:</strong> Generating just 5 more edge-case test scenarios for your active story will increase your metric by 24 points! Use the AI Generator.</li>`);
+  if (scenario < 13) {
+    tips.push(`<li>📝 <strong>Scenario Quality:</strong> Make sure your Test Cases explicitly cover User Story requirements/Acceptance Criteria and cover all edge cases and boundary values.</li>`);
   }
-  
-  if (regressionExecuted === 0) {
-    tips.push(`<li>📈 <strong>Maximize Multiplier:</strong> Don't forget to execute your regression suite. Even 10 regression scenarios executed adds 15 points to your final score.</li>`);
+  if (compliance < 13) {
+    tips.push(`<li>⚖️ <strong>Process Compliance:</strong> Ensure your JIRA subtasks follow the exact UAT -> PRL -> Smoke -> Regression flow and your logged time correlates with each activity type.</li>`);
+  }
+  if (score >= 12) {
+    tips.push(`<li>🌟 <strong>Outstanding Performance:</strong> You are projecting an excellent score! Double-check that no tests were aborted without justification to maintain perfection.</li>`);
   }
   
   if (tips.length > 0) {

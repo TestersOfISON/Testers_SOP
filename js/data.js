@@ -735,26 +735,24 @@ Please send observations before the meeting.</div>`
           <p>Instantly calculate your projected end-of-month KPI score based on the client's metrics. Note: These metrics do NOT affect other teams. Focus on your personal excellence and setting new high scores!</p>
           <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 20px;">
             <div style="flex: 1; min-width: 300px; background: var(--card-bg); padding: 20px; border-radius: 10px; border: 1px solid var(--border); box-shadow: var(--shadow);">
-              <h4 style="margin-top: 0;">Input Your Current Metrics</h4>
-              <label style="font-weight: 600; display: block; margin-top: 10px;">Total Story Points (Approval Required):</label>
-              <input type="number" id="kpi-story-points" class="form-input" style="width: 100%; margin-top: 5px;" value="0" min="0">
+              <h4 style="margin-top: 0;">Input Expected KPI Component Scores (0-13)</h4>
+              <label style="font-weight: 600; display: block; margin-top: 10px;">Test Scenario Quality:</label>
+              <input type="number" id="kpi-scenario-quality" class="form-input" style="width: 100%; margin-top: 5px;" value="0" min="0" max="13">
+              <small style="color: #666;">Coverage, Traceability, Edge Cases, Expected Results</small>
               
-              <label style="font-weight: 600; display: block; margin-top: 10px;">Total Bugs Reported:</label>
-              <input type="number" id="kpi-bugs" class="form-input" style="width: 100%; margin-top: 5px;" value="0" min="0">
+              <label style="font-weight: 600; display: block; margin-top: 15px;">Test Execution Quality:</label>
+              <input type="number" id="kpi-execution-quality" class="form-input" style="width: 100%; margin-top: 5px;" value="0" min="0" max="13">
+              <small style="color: #666;">Linked Defects, Env Accuracy, Regression Status</small>
               
-              <label style="font-weight: 600; display: block; margin-top: 10px;">Test Scenarios Created:</label>
-              <input type="number" id="kpi-scenarios-created" class="form-input" style="width: 100%; margin-top: 5px;" value="0" min="0">
+              <label style="font-weight: 600; display: block; margin-top: 15px;">Bug Quality:</label>
+              <input type="number" id="kpi-bug-quality" class="form-input" style="width: 100%; margin-top: 5px;" value="0" min="0" max="13">
+              <small style="color: #666;">Clear Title, Actual/Expected, Reproduction Steps, Severity, Evidence</small>
               
-              <label style="font-weight: 600; display: block; margin-top: 10px;">Test Scenarios Executed:</label>
-              <input type="number" id="kpi-scenarios-executed" class="form-input" style="width: 100%; margin-top: 5px;" value="0" min="0">
+              <label style="font-weight: 600; display: block; margin-top: 15px;">Compliance with Working Method:</label>
+              <input type="number" id="kpi-compliance" class="form-input" style="width: 100%; margin-top: 5px;" value="0" min="0" max="13">
+              <small style="color: #666;">Jira Workflow, Time Tracking, Operational Rules</small>
               
-              <label style="font-weight: 600; display: block; margin-top: 10px;">Regression Scenarios Executed:</label>
-              <input type="number" id="kpi-regression-executed" class="form-input" style="width: 100%; margin-top: 5px;" value="0" min="0">
-              
-              <label style="font-weight: 600; display: block; margin-top: 10px; color: #ef4444;">Leaked Incidents (Penalties):</label>
-              <input type="number" id="kpi-leaked-incidents" class="form-input" style="width: 100%; margin-top: 5px; border-color: #ef4444;" value="0" min="0">
-              
-              <button class="btn btn-primary" style="width: 100%; margin-top: 20px;" onclick="window.calculateKPI()">Calculate Projected Score</button>
+              <button class="btn btn-primary" style="width: 100%; margin-top: 25px;" onclick="window.calculateKPI()">Calculate Projected Average</button>
             </div>
             
             <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 20px;">
