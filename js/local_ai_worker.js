@@ -269,6 +269,50 @@ Output strictly a JSON object with a single key 'rules' containing the validated
         }
     }
 
+    // Phase 1 Pipeline: Generation Stage
+    if (data.type === 'generate_ac_matrix') {
+        try {
+            const engine = await WebLLMSingleton.getInstance();
+            const db = await WebLLMSingleton.getOrama();
+            
+            let ragContext = "";
+            const searchResult = await search(db, {
+                term: "perfect test coverage matrix acceptance criteria example",
+                properties: ['content', 'title'],
+                limit: 1
+            });
+            if (searchResult.hits.length > 0) {
+                ragContext = `\n\nReference Structure/Style:\n${searchResult.hits[0].document.content}`;
+            }
+
+            const systemPrompt = `You are an expert T24 Testing Architect. 
+Your task is to take the extracted business rules (JSON) and the original User Story, and write the Acceptance Criteria and Test Coverage Matrix in strict Markdown.
+Follow the GIVEN/WHEN/THEN format for ACs. 
+Ensure you include edge cases and negative flows.
+Output ONLY the raw markdown text. Do not wrap in JSON.`;
+            
+            const userPrompt = `User Story:\n${data.prompt}\n\nExtracted Rules:\n${JSON.stringify(data.extractedJson, null, 2)}${ragContext}`;
+
+            const reply = await engine.chat.completions.create({
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userPrompt }
+                ],
+                temperature: 0.3,
+                max_tokens: 1500
+            });
+
+            self.postMessage({
+                status: 'generation_complete',
+                output: reply.choices[0].message.content.trim()
+            });
+
+        } catch (error) {
+            console.error(error);
+            self.postMessage({ status: 'error', message: error.message });
+        }
+    }
+
     // Direct Hybrid RAG Search for Ghidul Oracle
     if (data.type === 'rag_search') {
         try {

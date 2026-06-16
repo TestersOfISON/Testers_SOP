@@ -63,6 +63,9 @@ function initWorker() {
                 case 'extract_complete':
                     window.dispatchEvent(new CustomEvent('ai_extract_complete', { detail: data.output }));
                     break;
+                case 'generation_complete':
+                    window.dispatchEvent(new CustomEvent('ai_generation_complete', { detail: data.output }));
+                    break;
             }
         };
 

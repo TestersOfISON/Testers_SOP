@@ -58,9 +58,38 @@ window.generateACMatrix = async function() {
                 }
             }
 
-            // Pass criticFeedback to parseUserStory to actively avoid previous hallucinations
-            const parsed = window.PromptEngine.parseUserStory(userStory, aiExtractedRules, criticFeedback);
-            const result = window.PromptEngine.generateAcceptanceCriteria(parsed);
+            // Phase 1: Use the local AI pipeline to generate the Markdown directly
+            outAc.value = `Attempt ${attempts}/${maxAttempts}: AI Worker generating native markdown...`;
+            const generateMarkdown = () => new Promise((resolve, reject) => {
+                const onSuccess = (e) => {
+                    window.removeEventListener('ai_generation_complete', onSuccess);
+                    window.removeEventListener('ai_extract_error', onError);
+                    resolve(e.detail);
+                };
+                const onError = (e) => {
+                    window.removeEventListener('ai_generation_complete', onSuccess);
+                    window.removeEventListener('ai_extract_error', onError);
+                    reject(new Error(e.detail));
+                };
+                window.addEventListener('ai_generation_complete', onSuccess);
+                window.addEventListener('ai_extract_error', onError);
+                
+                window.aiWorker.postMessage({ type: 'generate_ac_matrix', prompt: userStory, extractedJson: aiExtractedRules });
+            });
+            
+            let result = '';
+            if (window.aiWorker && aiExtractedRules) {
+                try {
+                    result = await generateMarkdown();
+                } catch (e) {
+                    console.warn("Generation failed, falling back to static JS templates", e);
+                    const parsed = window.PromptEngine.parseUserStory(userStory, aiExtractedRules, criticFeedback);
+                    result = window.PromptEngine.generateAcceptanceCriteria(parsed);
+                }
+            } else {
+                const parsed = window.PromptEngine.parseUserStory(userStory, aiExtractedRules, criticFeedback);
+                result = window.PromptEngine.generateAcceptanceCriteria(parsed);
+            }
             
             outAc.value = `Attempt ${attempts}/${maxAttempts}: Critic AI reviewing draft...`;
             
