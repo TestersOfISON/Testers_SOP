@@ -16,6 +16,11 @@ if (!window.aiWorker) {
             window.dispatchEvent(new CustomEvent('ai_generation_complete', { detail: data.output }));
         } else if (data.status === 'error') {
             window.dispatchEvent(new CustomEvent('ai_extract_error', { detail: data.message }));
+        } else if (data.status === 'progress') {
+            const outAc = document.getElementById('out-ac');
+            if (outAc) {
+                outAc.value = `Loading AI Engine (First run may take a few minutes)...\n${data.text || Math.round(data.loaded) + '%'}`;
+            }
         }
     };
     // Initialize WebLLM Engine and Orama DB in background
@@ -36,14 +41,22 @@ window.generateACMatrix = async function() {
     btnAc.disabled = true;
     btnAc.innerText = '⚙️ Analyzing...';
 
-    // Promise wrapper for AI Worker communication
+    // Promise wrapper for AI Worker communication with 10s timeout fallback
     const extractJSON = () => new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+            window.removeEventListener('ai_extract_complete', onSuccess);
+            window.removeEventListener('ai_extract_error', onError);
+            reject(new Error("Local AI Worker timed out (Hardware likely insufficient). Falling back to static regex logic..."));
+        }, 10000);
+
         const onSuccess = (e) => {
+            clearTimeout(timeoutId);
             window.removeEventListener('ai_extract_complete', onSuccess);
             window.removeEventListener('ai_extract_error', onError);
             resolve(e.detail);
         };
         const onError = (e) => {
+            clearTimeout(timeoutId);
             window.removeEventListener('ai_extract_complete', onSuccess);
             window.removeEventListener('ai_extract_error', onError);
             reject(new Error(e.detail));

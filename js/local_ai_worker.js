@@ -194,7 +194,14 @@ self.addEventListener('message', async (event) => {
     // JSON Extraction Request (Multi-Agent Pipeline)
     if (data.type === 'extract_rules') {
         try {
-            const engine = await WebLLMSingleton.getInstance();
+            const engine = await WebLLMSingleton.getInstance((progress) => {
+                self.postMessage({ 
+                    status: 'progress', 
+                    loaded: progress.progress * 100, 
+                    total: 100,
+                    text: progress.text
+                });
+            });
             const db = await WebLLMSingleton.getOrama();
 
             // 1. RAG Search
