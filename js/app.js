@@ -1897,11 +1897,19 @@ window.toggleOracleMode = async function(checkbox) {
   }
 };
 
+window.currentKeyIndex = 0;
+
 window.openAISettings = function() {
   const modal = document.getElementById('ai-settings-modal');
   const input = document.getElementById('ai-api-key-input');
   const select = document.getElementById('ai-model-select');
-  input.value = localStorage.getItem('gemini_api_key') || '';
+  
+  let storedKeys = localStorage.getItem('gemini_api_keys') || localStorage.getItem('gemini_api_key') || '';
+  try {
+      if (storedKeys.startsWith('[')) storedKeys = JSON.parse(storedKeys).join(', ');
+  } catch(e) {}
+  input.value = storedKeys;
+  
   select.value = localStorage.getItem('gemini_ai_model') || 'gemini-2.5-flash';
   modal.style.display = 'flex';
 };
@@ -1910,9 +1918,13 @@ window.saveAISettings = function() {
   const input = document.getElementById('ai-api-key-input').value.trim();
   const select = document.getElementById('ai-model-select').value;
   if (input) {
-    localStorage.setItem('gemini_api_key', input);
+    const keysArray = input.split(',').map(k => k.trim()).filter(k => k);
+    localStorage.setItem('gemini_api_keys', JSON.stringify(keysArray));
+    localStorage.setItem('gemini_api_key', keysArray[0]); // legacy support
+    window.currentKeyIndex = 0; // reset index on save
     localStorage.setItem('gemini_ai_model', select);
   } else {
+    localStorage.removeItem('gemini_api_keys');
     localStorage.removeItem('gemini_api_key');
   }
   document.getElementById('ai-settings-modal').style.display = 'none';
@@ -2044,8 +2056,27 @@ async function callAIAssistant(userMessage, apiKey, modelName) {
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error?.message || 'API request failed');
+    if (response.status === 429) {
+      let keysArray = [];
+      try { keysArray = JSON.parse(localStorage.getItem('gemini_api_keys')); } catch(e) {}
+      if (keysArray && keysArray.length > 1) {
+          window.currentKeyIndex = (window.currentKeyIndex || 0) + 1;
+          if (window.currentKeyIndex < keysArray.length) {
+              const nextKey = keysArray[window.currentKeyIndex];
+              localStorage.setItem('gemini_api_key', nextKey);
+              console.warn(`[AI Key Rotation] Limit hit on key index ${window.currentKeyIndex - 1}. Rotating to key index ${window.currentKeyIndex}...`);
+              return callAIAssistant(userMessage, nextKey, modelName);
+          } else {
+              throw new Error('All API keys in the rotation pool have been exhausted (429 Rate Limit).');
+          }
+      }
+    }
+    let errMsg = 'API request failed';
+    try {
+      const errorData = await response.json();
+      errMsg = errorData.error?.message || errMsg;
+    } catch(e) {}
+    throw new Error(errMsg);
   }
 
   const data = await response.json();

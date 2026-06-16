@@ -149,21 +149,36 @@ Output ONLY the raw JSON object. Do not include markdown \`\`\`json wrappers.`;
             });
         });
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                system_instruction: {
-                    parts: [{ text: systemInstruction }]
-                },
-                contents: [{
-                    parts: apiContents
-                }]
-            })
-        });
+        const payload = {
+            system_instruction: { parts: [{ text: systemInstruction }] },
+            contents: [{ parts: apiContents }]
+        };
 
+        const makeRequest = async (key) => {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.status === 429) {
+                let keysArray = [];
+                try { keysArray = JSON.parse(localStorage.getItem('gemini_api_keys')); } catch(e) {}
+                if (keysArray && keysArray.length > 1) {
+                    window.currentKeyIndex = (window.currentKeyIndex || 0) + 1;
+                    if (window.currentKeyIndex < keysArray.length) {
+                        const nextKey = keysArray[window.currentKeyIndex];
+                        localStorage.setItem('gemini_api_key', nextKey);
+                        console.warn(`[AI Key Rotation] Limit hit on key index ${window.currentKeyIndex - 1}. Rotating to key index ${window.currentKeyIndex}...`);
+                        return makeRequest(nextKey);
+                    } else {
+                        throw new Error('All API keys in the rotation pool have been exhausted (429 Rate Limit).');
+                    }
+                }
+            }
+            return res;
+        };
+
+        const response = await makeRequest(apiKey);
         const data = await response.json();
         if (data.error) {
             qaMessage.innerText = "API Error: " + data.error.message;
