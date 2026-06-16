@@ -44,6 +44,20 @@ class WebLLMSingleton {
                     }
                 }
 
+                // Fetch GOLDEN EXAMPLES context for Local RAG
+                const responseGolden = await fetch('../knowledge_base/perfect_test_matrices.md');
+                if (responseGolden.ok) {
+                    const textGolden = await responseGolden.text();
+                    const sectionsGolden = textGolden.split('\n## ');
+                    for (let i = 1; i < sectionsGolden.length; i++) {
+                        const lines = sectionsGolden[i].split('\n');
+                        const title = lines[0].trim();
+                        const content = lines.slice(1).join('\n').trim();
+                        // Insert the whole section together so the AI sees the full matrix
+                        await insert(this.oramaDb, { title: "perfect test coverage matrix acceptance criteria example " + title, content: content });
+                    }
+                }
+
                 // Fetch SENSITIVE context for Local RAG
                 const response2 = await fetch('../knowledge_base/t24_sensitive_logic.md');
                 if (response2.ok) {
