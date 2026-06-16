@@ -1906,7 +1906,7 @@ window.openAISettings = function() {
   
   let storedKeys = localStorage.getItem('gemini_api_keys') || localStorage.getItem('gemini_api_key') || '';
   try {
-      if (storedKeys.startsWith('[')) storedKeys = JSON.parse(storedKeys).join(', ');
+      if (storedKeys.startsWith('[')) storedKeys = JSON.parse(storedKeys).join('\n');
   } catch(e) {}
   input.value = storedKeys;
   
@@ -1918,7 +1918,7 @@ window.saveAISettings = function() {
   const input = document.getElementById('ai-api-key-input').value.trim();
   const select = document.getElementById('ai-model-select').value;
   if (input) {
-    const keysArray = input.split(',').map(k => k.trim()).filter(k => k);
+    const keysArray = input.split(/[\n,]+/).map(k => k.trim()).filter(k => k);
     localStorage.setItem('gemini_api_keys', JSON.stringify(keysArray));
     localStorage.setItem('gemini_api_key', keysArray[0]); // legacy support
     window.currentKeyIndex = 0; // reset index on save

@@ -996,8 +996,8 @@
       
       <div style="margin-bottom: 20px;">
         <label for="ai-api-key-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Gemini API Key</label>
-        <p style="margin-bottom: 10px; font-size: 0.9em; color: var(--text-color);">Enter one or more API Keys (comma-separated for auto-rotation on limits):</p>
-        <input type="text" id="ai-api-key-input" placeholder="e.g. AIzaSyB..., AIzaSyC..." style="width: 100%; padding: 8px; margin-bottom: 15px; border-radius: 4px; border: 1px solid #ccc; background: var(--bg-color); color: var(--text-color);">
+        <p style="margin-bottom: 10px; font-size: 0.9em; color: var(--text-color);">Enter one or more API Keys (comma or newline-separated for auto-rotation on limits):</p>
+        <textarea id="ai-api-key-input" placeholder="e.g. AIzaSyB...\nAIzaSyC..." rows="4" style="width: 100%; padding: 8px; margin-bottom: 15px; border-radius: 4px; border: 1px solid #ccc; background: var(--bg-color); color: var(--text-color); resize: vertical;"></textarea>
       </div>
 
       <div style="margin-bottom: 20px;">
