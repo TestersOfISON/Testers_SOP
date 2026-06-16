@@ -5,6 +5,23 @@
  * broken WebLLM Worker. Instant generation, zero hallucination, 100% private.
  */
 
+// Initialize AI Worker to support Phase 1/2 native Markdown Generation
+if (!window.aiWorker) {
+    window.aiWorker = new Worker('js/local_ai_worker.js', { type: 'module' });
+    window.aiWorker.onmessage = function(e) {
+        const data = e.data;
+        if (data.status === 'extract_complete') {
+            window.dispatchEvent(new CustomEvent('ai_extract_complete', { detail: data.output }));
+        } else if (data.status === 'generation_complete') {
+            window.dispatchEvent(new CustomEvent('ai_generation_complete', { detail: data.output }));
+        } else if (data.status === 'error') {
+            window.dispatchEvent(new CustomEvent('ai_extract_error', { detail: data.message }));
+        }
+    };
+    // Initialize WebLLM Engine and Orama DB in background
+    window.aiWorker.postMessage({ type: 'load' });
+}
+
 window.generateACMatrix = async function() {
     const userStory = document.getElementById('in-user-story').value.trim();
     if (!userStory) {
