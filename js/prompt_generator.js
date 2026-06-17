@@ -5,27 +5,7 @@
  * broken WebLLM Worker. Instant generation, zero hallucination, 100% private.
  */
 
-// Initialize AI Worker to support Phase 1/2 native Markdown Generation
-if (!window.aiWorker) {
-    window.aiWorker = new Worker('js/local_ai_worker.js', { type: 'module' });
-    window.aiWorker.onmessage = function(e) {
-        const data = e.data;
-        if (data.status === 'extract_complete') {
-            window.dispatchEvent(new CustomEvent('ai_extract_complete', { detail: data.output }));
-        } else if (data.status === 'generation_complete') {
-            window.dispatchEvent(new CustomEvent('ai_generation_complete', { detail: data.output }));
-        } else if (data.status === 'error') {
-            window.dispatchEvent(new CustomEvent('ai_extract_error', { detail: data.message }));
-        } else if (data.status === 'progress') {
-            const outAc = document.getElementById('out-ac');
-            if (outAc) {
-                outAc.value = `Loading AI Engine (First run may take a few minutes)...\n${data.text || Math.round(data.loaded) + '%'}`;
-            }
-        }
-    };
-    // Initialize WebLLM Engine and Orama DB in background
-    window.aiWorker.postMessage({ type: 'load' });
-}
+// Removed aiWorker initialization as we are shifting to API Key engine
 
 window.generateACMatrix = async function() {
     const userStory = document.getElementById('in-user-story').value.trim();
@@ -37,139 +17,93 @@ window.generateACMatrix = async function() {
     const btnAc = document.getElementById('btn-gen-ac');
     const outAc = document.getElementById('out-ac');
     
-    // Brief UI feedback
     btnAc.disabled = true;
-    btnAc.innerText = '⚙️ Analyzing...';
+    btnAc.innerText = '⚙️ Consulting AI...';
+    outAc.value = 'Connecting to Gemini AI Engine...';
 
-    // Promise wrapper for AI Worker communication with 10s timeout fallback
-    const extractJSON = () => new Promise((resolve, reject) => {
-        const timeoutId = setTimeout(() => {
-            window.removeEventListener('ai_extract_complete', onSuccess);
-            window.removeEventListener('ai_extract_error', onError);
-            reject(new Error("Local AI Worker timed out (Hardware likely insufficient). Falling back to static regex logic..."));
-        }, 10000);
-
-        const onSuccess = (e) => {
-            clearTimeout(timeoutId);
-            window.removeEventListener('ai_extract_complete', onSuccess);
-            window.removeEventListener('ai_extract_error', onError);
-            resolve(e.detail);
-        };
-        const onError = (e) => {
-            clearTimeout(timeoutId);
-            window.removeEventListener('ai_extract_complete', onSuccess);
-            window.removeEventListener('ai_extract_error', onError);
-            reject(new Error(e.detail));
-        };
-        
-        window.addEventListener('ai_extract_complete', onSuccess);
-        window.addEventListener('ai_extract_error', onError);
-        
-        window.aiWorker.postMessage({ type: 'extract_rules', prompt: userStory, feedback: criticFeedback });
-    });
-
-    let attempts = 0;
-    const maxAttempts = 3;
-    let finalResult = '';
-    let criticFeedback = [];
-
-    while (attempts < maxAttempts) {
-        attempts++;
-        try {
-            outAc.value = `Attempt ${attempts}/${maxAttempts}: Generating Draft Matrix...`;
-            
-            let aiExtractedRules = null;
-            if (window.aiWorker) {
-                outAc.value = `Attempt ${attempts}/${maxAttempts}: AI Worker analyzing banking logic...`;
-                try {
-                    aiExtractedRules = await extractJSON();
-                } catch (e) {
-                    console.warn("AI extraction failed, using deterministic fallback", e);
-                }
-            }
-
-            // Phase 1: Use the local AI pipeline to generate the Markdown directly
-            outAc.value = `Attempt ${attempts}/${maxAttempts}: AI Worker generating native markdown...`;
-            const generateMarkdown = () => new Promise((resolve, reject) => {
-                const onSuccess = (e) => {
-                    window.removeEventListener('ai_generation_complete', onSuccess);
-                    window.removeEventListener('ai_extract_error', onError);
-                    resolve(e.detail);
-                };
-                const onError = (e) => {
-                    window.removeEventListener('ai_generation_complete', onSuccess);
-                    window.removeEventListener('ai_extract_error', onError);
-                    reject(new Error(e.detail));
-                };
-                window.addEventListener('ai_generation_complete', onSuccess);
-                window.addEventListener('ai_extract_error', onError);
-                
-                window.aiWorker.postMessage({ type: 'generate_ac_matrix', prompt: userStory, extractedJson: aiExtractedRules });
-            });
-            
-            let result = '';
-            if (window.aiWorker && aiExtractedRules) {
-                try {
-                    result = await generateMarkdown();
-                } catch (e) {
-                    console.warn("Generation failed, falling back to static JS templates", e);
-                    const parsed = window.PromptEngine.parseUserStory(userStory, aiExtractedRules, criticFeedback);
-                    result = window.PromptEngine.generateAcceptanceCriteria(parsed);
-                }
-            } else {
-                const parsed = window.PromptEngine.parseUserStory(userStory, aiExtractedRules, criticFeedback);
-                result = window.PromptEngine.generateAcceptanceCriteria(parsed);
-            }
-            
-            outAc.value = `Attempt ${attempts}/${maxAttempts}: Critic AI reviewing draft...`;
-            
-            let criticApproved = true;
-            let criticFlags = [];
-            
-            if (window.criticAiWorker) {
-                const criticPromise = new Promise((resolve) => {
-                    const onMsg = (e) => {
-                        if (e.data.status === 'review_complete') {
-                            window.criticAiWorker.removeEventListener('message', onMsg);
-                            resolve(e.data);
-                        }
-                    };
-                    window.criticAiWorker.addEventListener('message', onMsg);
-                    window.criticAiWorker.postMessage({ type: 'review_matrix', matrix: result, prompt: userStory });
-                });
-                const criticResponse = await criticPromise;
-                criticApproved = criticResponse.approved;
-                criticFlags = criticResponse.flags;
-            }
-            
-            if (criticApproved) {
-                outAc.value = result;
-                btnAc.disabled = false;
-                btnAc.innerText = '✨ Generate AC & Matrix';
-                showPGToast('✅ Intelligent Matrix generated successfully!', 'success');
-                return;
-            } else {
-                criticFeedback = criticFlags;
-                finalResult = result;
-                outAc.value = `Attempt ${attempts}/${maxAttempts}: Critic rejected draft. Regenerating...\nFlags:\n${criticFlags.join('\n')}`;
-                // small delay for UI updates so user sees the text
-                await new Promise(r => setTimeout(r, 600)); 
-            }
-
-        } catch (err) {
-            outAc.value = 'Error: ' + err.message;
-            btnAc.disabled = false;
-            btnAc.innerText = '✨ Generate AC & Matrix';
-            showPGToast('❌ Generation failed: ' + err.message, 'error');
-            return;
-        }
+    const apiKey = localStorage.getItem('gemini_api_key');
+    if (!apiKey) {
+        outAc.value = 'Error: Please configure your Gemini API Key in the settings (✨) first.';
+        btnAc.disabled = false;
+        btnAc.innerText = '✨ Generate AC & Matrix';
+        showPGToast('❌ API Key Missing', 'error');
+        return;
     }
-    
-    // If it reaches here, max attempts failed
-    outAc.value = criticFeedback.join('\n\n') + '\n\n---\n\n' + finalResult;
-    btnAc.disabled = false;
-    btnAc.innerText = '✨ Generate AC & Matrix';
-    showPGToast('🚨 Critic AI Flag: Hallucination detected after max retries!', 'error');
+    const model = localStorage.getItem('gemini_ai_model') || 'gemini-2.5-flash';
+
+    const systemInstruction = `You are a Senior QA Automation Engineer at Libra Bank specializing in Temenos T24 testing.
+Your task is to analyze the provided raw User Story and convert it into a highly professional Acceptance Criteria list and a Test Coverage Matrix.
+
+You MUST use EXACTLY the following structure (Markdown):
+
+### Acceptance Criteria
+1. **[Criteria Name]:** [Detailed criteria based strictly on the user story]
+(Add as many criteria as logically necessary)
+
+### Test Coverage Matrix
+| Test Case ID | Description | Condition/Amount | Expected Result |
+|---|---|---|---|
+| TC-01 | [Description] | [Condition] | [Expected Result] |
+(Add as many test cases as logically necessary, ensuring you cover negative/edge cases if fields are mandatory)
+
+Rules:
+- DO NOT hallucinate banking features not mentioned in the story.
+- DO NOT wrap the entire response in an outer \`\`\`markdown block. Just output the raw markdown text directly.`;
+
+    const payload = {
+        system_instruction: { parts: [{ text: systemInstruction }] },
+        contents: [{ parts: [{ text: "User Story:\n" + userStory }] }]
+    };
+
+    const makeRequest = async (key) => {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (res.status === 429) {
+            let keysArray = [];
+            try { keysArray = JSON.parse(localStorage.getItem('gemini_api_keys')); } catch(e) {}
+            if (keysArray && keysArray.length > 1) {
+                window.currentKeyIndex = (window.currentKeyIndex || 0) + 1;
+                if (window.currentKeyIndex < keysArray.length) {
+                    const nextKey = keysArray[window.currentKeyIndex];
+                    localStorage.setItem('gemini_api_key', nextKey);
+                    console.warn(`[AI Key Rotation] Limit hit. Rotating to key index ${window.currentKeyIndex}...`);
+                    return makeRequest(nextKey);
+                } else {
+                    throw new Error('All API keys in the rotation pool have been exhausted (429 Rate Limit).');
+                }
+            }
+        }
+        return res;
+    };
+
+    try {
+        const response = await makeRequest(apiKey);
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error.message);
+        }
+
+        let result = data.candidates[0].content.parts[0].text.trim();
+        
+        // Cleanup markdown wrappers if present
+        if (result.startsWith('\`\`\`markdown')) result = result.replace(/^\`\`\`markdown/, '');
+        if (result.startsWith('\`\`\`')) result = result.replace(/^\`\`\`/, '');
+        if (result.endsWith('\`\`\`')) result = result.replace(/\`\`\`$/, '');
+
+        outAc.value = result.trim();
+        showPGToast('✅ Intelligent Matrix generated successfully!', 'success');
+
+    } catch (err) {
+        outAc.value = 'Error: ' + err.message;
+        showPGToast('❌ Generation failed', 'error');
+    } finally {
+        btnAc.disabled = false;
+        btnAc.innerText = '✨ Generate AC & Matrix';
+    }
 };
 
 window.generateUiPathPrompt = function() {
