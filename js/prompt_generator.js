@@ -7,6 +7,30 @@
 
 // Removed aiWorker initialization as we are shifting to API Key engine
 
+/**
+ * Data Security Pipeline - Strips PII/NPI before sending to API
+ */
+function sanitizePayload(text) {
+    if (!text) return text;
+    let sanitized = text;
+    
+    // Mask IPs
+    sanitized = sanitized.replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, '[SERVER_IP]');
+    
+    // Mask Arrangement IDs (AA followed by 10-12 digits)
+    sanitized = sanitized.replace(/\bAA\d{10,12}\b/g, '[T24_ARRANGEMENT_ID]');
+    
+    // Mask 10+ digit Account Numbers
+    sanitized = sanitized.replace(/\b\d{10,16}\b/g, '[ACCOUNT_NUMBER]');
+    
+    // Mask specific employee/BA names (case insensitive)
+    const baNames = ['cristian', 'razvan', 'teodora', 'john', 'doe'];
+    const nameRegex = new RegExp(`\\b(${baNames.join('|')})\\b`, 'gi');
+    sanitized = sanitized.replace(nameRegex, '[BA_NAME]');
+    
+    return sanitized;
+}
+
 window.generateACMatrix = async function() {
     const userStory = document.getElementById('in-user-story').value.trim();
     if (!userStory) {
@@ -48,11 +72,13 @@ You MUST use EXACTLY the following structure (Markdown):
 
 Rules:
 - DO NOT hallucinate banking features not mentioned in the story.
-- DO NOT wrap the entire response in an outer \`\`\`markdown block. Just output the raw markdown text directly.`;
+- DO NOT wrap the entire response in an outer \`\`\`markdown block. Just output the raw markdown text directly.
+- **Dummy Data Mandate:** Use explicit dummy data standards when generating test values (e.g., use CUST-9999 for ID, use John Doe for names) to prevent realistic-looking data hallucination.`;
 
+    const sanitizedStory = sanitizePayload(userStory);
     const payload = {
         system_instruction: { parts: [{ text: systemInstruction }] },
-        contents: [{ parts: [{ text: "User Story:\n" + userStory }] }]
+        contents: [{ parts: [{ text: "User Story:\n" + sanitizedStory }] }]
     };
 
     const makeRequest = async (key) => {
@@ -106,28 +132,123 @@ Rules:
     }
 };
 
-window.generateUiPathPrompt = function() {
+window.generateUiPathPrompt = async function() {
     const acContext = document.getElementById('out-ac').value.trim();
-    if (!acContext) {
-        showPGToast('⚠️ Please generate the Acceptance Criteria & Matrix first.', 'warning');
+    const userStory = document.getElementById('in-user-story').value.trim();
+    
+    if (!acContext || !userStory) {
+        showPGToast('⚠️ Please provide the User Story and generate the Acceptance Criteria & Matrix first.', 'warning');
         return;
     }
 
     const outUp = document.getElementById('out-uipath');
-    outUp.value = 'Crafting AI Instructional Prompt Template...';
+    const apiKey = localStorage.getItem('gemini_api_key');
+    if (!apiKey) {
+        outUp.value = 'Error: Please configure your Gemini API Key in the settings (✨) first.';
+        showPGToast('❌ API Key Missing', 'error');
+        return;
+    }
+    const model = localStorage.getItem('gemini_ai_model') || 'gemini-2.5-flash';
 
-    requestAnimationFrame(function() {
-        setTimeout(function() {
-            try {
-                const result = window.PromptEngine.generateUiPathBDD(acContext);
-                outUp.value = result;
-                showPGToast('✅ UiPath BDD Prompt generated successfully!', 'success');
-            } catch (err) {
-                outUp.value = 'Error: ' + err.message;
-                showPGToast('❌ Generation failed: ' + err.message, 'error');
+    outUp.value = 'Connecting to Gemini API to generate T24 UiPath Meta-Prompt...';
+
+    const systemInstruction = `# SYSTEM ROLE:
+You are an Expert T24 Core Banking QA Architect. Your sole function is to generate strict, enterprise-grade prompts that will be fed into UiPath Test Manager to generate step-by-step manual test scripts. 
+
+# OPERATIONAL RULES:
+1. **Zero Context Bleed:** Treat every request as a completely isolated environment. Never reuse business logic, module names, or fields from previous conversations.
+2. **Architectural Accuracy:** Before generating anything, analyze the raw User Story to determine if the feature is a Real-Time UI Action (e.g., AA.ARRANGEMENT.ACTIVITY, CUSTOMER input) OR a Batch Routine (End-of-Day/COB). Your output must reflect this architecture.
+3. **No Placeholders:** Never use vague expected results like "updated according to business rules." You must extract and state the exact fields, exact dropdown values, or exact error messages.
+4. **Strict Categorization:** You must correctly label scenarios as 'Happy Path', 'Negative', 'Configuration', or 'Edge Case'. A scenario expecting a system error is a 'Negative' flow, not a 'Happy Path'.
+
+# REQUIRED OUTPUT FORMAT:
+Whenever the user provides a User Story and Acceptance Criteria, you must output EXACTLY the following Markdown structure, filling in the bracketed variables with precision. Do not output anything outside of this template.
+
+---
+
+# **Role:**
+Expert QA Analyst for a Core Banking System (Temenos T24).
+
+# **Objective:**
+Generate EXACTLY [Insert Total Number] explicitly defined MANUAL test cases in English for UiPath Test Manager based on the user story: "[Insert Story ID & Title]".
+
+# **Context:**
+This user story defines a [Real-Time UI / Batch COB] process in T24.
+* **Execution:** [1-2 sentences explaining how the feature is triggered based on the AC].
+* **Validation:** [1 sentence explaining the core rule being tested].
+
+# **Instructions:**
+
+## **Instruction 1: Test Case Generation Rules**
+* **NO DATA-DRIVEN VARIABLES.** You must write out each scenario individually.
+* Write steps strictly for a human tester executing the process manually on the T24 UI.
+* Use explicit T24 navigation commands (e.g., navigating to the application, triggering the service/verifying COB completion, checking ENQ records).
+* Maximum 10 steps per scenario. Include Maker/Checker steps if authorization is mentioned.
+* Format all titles strictly as: [Story ID] - [Scenario Type] - [Description]
+
+## **Instruction 2: Required Step-by-Step Flow Adaptation**
+* **For Happy Path:** [Define the generic 3-step flow based on the specific architecture].
+* **For Negative Flow:** [Define how the tester triggers the error and asserts the block].
+* **For Edge Case:** [Define how to test the exception or background logic].
+
+## **Instruction 3: Exact Scope Boundaries (Generate exactly [Total Number] distinct scenarios)**
+* **Scenario 1: [Scenario Type]** -> Description: [Short phrase] | Condition: [Exact precondition] | Expected Result: [Exact field value or exact error message].
+* **Scenario 2: [Scenario Type]** -> Description: [Short phrase] | Condition: [Exact precondition] | Expected Result: [Exact field value or exact error message].
+[Continue for all identified scenarios required to achieve 100% AC coverage...]
+
+# **Notes:**
+* Ensure exactly [Total Number] individual test cases are generated with clear Action and Expected Result columns. Output each separately.`;
+
+    const sanitizedStory = sanitizePayload(userStory);
+    const sanitizedAc = sanitizePayload(acContext);
+
+    const payload = {
+        system_instruction: { parts: [{ text: systemInstruction }] },
+        contents: [{ parts: [{ text: `User Story:\n${sanitizedStory}\n\nAcceptance Criteria & Matrix:\n${sanitizedAc}` }] }]
+    };
+
+    const makeRequest = async (key) => {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (res.status === 429) {
+            let keysArray = [];
+            try { keysArray = JSON.parse(localStorage.getItem('gemini_api_keys')); } catch(e) {}
+            if (keysArray && keysArray.length > 1) {
+                window.currentKeyIndex = (window.currentKeyIndex || 0) + 1;
+                if (window.currentKeyIndex < keysArray.length) {
+                    const nextKey = keysArray[window.currentKeyIndex];
+                    localStorage.setItem('gemini_api_key', nextKey);
+                    console.warn(`[AI Key Rotation] Limit hit. Rotating to key index ${window.currentKeyIndex}...`);
+                    return makeRequest(nextKey);
+                } else {
+                    throw new Error('All API keys in the rotation pool have been exhausted (429 Rate Limit).');
+                }
             }
-        }, 150);
-    });
+        }
+        return res;
+    };
+
+    try {
+        const response = await makeRequest(apiKey);
+        const data = await response.json();
+        
+        if (data.error) throw new Error(data.error.message);
+
+        let result = data.candidates[0].content.parts[0].text.trim();
+        if (result.startsWith('\`\`\`markdown')) result = result.replace(/^\`\`\`markdown/, '');
+        if (result.startsWith('\`\`\`')) result = result.replace(/^\`\`\`/, '');
+        if (result.endsWith('\`\`\`')) result = result.replace(/\`\`\`$/, '');
+
+        outUp.value = result.trim();
+        showPGToast('✅ UiPath BDD Prompt generated successfully!', 'success');
+
+    } catch (err) {
+        outUp.value = 'Error: ' + err.message;
+        showPGToast('❌ Generation failed', 'error');
+    }
 };
 
 
