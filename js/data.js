@@ -106,7 +106,7 @@ const qaModules = {
                     <button onclick="window.copyPGOutput('out-ac')" style="padding: 4px 10px; background: rgba(37,99,235,0.1); color: #3b82f6; border: 1px solid rgba(37,99,235,0.2); border-radius: 5px; cursor: pointer; font-size: 0.75rem; font-weight: 600;">📋 Copy</button>
                 </div>
             </div>
-            <button onclick="window.transferACToStep2()" style="padding: 8px; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.85rem; transition: all 0.2s; box-shadow: 0 2px 8px rgba(16,185,129,0.3);">➡️ Transfer to Step 2</button>
+            <button onclick="window.generateUiPathPrompt()" style="padding: 8px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.85rem; transition: all 0.2s; box-shadow: 0 2px 8px rgba(139,92,246,0.3);">🚀 Generate UiPath prompt</button>
         </div>
         
         <!-- STEP 2: AC & Matrix → UiPath BDD Prompt -->
@@ -115,10 +115,9 @@ const qaModules = {
                 <span style="background: #8b5cf6; color: white; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold;">2</span>
                 Generate UiPath Prompt
             </h4>
-            <textarea id="in-ac-matrix" class="form-input" style="width: 100%; height: 120px; resize: vertical; box-sizing: border-box; font-size: 0.9rem;" placeholder="Paste the AC & Matrix from Step 1 here (or use the Transfer button)..."></textarea>
-            <button id="btn-gen-uipath" onclick="window.generateUiPathPrompt()" style="padding: 10px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.9rem; transition: all 0.2s; box-shadow: 0 2px 8px rgba(139,92,246,0.3);">🚀 Generate UiPath Prompt</button>
+
             <div style="position: relative;">
-                <textarea id="out-uipath" class="form-input" style="width: 100%; height: 220px; resize: vertical; box-sizing: border-box; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.85rem; line-height: 1.5; background: var(--bg-color, #f8fafc);" placeholder="Markdown BDD prompt for UiPath Test Manager will appear here..." readonly></textarea>
+                <textarea id="out-uipath" class="form-input" style="width: 100%; height: 350px; resize: vertical; box-sizing: border-box; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.85rem; line-height: 1.5; background: var(--bg-color, #f8fafc);" placeholder="Markdown BDD prompt for UiPath Test Manager will appear here automatically when you click 'Generate UiPath prompt' in Step 1..." readonly></textarea>
                 <div style="position: absolute; top: 8px; right: 8px; display: flex; gap: 5px;">
                     <button onclick="window.copyPGOutput('out-uipath')" style="padding: 4px 10px; background: rgba(139,92,246,0.1); color: #8b5cf6; border: 1px solid rgba(139,92,246,0.2); border-radius: 5px; cursor: pointer; font-size: 0.75rem; font-weight: 600;">📋 Copy</button>
                 </div>

@@ -333,9 +333,8 @@ window.PromptEngine = (function() {
     sections.push(`## **Instruction 3: Exact Scope Boundaries (Generate exactly ${numCases} distinct scenarios)**`);
     if (matrixRows.length > 0) {
       matrixRows.forEach((row, i) => {
-        const shortType = row.type.includes('Happy') ? 'Happy Path' : row.type.includes('Negative') ? 'Negative' : 'Edge Case';
-        const shortSeg = row.segment.split(' ')[0];
-        sections.push(`* **Scenario ${i+1}: ${shortType} ${shortSeg}** -> Segment: ${row.segment} | Condition: ${row.condition.substring(0, 75)}... | Expected Result: ${row.result}`);
+        const shortType = row.desc ? (row.desc.includes('Negative') ? 'Negative' : 'Happy Path') : 'Happy Path';
+        sections.push(`* **Scenario ${i+1}: ${shortType}** -> ID: ${row.id} | Description: ${row.desc} | Condition: ${row.condition} | Expected Result: ${row.result}`);
       });
     }
 
@@ -354,12 +353,20 @@ window.PromptEngine = (function() {
 
     for (const line of lines) {
       const trimmed = line.trim();
-      if (trimmed.startsWith('| ID') || trimmed.startsWith('|ID')) { inTable = true; headerSkipped = false; continue; }
+      if (trimmed.startsWith('| Test Case ID') || trimmed.startsWith('| ID') || trimmed.startsWith('|ID')) { 
+        inTable = true; headerSkipped = false; continue; 
+      }
       if (inTable && trimmed.match(/^\|[-\s|]+\|$/)) { headerSkipped = true; continue; }
       if (inTable && headerSkipped && trimmed.startsWith('|')) {
         const cells = trimmed.split('|').map(c => c.trim()).filter(c => c);
-        if (cells.length >= 5) {
-          rows.push({ id: cells[0], segment: cells[1], type: cells[2], condition: cells[3], result: cells[4] });
+        if (cells.length >= 4) {
+          if (cells.length === 5) {
+             // Legacy 5 column table
+             rows.push({ id: cells[0], segment: cells[1], desc: cells[2], condition: cells[3], result: cells[4] });
+          } else {
+             // New 4 column API table
+             rows.push({ id: cells[0], desc: cells[1], condition: cells[2], result: cells[3] });
+          }
         }
       }
       if (inTable && headerSkipped && !trimmed.startsWith('|') && trimmed !== '') inTable = false;

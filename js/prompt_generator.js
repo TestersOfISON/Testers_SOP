@@ -107,58 +107,30 @@ Rules:
 };
 
 window.generateUiPathPrompt = function() {
-    const acContext = document.getElementById('in-ac-matrix').value.trim();
+    const acContext = document.getElementById('out-ac').value.trim();
     if (!acContext) {
-        showPGToast('⚠️ Please paste the Acceptance Criteria & Matrix into the input box first.', 'warning');
+        showPGToast('⚠️ Please generate the Acceptance Criteria & Matrix first.', 'warning');
         return;
     }
 
-    const btnUp = document.getElementById('btn-gen-uipath');
     const outUp = document.getElementById('out-uipath');
-
-    // Brief UI feedback
-    btnUp.disabled = true;
-    btnUp.innerText = '⚙️ Generating...';
     outUp.value = 'Crafting AI Instructional Prompt Template...';
 
     requestAnimationFrame(function() {
         setTimeout(function() {
             try {
                 const result = window.PromptEngine.generateUiPathBDD(acContext);
-                
                 outUp.value = result;
-                btnUp.disabled = false;
-                btnUp.innerText = '🚀 Generate UiPath Prompt';
                 showPGToast('✅ UiPath BDD Prompt generated successfully!', 'success');
             } catch (err) {
                 outUp.value = 'Error: ' + err.message;
-                btnUp.disabled = false;
-                btnUp.innerText = '🚀 Generate UiPath Prompt';
                 showPGToast('❌ Generation failed: ' + err.message, 'error');
             }
         }, 150);
     });
 };
 
-/**
- * Transfer Step 1 output into Step 2 input automatically
- */
-window.transferACToStep2 = function() {
-    const outAc = document.getElementById('out-ac');
-    const inAcMatrix = document.getElementById('in-ac-matrix');
-    
-    if (!outAc || !outAc.value.trim()) {
-        showPGToast('⚠️ Nothing to transfer. Generate the AC & Matrix first.', 'warning');
-        return;
-    }
 
-    inAcMatrix.value = outAc.value;
-    showPGToast('✅ Transferred to Step 2 input!', 'success');
-    
-    // Scroll Step 2 into view if needed
-    inAcMatrix.focus();
-    inAcMatrix.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-};
 
 /**
  * Copy content to clipboard
@@ -184,7 +156,7 @@ window.copyPGOutput = function(elementId) {
  * Clear all fields
  */
 window.clearPGFields = function() {
-    ['in-user-story', 'out-ac', 'in-ac-matrix', 'out-uipath'].forEach(function(id) {
+    ['in-user-story', 'out-ac', 'out-uipath'].forEach(function(id) {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
