@@ -241,7 +241,11 @@ try {
       if (window.loginOrRegisterUser) {
         const result = await window.loginOrRegisterUser(newName, pin);
         if (!result.success) {
-          alert(`Kindly try with correct '${newName}' user ID and password`);
+          if (result.message && result.message.includes("Database error")) {
+            alert(`CRITICAL ERROR: ${result.message}\nYour Firebase database rules might have expired or you are offline.`);
+          } else {
+            alert(`Kindly try with correct '${newName}' user ID and password`);
+          }
           return;
         }
       }

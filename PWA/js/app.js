@@ -179,7 +179,7 @@ try {
     window.lockApplication = function() {
       // Clear admin status to fully lock it
       localStorage.removeItem('isAdmin');
-      const adminBtn = document.getElementById('admin-dashboard-btn');
+      const adminBtn = document.getElementById('sidebar-admin-btn');
       if (adminBtn) adminBtn.style.display = 'none';
 
       const current = localStorage.getItem('testerName') || '';
@@ -218,8 +218,8 @@ try {
         localStorage.setItem('isAdmin', 'true');
         localStorage.setItem('testerName', 'Lead Admin');
         
-        const adminBtn = document.getElementById('admin-dashboard-btn');
-        if (adminBtn) adminBtn.style.display = 'inline-block';
+        const adminBtn = document.getElementById('sidebar-admin-btn');
+        if (adminBtn) adminBtn.style.display = 'block';
         
         const displaySpan = document.getElementById('display-profile-name');
         if (displaySpan) displaySpan.innerText = 'Lead Admin';
@@ -241,7 +241,11 @@ try {
       if (window.loginOrRegisterUser) {
         const result = await window.loginOrRegisterUser(newName, pin);
         if (!result.success) {
-          alert(`Kindly try with correct '${newName}' user ID and password`);
+          if (result.message && result.message.includes("Database error")) {
+            alert(`CRITICAL ERROR: ${result.message}\nYour Firebase database rules might have expired or you are offline.`);
+          } else {
+            alert(`Kindly try with correct '${newName}' user ID and password`);
+          }
           return;
         }
       }
@@ -1326,6 +1330,9 @@ try {
       if (progressBar) progressBar.style.display = isSOPModule ? 'block' : 'none';
       if (dashboardContainer) dashboardContainer.style.display = isSOPModule ? 'block' : 'none';
       if (resetAllBtn) resetAllBtn.style.display = isSOPModule ? 'inline-block' : 'none';
+      
+      const adminContainer = document.getElementById('admin-module-container');
+      if (adminContainer) adminContainer.style.display = 'none';
 
       // Update Active State in Sidebar
       document.querySelectorAll('.panel-btn').forEach(btn => btn.classList.remove('active-module'));
@@ -1392,10 +1399,44 @@ try {
         return text;
       }
 
-      if (Array.isArray(data.checklist)) {
-        data.checklist.forEach((item, index) => {
-          const id = `check-${moduleId}-${index}`;
-          checklistContainer.innerHTML += `
+      function renderItemHTML(item, idPrefix, index) {
+        const id = `${idPrefix}-${moduleId}-${index}`;
+        if (typeof item === 'object' && item.children) {
+          let html = `
+            <div class="checklist-item" style="padding: 10px; border-bottom: 1px solid var(--border);">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div style="display: flex; gap: 10px; flex-grow: 1;">
+                  <input type="checkbox" id="${id}" class="parent-checkbox" style="margin-top: 4px;" disabled title="Complete all sub-tasks to check this item">
+                  <label for="${id}" style="flex-grow: 1; font-weight: bold;">${formatLabel(item.text)}</label>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+                  <span id="note-icon-${moduleId}-${id}" style="display: none; color: #ef4444; font-size: 1.1rem; cursor: pointer;" title="View Note" onclick="openNoteModal('${moduleId}', '${id}')">🚩</span>
+                  <button onclick="openNoteModal('${moduleId}', '${id}')" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0 5px; color: #94a3b8; line-height: 1;" title="Add Note/Flag">⋮</button>
+                </div>
+              </div>
+              <div style="margin-left: 25px; margin-top: 8px; border-left: 2px solid var(--border); padding-left: 10px;">
+          `;
+          item.children.forEach((childItem, childIndex) => {
+            const childId = `${id}-child-${childIndex}`;
+            html += `
+                <div style="display: flex; gap: 10px; margin-bottom: 6px;">
+                  <input type="checkbox" id="${childId}" data-parent-id="${id}" class="child-checkbox" style="margin-top: 2px;" onchange="
+                    const parent = document.getElementById('${id}');
+                    const siblings = document.querySelectorAll('[data-parent-id=\\'${id}\\']');
+                    let allChecked = true;
+                    siblings.forEach(s => { if(!s.checked) allChecked = false; });
+                    if(parent.checked !== allChecked) {
+                        parent.checked = allChecked;
+                    }
+                  ">
+                  <label for="${childId}" style="flex-grow: 1; font-size: 0.95em;">${formatLabel(childItem)}</label>
+                </div>
+            `;
+          });
+          html += `</div></div>`;
+          return html;
+        } else {
+          return `
             <div class="checklist-item" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 10px; border-bottom: 1px solid var(--border);">
               <div style="display: flex; gap: 10px; flex-grow: 1;">
                 <input type="checkbox" id="${id}" style="margin-top: 4px;">
@@ -1406,40 +1447,24 @@ try {
                 <button onclick="openNoteModal('${moduleId}', '${id}')" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0 5px; color: #94a3b8; line-height: 1;" title="Add Note/Flag">⋮</button>
               </div>
             </div>`;
+        }
+      }
+
+      if (Array.isArray(data.checklist)) {
+        data.checklist.forEach((item, index) => {
+          checklistContainer.innerHTML += renderItemHTML(item, 'check', index);
         });
       } else if (data.checklist) {
         if (data.checklist.entry_criteria && data.checklist.entry_criteria.length > 0) {
           checklistContainer.innerHTML += `<div style="padding: 10px 15px; font-weight: bold; background: rgba(37, 99, 235, 0.08); border-bottom: 1px solid var(--border);">Entry Criteria</div>`;
           data.checklist.entry_criteria.forEach((item, index) => {
-            const id = `check-entry-${moduleId}-${index}`;
-            checklistContainer.innerHTML += `
-              <div class="checklist-item" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 10px; border-bottom: 1px solid var(--border);">
-                <div style="display: flex; gap: 10px; flex-grow: 1;">
-                  <input type="checkbox" id="${id}" style="margin-top: 4px;">
-                  <label for="${id}" style="flex-grow: 1;">${formatLabel(item)}</label>
-                </div>
-                <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
-                  <span id="note-icon-${moduleId}-${id}" style="display: none; color: #ef4444; font-size: 1.1rem; cursor: pointer;" title="View Note" onclick="openNoteModal('${moduleId}', '${id}')">🚩</span>
-                  <button onclick="openNoteModal('${moduleId}', '${id}')" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0 5px; color: #94a3b8; line-height: 1;" title="Add Note/Flag">⋮</button>
-                </div>
-              </div>`;
+            checklistContainer.innerHTML += renderItemHTML(item, 'check-entry', index);
           });
         }
         if (data.checklist.exit_criteria && data.checklist.exit_criteria.length > 0) {
           checklistContainer.innerHTML += `<div style="padding: 10px 15px; font-weight: bold; background: rgba(16, 185, 129, 0.08); border-bottom: 1px solid var(--border); border-top: 1px solid var(--border);">Exit Criteria</div>`;
           data.checklist.exit_criteria.forEach((item, index) => {
-            const id = `check-exit-${moduleId}-${index}`;
-            checklistContainer.innerHTML += `
-              <div class="checklist-item" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 10px; border-bottom: 1px solid var(--border);">
-                <div style="display: flex; gap: 10px; flex-grow: 1;">
-                  <input type="checkbox" id="${id}" style="margin-top: 4px;">
-                  <label for="${id}" style="flex-grow: 1;">${formatLabel(item)}</label>
-                </div>
-                <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
-                  <span id="note-icon-${moduleId}-${id}" style="display: none; color: #ef4444; font-size: 1.1rem; cursor: pointer;" title="View Note" onclick="openNoteModal('${moduleId}', '${id}')">🚩</span>
-                  <button onclick="openNoteModal('${moduleId}', '${id}')" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0 5px; color: #94a3b8; line-height: 1;" title="Add Note/Flag">⋮</button>
-                </div>
-              </div>`;
+            checklistContainer.innerHTML += renderItemHTML(item, 'check-exit', index);
           });
         }
       }
@@ -1732,8 +1757,9 @@ try {
       
       // Check Admin State
       if (localStorage.getItem('isAdmin') === 'true') {
-        const adminBtn = document.getElementById('admin-dashboard-btn');
-        if (adminBtn) adminBtn.style.display = 'inline-block';
+        const adminBtn = document.getElementById('sidebar-admin-btn');
+        if (adminBtn) adminBtn.style.display = 'block';
+        if (displaySpan) displaySpan.innerText = 'Lead Admin';
       }
       
       // Fetch data for datalists
@@ -1806,11 +1832,88 @@ window.toggleAIChat = function() {
   }
 };
 
+window.oracleModeActive = false;
+window.ragWorker = new Worker('js/oracle_rag_worker.js', { type: 'module' });
+window.ragResolvers = {};
+window.ragWorker.onmessage = function(e) {
+    if (e.data.status === 'rag_complete' || e.data.status === 'rag_error') {
+        if (window.ragResolvers[e.data.queryId]) {
+            window.ragResolvers[e.data.queryId](e.data.output || "");
+            delete window.ragResolvers[e.data.queryId];
+        }
+    } else if (e.data.status === 'ready') {
+        const statusBar = document.getElementById('oracle-status-bar');
+        if (statusBar && window.oracleModeActive) {
+            statusBar.innerText = '✅ Local T24 Hybrid RAG DB Online!';
+        }
+    } else if (e.data.status === 'error') {
+        const statusBar = document.getElementById('oracle-status-bar');
+        if (statusBar && window.oracleModeActive) {
+            statusBar.innerText = '❌ Error loading Hybrid RAG DB: ' + e.data.message;
+        }
+    }
+};
+window.ragWorker.onerror = function(e) {
+    console.error("Worker Error:", e.message, e.filename, e.lineno);
+    const statusBar = document.getElementById('oracle-status-bar');
+    if (statusBar && window.oracleModeActive) {
+        statusBar.innerText = '❌ Fatal Worker Error: ' + (e.message || "Unknown error");
+    }
+};
+
+function performRagSearch(query) {
+    return new Promise((resolve) => {
+        const qid = Date.now().toString() + Math.random().toString();
+        window.ragResolvers[qid] = resolve;
+        window.ragWorker.postMessage({ type: 'rag_search', prompt: query, queryId: qid });
+        
+        // Timeout just in case
+        setTimeout(() => {
+            if (window.ragResolvers[qid]) {
+                window.ragResolvers[qid]("");
+                delete window.ragResolvers[qid];
+            }
+        }, 15000);
+    });
+}
+
+window.toggleOracleMode = async function(checkbox) {
+  const statusBar = document.getElementById('oracle-status-bar');
+  if (checkbox.checked) {
+    window.oracleModeActive = true;
+    statusBar.style.display = 'block';
+    statusBar.innerText = 'Loading Oracle Vector Database (WebLLM/Orama)...';
+    try {
+        window.ragWorker.postMessage({ type: 'load_rag_only' });
+        // The worker will reply with 'ready' when done
+        
+        if (document.querySelectorAll('.ai-message').length <= 1) {
+            appendAIMessage("🔮 **T24 Hybrid RAG Oracle Online.** I have connected to the multi-modal video DB. Ask me any complex architectural questions!");
+        }
+    } catch (e) {
+      statusBar.innerText = '❌ Error loading Hybrid RAG DB: ' + e.message;
+      checkbox.checked = false;
+    }
+  } else {
+    window.oracleModeActive = false;
+    statusBar.style.display = 'none';
+    appendAIMessage("Oracle Mode disabled. Returning to standard Ghidul SOP guidance.");
+  }
+};
+
+window.currentKeyIndex = 0;
+
 window.openAISettings = function() {
   const modal = document.getElementById('ai-settings-modal');
   const input = document.getElementById('ai-api-key-input');
   const select = document.getElementById('ai-model-select');
-  input.value = localStorage.getItem('gemini_api_key') || '';
+  
+  let storedKeys = localStorage.getItem('gemini_api_keys') || localStorage.getItem('gemini_api_key') || '';
+  try {
+      if (storedKeys.startsWith('[')) storedKeys = JSON.parse(storedKeys).join('\n');
+  } catch(e) {}
+  input.value = storedKeys;
+  
   select.value = localStorage.getItem('gemini_ai_model') || 'gemini-2.5-flash';
   modal.style.display = 'flex';
 };
@@ -1819,9 +1922,13 @@ window.saveAISettings = function() {
   const input = document.getElementById('ai-api-key-input').value.trim();
   const select = document.getElementById('ai-model-select').value;
   if (input) {
-    localStorage.setItem('gemini_api_key', input);
+    const keysArray = input.split(/[\n,]+/).map(k => k.trim()).filter(k => k);
+    localStorage.setItem('gemini_api_keys', JSON.stringify(keysArray));
+    localStorage.setItem('gemini_api_key', keysArray[0]); // legacy support
+    window.currentKeyIndex = 0; // reset index on save
     localStorage.setItem('gemini_ai_model', select);
   } else {
+    localStorage.removeItem('gemini_api_keys');
     localStorage.removeItem('gemini_api_key');
   }
   document.getElementById('ai-settings-modal').style.display = 'none';
@@ -1919,7 +2026,12 @@ function scrollToBottom(container) {
 async function callAIAssistant(userMessage, apiKey, modelName) {
   // Build Context from current module
   let contextStr = "You are Ghidul, an AI Co-Pilot for Libra Bank QA testers. Be concise, helpful, and direct.\n";
-  if (currentModuleId && qaModules[currentModuleId]) {
+  
+  if (window.oracleModeActive) {
+      const ragContext = await performRagSearch(userMessage);
+      contextStr = `You are the T24 Migration Oracle. You must answer the user's question using ONLY the information provided in the KNOWLEDGE BASE below. If the answer is not present in the KNOWLEDGE BASE, you must reply with exactly this sentence: 'I cannot find this in the Oracle Knowledge Base.'\n\n=== KNOWLEDGE BASE ===\n${ragContext}\n======================\n`;
+  }
+  if (!window.oracleModeActive && currentModuleId && qaModules[currentModuleId]) {
     const mod = qaModules[currentModuleId];
     contextStr += `The user is currently viewing the module: "${mod.title}".\n`;
     contextStr += `Guidelines: ${mod.guidelines.replace(/<[^>]+>/g, ' ')}\n`;
@@ -1948,8 +2060,27 @@ async function callAIAssistant(userMessage, apiKey, modelName) {
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error?.message || 'API request failed');
+    if (response.status === 429) {
+      let keysArray = [];
+      try { keysArray = JSON.parse(localStorage.getItem('gemini_api_keys')); } catch(e) {}
+      if (keysArray && keysArray.length > 1) {
+          window.currentKeyIndex = (window.currentKeyIndex || 0) + 1;
+          if (window.currentKeyIndex < keysArray.length) {
+              const nextKey = keysArray[window.currentKeyIndex];
+              localStorage.setItem('gemini_api_key', nextKey);
+              console.warn(`[AI Key Rotation] Limit hit on key index ${window.currentKeyIndex - 1}. Rotating to key index ${window.currentKeyIndex}...`);
+              return callAIAssistant(userMessage, nextKey, modelName);
+          } else {
+              throw new Error('All API keys in the rotation pool have been exhausted (429 Rate Limit).');
+          }
+      }
+    }
+    let errMsg = 'API request failed';
+    try {
+      const errorData = await response.json();
+      errMsg = errorData.error?.message || errMsg;
+    } catch(e) {}
+    throw new Error(errMsg);
   }
 
   const data = await response.json();
@@ -2003,12 +2134,31 @@ window.generateExecutiveReport = async function() {
       return;
   }
 
-  const systemPrompt = `You are an AI QA Manager named Ghidul. Analyze this raw weekly testing data and write a professional, concise executive summary in markdown.
-Focus on:
-1. Overall completion and progress.
-2. Flagged anomalies (e.g., rushed testing).
-3. Skill gaps (testers needing mentorship).
-4. A short conclusion.
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setDate(endDate.getDate() - 7);
+  const dateString = `${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}`;
+
+  const systemPrompt = `You are an AI QA Manager named Ghidul. Analyze this raw weekly testing data and write a professional, concise executive summary.
+You MUST strictly follow this exact Markdown template structure:
+
+## Weekly Testing Executive Summary
+**📅 Reporting Period:** ${dateString}
+**Prepared by:** Ghidul, AI QA Manager
+
+---
+
+### 📊 Quick Glance Snapshot
+(Provide a 3-4 bullet point summary of total active stories, average progress, and overall health of the sprint.)
+
+### 🏆 Wins of the Week
+(Highlight specific testers who made significant progress (>30%) or completed tasks. Use bullet points.)
+
+### ⚠️ Risks & Blockers
+(Use a Markdown table with columns: [User Story | Assignee | Issue/Risk] to list unassigned stories, anomalies like "Suspiciously fast completion", or stories stalled at low progress.)
+
+### ✅ Recommended Next Steps for Lead Admin
+(Provide a numbered checklist of 2-3 specific, actionable tasks the Lead Admin must do today based on the risks above.)
 
 Raw Data:
 ${rawData}`;
@@ -2033,13 +2183,14 @@ ${rawData}`;
     
     let answer = data.candidates[0].content.parts[0].text;
     
-    // Simple markdown to HTML conversion for bold and lists
-    answer = answer.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    answer = answer.replace(/\n\* (.*?)/g, '<br>• $1');
-    answer = answer.replace(/\n- (.*?)/g, '<br>• $1');
-    answer = answer.replace(/\n/g, '<br>');
-    
-    content.innerHTML = answer;
+    // Parse markdown to HTML
+    if (typeof marked !== 'undefined') {
+        content.innerHTML = marked.parse(answer);
+    } else {
+        // Fallback if CDN fails
+        answer = answer.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+        content.innerHTML = answer;
+    }
   } catch (error) {
     content.innerHTML = `<span style="color:red;">Error connecting to API.</span>`;
   }
@@ -2153,3 +2304,117 @@ function formatMarkdown(text) {
     .replace(/\n/g, '<br>');
   return formatted;
 }
+
+// --- KPI PREDICTOR MODULE LOGIC ---
+let kpiGaugeInstance = null;
+
+window.loadKPIData = function() {
+  const testerName = localStorage.getItem('testerName') || "Anonymous Tester";
+  const storedStr = localStorage.getItem('kpi_metrics_qualitative_' + testerName);
+  if (storedStr) {
+    try {
+      const metrics = JSON.parse(storedStr);
+      document.getElementById('kpi-scenario-quality').value = metrics.scenario || 0;
+      document.getElementById('kpi-execution-quality').value = metrics.execution || 0;
+      document.getElementById('kpi-bug-quality').value = metrics.bug || 0;
+      document.getElementById('kpi-compliance').value = metrics.compliance || 0;
+      window.calculateKPI();
+    } catch(e) {}
+  } else {
+    // Initial render
+    window.calculateKPI();
+  }
+};
+
+window.calculateKPI = function() {
+  const scenario = parseFloat(document.getElementById('kpi-scenario-quality').value) || 0;
+  const execution = parseFloat(document.getElementById('kpi-execution-quality').value) || 0;
+  const bug = parseFloat(document.getElementById('kpi-bug-quality').value) || 0;
+  const compliance = parseFloat(document.getElementById('kpi-compliance').value) || 0;
+  
+  // Save to local storage
+  const testerName = localStorage.getItem('testerName') || "Anonymous Tester";
+  localStorage.setItem('kpi_metrics_qualitative_' + testerName, JSON.stringify({
+    scenario, execution, bug, compliance
+  }));
+
+  // Client formula: Average of all 4 components
+  let score = (scenario + execution + bug + compliance) / 4;
+  
+  // Format to 1 decimal place
+  score = Math.round(score * 10) / 10;
+  if (score < 0) score = 0;
+  
+  const MAX_TARGET = 13; // New methodology max score
+  
+  document.getElementById('kpi-score-text').innerText = score;
+  
+  // Render Gauge
+  const ctx = document.getElementById('kpiGaugeChart');
+  if (ctx) {
+    const theme = document.documentElement.getAttribute('data-theme') || 'light';
+    const bgColor = theme === 'dark' ? '#334155' : '#e2e8f0';
+    let progressColor = '#10b981'; // Green (Excellent >= 10)
+    if (score < 7) progressColor = '#ef4444'; // Red (Critical < 7)
+    else if (score < 10) progressColor = '#d97706'; // Orange (Needs Improvement 7-9.9)
+    
+    let percent = Math.min((score / MAX_TARGET) * 100, 100);
+    
+    if (kpiGaugeInstance) {
+      kpiGaugeInstance.data.datasets[0].data = [percent, 100 - percent];
+      kpiGaugeInstance.data.datasets[0].backgroundColor = [progressColor, bgColor];
+      kpiGaugeInstance.update();
+    } else {
+      if(typeof Chart !== 'undefined') {
+        kpiGaugeInstance = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: ['Score Progress', 'Remaining'],
+            datasets: [{
+              data: [percent, 100 - percent],
+              backgroundColor: [progressColor, bgColor],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            cutout: '80%',
+            rotation: -90,
+            circumference: 180,
+            plugins: { legend: { display: false }, tooltip: { enabled: false } }
+          }
+        });
+      }
+    }
+  }
+  
+  // Generate Actionable Tips based on the Bug Reporting Newsletter and Methodology
+  const tipsList = document.getElementById('kpi-tips-list');
+  const tipsContainer = document.getElementById('kpi-tips-container');
+  if (!tipsList || !tipsContainer) return;
+  tipsList.innerHTML = '';
+  let tips = [];
+  
+  if (bug < 13) {
+    tips.push(`<li>🐞 <strong>Bug Report Quality:</strong> Check your bug reports! Ensure you have a clear Title, numbered Steps to Reproduce, Actual vs Expected results based on requirements, and <strong>ALWAYS attach evidence</strong>.</li>`);
+  }
+  if (execution < 13) {
+    tips.push(`<li>⚙️ <strong>Execution Quality:</strong> Are your defects directly linked to the execution steps? Ensure all validated tests are executed in the first environment (usually UAT) to maximize this score.</li>`);
+  }
+  if (scenario < 13) {
+    tips.push(`<li>📝 <strong>Scenario Quality:</strong> Make sure your Test Cases explicitly cover User Story requirements/Acceptance Criteria and cover all edge cases and boundary values.</li>`);
+  }
+  if (compliance < 13) {
+    tips.push(`<li>⚖️ <strong>Process Compliance:</strong> Ensure your JIRA subtasks follow the exact UAT -> PRL -> Smoke -> Regression flow and your logged time correlates with each activity type.</li>`);
+  }
+  if (score >= 12) {
+    tips.push(`<li>🌟 <strong>Outstanding Performance:</strong> You are projecting an excellent score! Double-check that no tests were aborted without justification to maintain perfection.</li>`);
+  }
+  
+  if (tips.length > 0) {
+    tipsContainer.style.display = 'block';
+    tipsList.innerHTML = tips.join('');
+  } else {
+    tipsContainer.style.display = 'none';
+  }
+};

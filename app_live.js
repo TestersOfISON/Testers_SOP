@@ -241,7 +241,11 @@ try {
       if (window.loginOrRegisterUser) {
         const result = await window.loginOrRegisterUser(newName, pin);
         if (!result.success) {
-          alert(`Kindly try with correct '${newName}' user ID and password`);
+          if (result.message && result.message.includes("Database error")) {
+            alert(`CRITICAL ERROR: ${result.message}\nYour Firebase database rules might have expired or you are offline.`);
+          } else {
+            alert(`Kindly try with correct '${newName}' user ID and password`);
+          }
           return;
         }
       }
@@ -796,13 +800,12 @@ try {
           }
           
           if (total > 0 && checked === total) {
-              let timeSpent = 0;
               if (window.moduleStartTimes[tKey] && window.moduleStartTimes[tKey][moduleId]) {
-                  timeSpent = Date.now() - window.moduleStartTimes[tKey][moduleId];
-              }
-              // If module is completed in under 15 seconds (15000ms), flag it as suspicious
-              if (timeSpent < 15000) {
-                  states['_anomaly'] = "Suspiciously fast completion";
+                  const timeSpent = Date.now() - window.moduleStartTimes[tKey][moduleId];
+                  // If module is completed in under 15 seconds (15000ms), flag it as suspicious
+                  if (timeSpent < 15000) {
+                      states['_anomaly'] = "Suspiciously fast completion";
+                  }
               }
           }
           // --- TIMELINE TRACKING LOGIC ---
@@ -1829,11 +1832,88 @@ window.toggleAIChat = function() {
   }
 };
 
+window.oracleModeActive = false;
+window.ragWorker = new Worker('js/oracle_rag_worker.js', { type: 'module' });
+window.ragResolvers = {};
+window.ragWorker.onmessage = function(e) {
+    if (e.data.status === 'rag_complete' || e.data.status === 'rag_error') {
+        if (window.ragResolvers[e.data.queryId]) {
+            window.ragResolvers[e.data.queryId](e.data.output || "");
+            delete window.ragResolvers[e.data.queryId];
+        }
+    } else if (e.data.status === 'ready') {
+        const statusBar = document.getElementById('oracle-status-bar');
+        if (statusBar && window.oracleModeActive) {
+            statusBar.innerText = '✅ Local T24 Hybrid RAG DB Online!';
+        }
+    } else if (e.data.status === 'error') {
+        const statusBar = document.getElementById('oracle-status-bar');
+        if (statusBar && window.oracleModeActive) {
+            statusBar.innerText = '❌ Error loading Hybrid RAG DB: ' + e.data.message;
+        }
+    }
+};
+window.ragWorker.onerror = function(e) {
+    console.error("Worker Error:", e.message, e.filename, e.lineno);
+    const statusBar = document.getElementById('oracle-status-bar');
+    if (statusBar && window.oracleModeActive) {
+        statusBar.innerText = '❌ Fatal Worker Error: ' + (e.message || "Unknown error");
+    }
+};
+
+function performRagSearch(query) {
+    return new Promise((resolve) => {
+        const qid = Date.now().toString() + Math.random().toString();
+        window.ragResolvers[qid] = resolve;
+        window.ragWorker.postMessage({ type: 'rag_search', prompt: query, queryId: qid });
+        
+        // Timeout just in case
+        setTimeout(() => {
+            if (window.ragResolvers[qid]) {
+                window.ragResolvers[qid]("");
+                delete window.ragResolvers[qid];
+            }
+        }, 15000);
+    });
+}
+
+window.toggleOracleMode = async function(checkbox) {
+  const statusBar = document.getElementById('oracle-status-bar');
+  if (checkbox.checked) {
+    window.oracleModeActive = true;
+    statusBar.style.display = 'block';
+    statusBar.innerText = 'Loading Oracle Vector Database (WebLLM/Orama)...';
+    try {
+        window.ragWorker.postMessage({ type: 'load_rag_only' });
+        // The worker will reply with 'ready' when done
+        
+        if (document.querySelectorAll('.ai-message').length <= 1) {
+            appendAIMessage("🔮 **T24 Hybrid RAG Oracle Online.** I have connected to the multi-modal video DB. Ask me any complex architectural questions!");
+        }
+    } catch (e) {
+      statusBar.innerText = '❌ Error loading Hybrid RAG DB: ' + e.message;
+      checkbox.checked = false;
+    }
+  } else {
+    window.oracleModeActive = false;
+    statusBar.style.display = 'none';
+    appendAIMessage("Oracle Mode disabled. Returning to standard Ghidul SOP guidance.");
+  }
+};
+
+window.currentKeyIndex = 0;
+
 window.openAISettings = function() {
   const modal = document.getElementById('ai-settings-modal');
   const input = document.getElementById('ai-api-key-input');
   const select = document.getElementById('ai-model-select');
-  input.value = localStorage.getItem('gemini_api_key') || '';
+  
+  let storedKeys = localStorage.getItem('gemini_api_keys') || localStorage.getItem('gemini_api_key') || '';
+  try {
+      if (storedKeys.startsWith('[')) storedKeys = JSON.parse(storedKeys).join('\n');
+  } catch(e) {}
+  input.value = storedKeys;
+  
   select.value = localStorage.getItem('gemini_ai_model') || 'gemini-2.5-flash';
   modal.style.display = 'flex';
 };
@@ -1842,9 +1922,13 @@ window.saveAISettings = function() {
   const input = document.getElementById('ai-api-key-input').value.trim();
   const select = document.getElementById('ai-model-select').value;
   if (input) {
-    localStorage.setItem('gemini_api_key', input);
+    const keysArray = input.split(/[\n,]+/).map(k => k.trim()).filter(k => k);
+    localStorage.setItem('gemini_api_keys', JSON.stringify(keysArray));
+    localStorage.setItem('gemini_api_key', keysArray[0]); // legacy support
+    window.currentKeyIndex = 0; // reset index on save
     localStorage.setItem('gemini_ai_model', select);
   } else {
+    localStorage.removeItem('gemini_api_keys');
     localStorage.removeItem('gemini_api_key');
   }
   document.getElementById('ai-settings-modal').style.display = 'none';
@@ -1942,7 +2026,12 @@ function scrollToBottom(container) {
 async function callAIAssistant(userMessage, apiKey, modelName) {
   // Build Context from current module
   let contextStr = "You are Ghidul, an AI Co-Pilot for Libra Bank QA testers. Be concise, helpful, and direct.\n";
-  if (currentModuleId && qaModules[currentModuleId]) {
+  
+  if (window.oracleModeActive) {
+      const ragContext = await performRagSearch(userMessage);
+      contextStr = `You are the T24 Migration Oracle. You must answer the user's question using ONLY the information provided in the KNOWLEDGE BASE below. If the answer is not present in the KNOWLEDGE BASE, you must reply with exactly this sentence: 'I cannot find this in the Oracle Knowledge Base.'\n\n=== KNOWLEDGE BASE ===\n${ragContext}\n======================\n`;
+  }
+  if (!window.oracleModeActive && currentModuleId && qaModules[currentModuleId]) {
     const mod = qaModules[currentModuleId];
     contextStr += `The user is currently viewing the module: "${mod.title}".\n`;
     contextStr += `Guidelines: ${mod.guidelines.replace(/<[^>]+>/g, ' ')}\n`;
@@ -1971,8 +2060,27 @@ async function callAIAssistant(userMessage, apiKey, modelName) {
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error?.message || 'API request failed');
+    if (response.status === 429) {
+      let keysArray = [];
+      try { keysArray = JSON.parse(localStorage.getItem('gemini_api_keys')); } catch(e) {}
+      if (keysArray && keysArray.length > 1) {
+          window.currentKeyIndex = (window.currentKeyIndex || 0) + 1;
+          if (window.currentKeyIndex < keysArray.length) {
+              const nextKey = keysArray[window.currentKeyIndex];
+              localStorage.setItem('gemini_api_key', nextKey);
+              console.warn(`[AI Key Rotation] Limit hit on key index ${window.currentKeyIndex - 1}. Rotating to key index ${window.currentKeyIndex}...`);
+              return callAIAssistant(userMessage, nextKey, modelName);
+          } else {
+              throw new Error('All API keys in the rotation pool have been exhausted (429 Rate Limit).');
+          }
+      }
+    }
+    let errMsg = 'API request failed';
+    try {
+      const errorData = await response.json();
+      errMsg = errorData.error?.message || errMsg;
+    } catch(e) {}
+    throw new Error(errMsg);
   }
 
   const data = await response.json();
